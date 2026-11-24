@@ -138,6 +138,32 @@ static int npm_exact_pin(const char *spec) {
     return 1;
 }
 
+/* BUGFIX N-2: recorded-skip vec for manifests (see supply.h). */
+void oc_manifest_skips_init(oc_manifest_skip_vec *v) {
+    memset(v, 0, sizeof(*v));
+}
+
+void oc_manifest_skips_destroy(oc_manifest_skip_vec *v) {
+    free(v->items);
+    oc_manifest_skips_init(v);
+}
+
+static int manifest_skip_push(oc_manifest_skip_vec *v, oc_arena *a, const char *path,
+                              const char *reason) {
+    if (v->n == v->cap) {
+        size_t ncap = v->cap ? v->cap * 2 : 8;
+        oc_manifest_skip *grown = (oc_manifest_skip *)realloc(v->items, ncap * sizeof(*grown));
+        if (!grown)
+            return 0;
+        v->items = grown;
+        v->cap = ncap;
+    }
+    v->items[v->n].path = oc_arena_strdup(a, path);
+    v->items[v->n].reason = oc_arena_strdup(a, reason);
+    v->n++;
+    return v->items[v->n - 1].path != NULL && v->items[v->n - 1].reason != NULL;
+}
+
 static oc_code load_package_json(oc_manifest *m, const char *path, const char *data, size_t len,
                                  oc_arena *a, oc_status *st) {
     oc_json *root = oc_json_parse(a, data, len, st);
@@ -2034,8 +2060,9 @@ static oc_manifest_kind manifest_kind_of(const char *path) {
     return (oc_manifest_kind)-1;
 }
 
-oc_code oc_supply_load_manifests(oc_manifest_vec *out, const char *const *files, size_t n_files,
-                                 oc_arena *a, oc_status *st) {
+oc_code oc_supply_load_manifests_ex(oc_manifest_vec *out, oc_manifest_skip_vec *skips,
+                                    const char *const *files, size_t n_files, oc_arena *a,
+                                    oc_status *st) {
     oc_manifests_init(out);
     for (size_t i = 0; i < n_files; i++) {
         oc_manifest_kind k = manifest_kind_of(files[i]);
@@ -2051,8 +2078,22 @@ oc_code oc_supply_load_manifests(oc_manifest_vec *out, const char *const *files,
         char *data = NULL;
         size_t len = 0;
         oc_code rc = oc_read_file(files[i], &data, &len, st);
-        if (rc != OC_OK)
+        if (rc != OC_OK) {
+            /* BUGFIX N-2: a manifest that cannot be READ is a recorded
+             * skip when the caller carries a skip vec (oc check), not a
+             * whole-scan veto. Named with its reason, never silent. */
+            if (skips) {
+                char reason[192];
+                snprintf(reason, sizeof(reason), "unreadable: %.170s",
+                         st->msg[0] ? st->msg : "read error");
+                if (!manifest_skip_push(skips, a, files[i], reason)) {
+                    oc_status_set(st, OC_ERR_ALLOC, "out of memory storing manifest skip");
+                    return OC_ERR_ALLOC;
+                }
+                continue;
+            }
             return rc;
+        }
         switch (k) {
         case OC_MANIFEST_PACKAGE_JSON:
             rc = load_package_json(&m, files[i], data, len, a, st);
@@ -2110,14 +2151,41 @@ oc_code oc_supply_load_manifests(oc_manifest_vec *out, const char *const *files,
             break;
         }
         free(data);
-        if (rc != OC_OK)
+        if (rc != OC_OK) {
+            /* BUGFIX N-2: an UNPARSEABLE manifest (corrupt package.json,
+             * malformed TOML/XML) is a recorded skip under the _ex
+             * contract -- the scan continues without its data; the skip
+             * is named in the report meta. Out-of-memory alone stays
+             * fatal (it is not a property of the manifest). With skips
+             * == NULL the legacy fail-loud behavior holds. */
+            if (rc == OC_ERR_ALLOC)
+                return rc;
+            if (skips) {
+                char reason[192];
+                snprintf(reason, sizeof(reason), "unparseable: %.170s",
+                         st->msg[0] ? st->msg : "parse error");
+                if (!manifest_skip_push(skips, a, files[i], reason)) {
+                    oc_status_set(st, OC_ERR_ALLOC, "out of memory storing manifest skip");
+                    return OC_ERR_ALLOC;
+                }
+                continue;
+            }
             return rc;
+        }
         if (!manifest_push(out, m)) {
             oc_status_set(st, OC_ERR_ALLOC, "out of memory storing manifest");
             return OC_ERR_ALLOC;
         }
     }
     return OC_OK;
+}
+
+oc_code oc_supply_load_manifests(oc_manifest_vec *out, const char *const *files, size_t n_files,
+                                 oc_arena *a, oc_status *st) {
+    /* Legacy fail-loud contract (BUGFIX N-2 keeps this for direct API
+     * users and the existing suite): no skip vec -> any bad manifest
+     * fails the load, exactly as before. */
+    return oc_supply_load_manifests_ex(out, NULL, files, n_files, a, st);
 }
 
 /* ----------------------------------------------------------------- OSV */

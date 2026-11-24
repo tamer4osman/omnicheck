@@ -58,6 +58,27 @@ ktor
 # tree; the M1 drift-replay lesson applies to restores, not just clones.
 !tests/fixtures/kotlin_resolver/core.kt
 
+# SPRINT-25 restore legs (closed-loop fix wave):
+# (a) the generated scala_resolver fixture core.scala matches `core.*`
+# above; the sprint-24 archive shipped one generated Scala fixture short
+# (audit note N-5) and a fresh restore re-lost it (test_sprint24 and
+# test_sprint25 unit_n5_scala_fixtures_present both failed). The fixture
+# MUST be tracked; gen_fixtures_scala.py remains its generator.
+!tests/fixtures/scala_resolver/core.scala
+# (b) the environment-level `node_modules/` ignore (project-root
+# .gitignore, outside this repo) untracked the discovery fixture stubs:
+# tests/fixtures/js/node_modules/skip.js ("discovery must never report
+# it") and tests/fixtures_sprint2/dots/node_modules/dep.js (OBS-1
+# files_skipped_ignored_dirs 1 -> 0, test_sprint2 1 failure). Same
+# landmine class as the core.py/core.kt exceptions -- these fixtures
+# MUST be tracked; only the named stubs are re-included.
+!tests/fixtures/js/node_modules/
+tests/fixtures/js/node_modules/*
+!tests/fixtures/js/node_modules/skip.js
+!tests/fixtures_sprint2/dots/node_modules/
+tests/fixtures_sprint2/dots/node_modules/*
+!tests/fixtures_sprint2/dots/node_modules/dep.js
+
 # SPRINT-24 corpus provisions (pinned, never tracked): the scala3
 # reference corpus and the m2/m3 gate reference-repo pins (re-fetchable
 # at the recorded commits; see SPRINT-24.md section 7 and the gate

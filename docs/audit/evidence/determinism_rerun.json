@@ -1,0 +1,8 @@
+{
+ "binary": "omnicheck 0.3.0 + N-1..N-4 + OC002-R + N-6",
+ "run": "oc check lib --packs-dir packs --format json, twice, cwd=node checkout",
+ "run1_sha256": "88e6940e9c99e8891a3ab3fb5cf1f0e79c863dbdf2cd6fdcd21af0b79dfc5b7d",
+ "run2_sha256": "88e6940e9c99e8891a3ab3fb5cf1f0e79c863dbdf2cd6fdcd21af0b79dfc5b7d",
+ "byte_identical": true,
+ "ctest": "39/39 pass (38 original + test_sprint25 with 10 fix units)"
+}

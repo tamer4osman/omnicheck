@@ -30,6 +30,9 @@ struct oc_lang_entry {
     TSQuery *q_comments;
     TSQuery *q_imports;
     TSQuery *q_exports;
+    TSQuery *q_exports_cjs; /* BUGFIX N-3: CommonJS export channel; NULL
+                             * for every family except JS (javascript /
+                             * typescript / tsx grammars) */
     TSQuery *q_package;   /* per-file package-clause fact; NULL when the
                            * language has none (SPRINT-10: go) */
     TSQuery *q_main;      /* per-file main-method fact; NULL when the

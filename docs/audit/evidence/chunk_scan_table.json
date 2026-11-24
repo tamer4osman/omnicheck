@@ -1,0 +1,74 @@
+[
+ {
+  "chunk": "node_lib_check.json",
+  "files": 439,
+  "findings": 1926,
+  "parse_errors": 0
+ },
+ {
+  "chunk": "src.json",
+  "files": 477,
+  "findings": 1809,
+  "parse_errors": 251
+ },
+ {
+  "chunk": "tools.json",
+  "files": 226,
+  "findings": 1261,
+  "parse_errors": 11
+ },
+ {
+  "chunk": "doc.json",
+  "files": 1,
+  "findings": 1,
+  "parse_errors": 0
+ },
+ {
+  "chunk": "benchmark.json",
+  "files": 641,
+  "findings": 1257,
+  "parse_errors": 9
+ },
+ {
+  "chunk": "test_p0.json",
+  "files": 6911,
+  "findings": 8741,
+  "parse_errors": 139
+ },
+ {
+  "chunk": "fix_p0.json",
+  "files": 464,
+  "findings": 614,
+  "parse_errors": 2
+ },
+ {
+  "chunk": "fix_p1.json",
+  "files": 2132,
+  "findings": 4409,
+  "parse_errors": 20
+ },
+ {
+  "chunk": "deps_small.json",
+  "files": 5775,
+  "findings": 17582,
+  "parse_errors": 2349
+ },
+ {
+  "chunk": "deps_openssl.json",
+  "files": 5014,
+  "findings": 8523,
+  "parse_errors": 2311
+ },
+ {
+  "chunk": "deps_v8.json",
+  "files": 21264,
+  "findings": 36572,
+  "parse_errors": 9305
+ },
+ {
+  "chunk": "rootfiles.json",
+  "files": 2,
+  "findings": 15,
+  "parse_errors": 0
+ }
+]

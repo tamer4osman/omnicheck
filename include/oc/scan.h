@@ -112,6 +112,13 @@ typedef struct oc_scan_result {
      * osv_snapshot_date is the vendored snapshot's visible date or NULL
      * when --osv-snapshot was not given. */
     size_t manifests_scanned;
+    /* BUGFIX N-2: manifests that could not be read/parsed were SKIPPED
+     * (recorded, never silent). Parallel arrays of file/reason strings,
+     * arena-owned; counts are zero and the arrays NULL when nothing was
+     * skipped, so clean runs stay byte-stable. */
+    size_t manifests_skipped;
+    const char **manifest_skip_files;
+    const char **manifest_skip_reasons;
     const char *osv_snapshot_date;
     /* Opaque internals (imports, surface vecs, parser, file list).
      * Freed by oc_scan_result_destroy; public pointers above point into

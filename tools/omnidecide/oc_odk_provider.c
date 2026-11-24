@@ -20,11 +20,14 @@
  *                   OmniCheck treats empty/invalid output as fail-open and
  *                   the scan proceeds unranked.
  *
- * Response-size discipline: OmniCheck reads at most 64 KiB and a truncated
- * line would fail-open uselessly, so this provider ranks ALL items with the
- * kernel but emits at most OC_ODK_EMIT_MAX entries (best first), tracking a
- * conservative byte budget well under the cap. Items beyond the budget stay
- * unranked (annotate-only semantics; ranked_count is printed honestly).
+ * Response-size discipline (BUGFIX N-4): OmniCheck's client GROWS its
+ * read buffer dynamically now (64 MiB cap), so this provider emits the
+ * FULL ranked list -- no byte budget, no entry cap beyond a sanity
+ * bound -- and rank coverage is complete for every request size. The
+ * old 58 KiB emit budget existed only to stay under the client's fixed
+ * 64 KiB read buffer; with that truncation removed on both ends, the
+ * "best first, capped" discipline is obsolete. Items beyond the sanity
+ * bound would still fail-open honestly rather than truncate silently.
  *
  * Optional run-artifacts channel (memo L2, default OFF): when the env var
  * OC_OMNIDECIDE_ARTIFACTS_DIR points at a directory, this provider ALSO
@@ -63,8 +66,10 @@
 #include <unistd.h>
 
 #define OC_ODK_INPUT_MAX   (32u * 1024u * 1024u)
-#define OC_ODK_EMIT_MAX    2000u
-#define OC_ODK_EMIT_BYTES  (58u * 1024u) /* conservative: < 64 KiB read cap */
+/* BUGFIX N-4: emit cap is now a SANITY bound (not a budget): the client
+ * reads dynamically, so every ranked item is emitted. 1<<20 items is
+ * far beyond any honest request; beyond it the provider fails open. */
+#define OC_ODK_EMIT_MAX    (1u << 20)
 #define OC_ODK_PATH_MAX    4096u
 
 static const char OC_ODK_INSTRUCTION[] =
@@ -344,11 +349,13 @@ int main(void) {
         return 0;
     }
 
-    /* Emit best-first, capped by entry count AND a conservative byte
-     * budget (well under OmniCheck's 64 KiB read cap). rank = position in
-     * ranked order; confidence = the kernel's calibrated probability. */
+    /* Emit EVERY ranked entry, best first (BUGFIX N-4: the old byte
+     * budget + 2000-entry cap existed to stay under the client's fixed
+     * 64 KiB read buffer; with the client reading dynamically, capping
+     * here only hid ranks -- 928 of 1,926 on the nodejs/node lib/ run).
+     * rank = position in ranked order; confidence = the kernel's
+     * calibrated probability. */
     size_t emitted = 0;
-    size_t budget = OC_ODK_EMIT_BYTES;
     fputs("{\"model\":\"omnidecide-c/", stdout);
     printf("%d.%d.%d\",\"ranks\":[", ODK_VERSION_MAJOR, ODK_VERSION_MINOR,
            ODK_VERSION_PATCH);
@@ -356,11 +363,6 @@ int main(void) {
         size_t idx = ranked[i].index;
         if (idx == (size_t)-1 || idx >= m || !ids[idx])
             continue;
-        /* conservative entry cost: id chars + syntax + score digits */
-        size_t cost = strlen(ids[idx]) + 48;
-        if (budget < cost)
-            break;
-        budget -= cost;
         if (emitted > 0)
             putchar(',');
         fputs("{\"id\":", stdout);

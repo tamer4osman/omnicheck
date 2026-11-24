@@ -1,0 +1,13 @@
+{
+  "schema": "omnicheck.compat_report/v1",
+  "baseline": "/tmp/esm1",
+  "current": "/tmp/esm2",
+  "verdict": "BREAKING",
+  "breaking": [
+    {"kind": "removed-export", "path": "lib.mjs", "symbol": "ping"},
+    {"kind": "removed-function", "path": "lib.mjs", "symbol": "ping"}
+  ],
+  "informational": [
+  ],
+  "counts": {"breaking": 2, "informational": 0}
+}

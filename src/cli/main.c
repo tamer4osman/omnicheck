@@ -300,6 +300,24 @@ cleanup:
 
 /* ------------------------------------------------------------------ main */
 
+/* Appends one path to a dynamically grown array (BUGFIX N-1). The
+ * previous fixed 256-slot array SILENTLY DROPPED every path past the
+ * cap: `oc check f0 ... f300` analyzed 256 roots with no diagnostic at
+ * all. Growth failures are reported loudly and abort with exit 2 --
+ * never a silent truncation. */
+static int push_path(const char ***paths, size_t *n, size_t *cap, const char *p) {
+    if (*n == *cap) {
+        size_t nc = *cap ? *cap * 2 : 16;
+        const char **np = (const char **)realloc(*paths, nc * sizeof(*np));
+        if (!np)
+            return 0;
+        *paths = np;
+        *cap = nc;
+    }
+    (*paths)[(*n)++] = p;
+    return 1;
+}
+
 int oc_cli_main(int argc, char **argv) {
     if (argc < 2) {
         print_usage(stderr);
@@ -334,7 +352,8 @@ int oc_cli_main(int argc, char **argv) {
     opt.format = "json";
     oc_config_init(&opt.cfg);
 
-    const char *paths[256];
+    const char **paths = NULL; /* dynamically grown (BUGFIX N-1) */
+    size_t paths_cap = 0;
     const char *cov_files[64];
     const char *default_paths[1] = {"."};
     const char *opt_baseline = NULL, *opt_current = NULL, *opt_test_cmd = NULL;
@@ -467,8 +486,11 @@ int oc_cli_main(int argc, char **argv) {
             exit_code = 2;
             goto out;
         } else {
-            if (n_paths < sizeof(paths) / sizeof(paths[0]))
-                paths[n_paths++] = a;
+            if (!push_path(&paths, &n_paths, &paths_cap, a)) {
+                fprintf(stderr, "omnicheck: out of memory recording path '%s'\n", a);
+                exit_code = 2;
+                goto out;
+            }
         }
     }
 
@@ -520,9 +542,11 @@ int oc_cli_main(int argc, char **argv) {
     /* Mutation engine (Sprint 5, WBS 4.5): operator-set mutants run
      * against the suite; exit 1 when survivors exist (gate semantics). */
     if (strcmp(cmd, "mutate") == 0) {
-        if (n_paths == 0) {
-            paths[0] = default_paths[0];
-            n_paths = 1;
+        if (n_paths == 0 &&
+            !push_path(&paths, &n_paths, &paths_cap, default_paths[0])) {
+            fprintf(stderr, "omnicheck: out of memory recording default path\n");
+            exit_code = 2;
+            goto out;
         }
         oc_mutate_options mopt;
         memset(&mopt, 0, sizeof(mopt));
@@ -550,8 +574,11 @@ int oc_cli_main(int argc, char **argv) {
 
     if (n_paths == 0 && strcmp(cmd, "packs") != 0 && strcmp(cmd, "lsp") != 0 &&
         strcmp(cmd, "mcp") != 0 && strcmp(cmd, "compat") != 0 && strcmp(cmd, "mutate") != 0) {
-        paths[0] = default_paths[0];
-        n_paths = 1;
+        if (!push_path(&paths, &n_paths, &paths_cap, default_paths[0])) {
+            fprintf(stderr, "omnicheck: out of memory recording default path\n");
+            exit_code = 2;
+            goto out;
+        }
     }
 
     if (strcmp(cmd, "check") == 0) {
@@ -565,6 +592,7 @@ int oc_cli_main(int argc, char **argv) {
     }
 
 out:
+    free(paths); /* heap array (BUGFIX N-1); NULL when never grown */
     oc_config_destroy(&opt.cfg);
     return exit_code;
 }

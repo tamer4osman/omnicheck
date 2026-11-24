@@ -33,7 +33,15 @@
  */
 
 #define OC_TRIAGE_TIMEOUT_SECONDS 3
-#define OC_TRIAGE_MAX_RESPONSE    (64u * 1024u)
+/* BUGFIX N-4: the response ceiling is now a generous GROWTH cap, not a
+ * truncation point. The old fixed 64 KiB stack buffer silently cut
+ * larger provider responses mid-JSON, which then failed to parse and
+ * fail-opened with ZERO ranked findings -- rank coverage collapsed on
+ * exactly the large runs where triage matters (the nodejs/node lib/
+ * audit hit this: 1,926 findings, 928 ranked). The client now grows a
+ * heap buffer until EOF or deadline; only a provider exceeding the cap
+ * fails open, with a named reason. */
+#define OC_TRIAGE_MAX_RESPONSE (64u * 1024u * 1024u)
 #define OC_TRIAGE_MAX_BUDGET_S    600
 
 static long long triage_now_ms(void) {
@@ -205,11 +213,42 @@ oc_code oc_triage_rank_findings(oc_finding_vec *v, oc_triage_outcome *out, oc_st
     }
     close(in_pipe[1]);
 
-    char resp[OC_TRIAGE_MAX_RESPONSE];
+    /* BUGFIX N-4: dynamically grown response buffer (see the cap comment
+     * above). Growth is deadline-bounded by the poll loop below; the
+     * hard cap only trips for a runaway provider, which fails open with
+     * a named reason instead of silently truncating. */
+    size_t resp_cap = 64 * 1024;
     size_t resp_len = 0;
+    int resp_overflow = 0;
+    char *resp = (char *)malloc(resp_cap);
+    int status = 0; /* shared: read phase OOM path and the waitpid below */
+    if (!resp) {
+        close(out_pipe[0]);
+        kill(-pid, SIGKILL);
+        waitpid(pid, &status, 0);
+        sigprocmask(SIG_SETMASK, &old_mask, NULL);
+        oc_strbuf_destroy(&req);
+        fail_open(bin, out, "out of memory reading triage response (fail-open)");
+        oc_status_clear(st);
+        return OC_OK;
+    }
     for (;;) {
-        if (resp_len >= OC_TRIAGE_MAX_RESPONSE - 1)
-            break;
+        if (resp_len + 1 >= resp_cap) {
+            if (resp_cap >= OC_TRIAGE_MAX_RESPONSE) {
+                resp_overflow = 1;
+                break;
+            }
+            size_t ncap = resp_cap * 2;
+            if (ncap > OC_TRIAGE_MAX_RESPONSE)
+                ncap = OC_TRIAGE_MAX_RESPONSE;
+            char *nb = (char *)realloc(resp, ncap);
+            if (!nb) {
+                resp_overflow = 1;
+                break;
+            }
+            resp = nb;
+            resp_cap = ncap;
+        }
         long long remaining = deadline - triage_now_ms();
         if (remaining <= 0) {
             timed_out = 1;
@@ -226,7 +265,7 @@ oc_code oc_triage_rank_findings(oc_finding_vec *v, oc_triage_outcome *out, oc_st
             timed_out = 1;
             break;
         }
-        ssize_t r = read(out_pipe[0], resp + resp_len, OC_TRIAGE_MAX_RESPONSE - 1 - resp_len);
+        ssize_t r = read(out_pipe[0], resp + resp_len, resp_cap - 1 - resp_len);
         if (r < 0) {
             if (errno == EINTR)
                 continue;
@@ -244,7 +283,6 @@ oc_code oc_triage_rank_findings(oc_finding_vec *v, oc_triage_outcome *out, oc_st
      * Harmless if it already exited. */
     if (timed_out || write_failed)
         kill(-pid, SIGKILL);
-    int status = 0;
     waitpid(pid, &status, 0);
     sigprocmask(SIG_SETMASK, &old_mask, NULL);
     oc_strbuf_destroy(&req);
@@ -252,11 +290,19 @@ oc_code oc_triage_rank_findings(oc_finding_vec *v, oc_triage_outcome *out, oc_st
     /* Guardrail: any provider failure leaves findings unranked, run passes. */
     int exec_failed = (WIFEXITED(status) && WEXITSTATUS(status) == 127);
     if (timed_out) {
+        free(resp);
         fail_open(bin, out, "triage timed out; provider killed (fail-open)");
         oc_status_clear(st);
         return OC_OK;
     }
+    if (resp_overflow) {
+        free(resp);
+        fail_open(bin, out, "triage response exceeded the 64 MiB cap (fail-open)");
+        oc_status_clear(st);
+        return OC_OK;
+    }
     if (write_failed || exec_failed) {
+        free(resp);
         fail_open(bin, out,
                   exec_failed ? "sidecar binary failed to start" : "failed to send request");
         oc_status_clear(st);
@@ -271,6 +317,7 @@ oc_code oc_triage_rank_findings(oc_finding_vec *v, oc_triage_outcome *out, oc_st
     oc_status parse_st;
     oc_status_clear(&parse_st);
     oc_json *root = oc_json_parse(&tmp, resp, resp_len, &parse_st);
+    free(resp); /* parsed or not, the raw bytes are no longer needed */
     if (!root || root->type != OC_JSON_OBJ) {
         oc_arena_destroy(&tmp);
         fail_open(bin, out, "sidecar response was not valid JSON");

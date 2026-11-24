@@ -77,6 +77,29 @@ static const char Q_COMMENTS[] = "(comment) @comment";
  * JS family. Python exports are top-level function/class definitions
  * (functions come from the function query above) plus __all__ lists. */
 static const char Q_EXPORTS_JS[] = "(export_statement) @es";
+
+/* BUGFIX N-3: the CommonJS export channel. The ESM query above sees only
+ * export_statement nodes; CommonJS modules (all of nodejs/node lib/, the
+ * whole tools tree, most webpack-era codebases) export through
+ * ASSIGNMENTS and Object.assign calls, which were invisible to the
+ * surface -- the compat gate reported SAFE across v25.0.0 -> HEAD while
+ * functions were disappearing from lib/. Two patterns, verified
+ * textually in C (the C side rejects anything that is not exactly a CJS
+ * export target):
+ *   1. assignment_expression with a member_expression LEFT
+ *      (module.exports, exports, or one-level member exports.name);
+ *   2. call_expression Object.assign(<target>, {...}, ...).
+ * Computed keys, spreads, nested member chains and opaque reassignment
+ * shapes are skipped: never guessed (see the C-side classifiers). */
+static const char Q_EXPORTS_JS_CJS[] =
+    "(assignment_expression"
+    "  left: (member_expression) @cjsleft"
+    "  right: (_) @cjsrhs) @cjasg"
+    " (call_expression"
+    "   function: (member_expression"
+    "     object: (identifier) @oai"
+    "     property: (property_identifier) @oap)"
+    "   arguments: (arguments) @oaargs) @oacall";
 static const char Q_EXPORTS_PY[] = "(class_definition name: (identifier) @cname) @cdef"
                                    " (assignment left: (identifier) @alname) @asg";
 
@@ -343,8 +366,11 @@ static const char Q_RUST_BODYLESS[] = "(function_signature_item name: (identifie
 
 /* Rust comments: line_comment covers // and doc comments (the doc
  * markers are children INSIDE the comment span -- consumed verbatim, no
- * doc-tree model). */
-static const char Q_RUST_COMMENTS[] = "(line_comment) @comment";
+ * doc-tree model). BUGFIX OC002-R: block_comment joins the same comment
+ * channel -- the nodejs/node audit caught OC002 missing every block
+ * comment marker in vendored crates (astronomy.rs:430, hex_float.rs:318,
+ * float_traits.rs:359) because only line_comment was queried. */
+static const char Q_RUST_COMMENTS[] = "(line_comment) @comment (block_comment) @comment";
 
 /* Rust import channels (SPRINT-15): (a) `use_declaration` nodes -- the
  * C side expands the argument use-tree into leaf specifiers (the head
@@ -2309,6 +2335,21 @@ oc_parser *oc_parser_ts_new(oc_arena *arena, oc_status *st) {
                           e->grammar, (int)err_type, err_off);
             return NULL;
         }
+        e->q_exports_cjs = NULL;
+        if (LANG_DESCRIPTORS[i].family == OC_LANG_JS) {
+            /* BUGFIX N-3: the CommonJS export channel compiles for the
+             * whole JS family (javascript / typescript / tsx). */
+            e->q_exports_cjs = ts_query_new(e->lang, Q_EXPORTS_JS_CJS,
+                                            (uint32_t)strlen(Q_EXPORTS_JS_CJS), &err_off,
+                                            &err_type);
+            if (!e->q_exports_cjs) {
+                oc_status_set(st, OC_ERR_INTERNAL,
+                              "CommonJS exports query failed to compile for '%s' "
+                              "(err_type=%d, offset=%u)",
+                              e->grammar, (int)err_type, err_off);
+                return NULL;
+            }
+        }
         e->q_package = NULL;
         if (LANG_DESCRIPTORS[i].q_package) {
             e->q_package =
@@ -2397,6 +2438,8 @@ void oc_parser_ts_free(oc_parser *p) {
             ts_query_delete(p->langs[i].q_imports);
         if (p->langs[i].q_exports)
             ts_query_delete(p->langs[i].q_exports);
+        if (p->langs[i].q_exports_cjs)
+            ts_query_delete(p->langs[i].q_exports_cjs);
         if (p->langs[i].q_package)
             ts_query_delete(p->langs[i].q_package);
         if (p->langs[i].q_main)
@@ -2577,6 +2620,190 @@ static char *string_payload(oc_arena *a, TSNode n, const char *src) {
 }
 
 /* ------------------------------------------------ module surface ------ */
+
+/* --- CommonJS export extraction (BUGFIX N-3) ---------------------------
+ * The helpers below classify what the Q_EXPORTS_JS_CJS query matched.
+ * Contract: record every HONESTLY readable CommonJS export name; record
+ * NOTHING for shapes whose names cannot be known without guessing. */
+
+typedef enum {
+    CJS_TARGET_NONE = 0,  /* not a CommonJS export target */
+    CJS_TARGET_WHOLE,     /* module.exports = rhs / exports = rhs */
+    CJS_TARGET_MEMBER     /* module.exports.name = rhs / exports.name = rhs */
+} cjs_target_kind;
+
+/* Classifies a CJS assignment LEFT member_expression (by its exact
+ * source text): CJS_TARGET_MEMBER sets *name to the exported name,
+ * CJS_TARGET_WHOLE means the RHS shape decides, CJS_TARGET_NONE rejects
+ * everything else (nested member chains like module.exports.a.b, foreign
+ * objects like foo.exports, unwritable text). */
+static cjs_target_kind cjs_classify_left(TSNode left, const char *src, char **name,
+                                         oc_arena *a) {
+    *name = NULL;
+    char *t = node_text(a, left, src);
+    if (!t)
+        return CJS_TARGET_NONE;
+    if (strcmp(t, "module.exports") == 0 || strcmp(t, "exports") == 0)
+        return CJS_TARGET_WHOLE;
+    static const char MODP[] = "module.exports.";
+    static const char EXPP[] = "exports.";
+    const char *rest = NULL;
+    if (strncmp(t, MODP, sizeof(MODP) - 1) == 0)
+        rest = t + sizeof(MODP) - 1;
+    else if (strncmp(t, EXPP, sizeof(EXPP) - 1) == 0)
+        rest = t + sizeof(EXPP) - 1;
+    if (!rest || rest[0] == '\0' || strchr(rest, '.') != NULL)
+        return CJS_TARGET_NONE; /* nested chain: not a one-level export name */
+    *name = oc_arena_strdup(a, rest);
+    return *name ? CJS_TARGET_MEMBER : CJS_TARGET_NONE;
+}
+
+/* Dedup within one file's CJS channel (order-stable, names are
+ * arena-owned): 1 = recorded (or already present), 0 = OOM. */
+static int cjs_seen_push(char ***seen, size_t *n, size_t *cap, const char *name) {
+    for (size_t i = 0; i < *n; i++)
+        if (strcmp((*seen)[i], name) == 0)
+            return 1; /* duplicate within the file: already recorded */
+    if (*n == *cap) {
+        size_t nc = *cap ? *cap * 2 : 16;
+        char **ns = (char **)realloc(*seen, nc * sizeof(*ns));
+        if (!ns)
+            return 0;
+        *seen = ns;
+        *cap = nc;
+    }
+    (*seen)[(*n)++] = (char *)name;
+    return 1;
+}
+
+/* Extracts the honest names of an object literal used as a CJS export
+ * value: pair keys (identifier or quoted -- quoted keys are unquoted
+ * via string_payload), method_definition names, shorthand identifiers.
+ * Computed keys and numeric keys are skipped, never guessed. Outputs:
+ * *n_pushed = names recorded; *opaque = 1 when the literal spreads an
+ * unknowable source (spread_element), so the caller can fall back to
+ * the "default" pseudo-name. Returns 0 only on allocation failure. */
+static int cjs_push_object_keys(oc_arena *a, TSNode obj, const char *src, const char *path,
+                                size_t line, oc_export_vec *exports, char ***seen, size_t *n_seen,
+                                size_t *cap_seen, int *oom, int *n_pushed, int *opaque) {
+    *n_pushed = 0;
+    *opaque = 0;
+    uint32_t nc = ts_node_child_count(obj);
+    for (uint32_t i = 0; i < nc; i++) {
+        TSNode c = ts_node_child(obj, i);
+        if (!ts_node_is_named(c))
+            continue;
+        const char *t = ts_node_type(c);
+        char *name = NULL;
+        if (strcmp(t, "pair") == 0) {
+            TSNode key = ts_node_child_by_field_name(c, "key", 3);
+            if (ts_node_is_null(key))
+                continue;
+            const char *kt = ts_node_type(key);
+            if (strcmp(kt, "property_identifier") == 0)
+                name = node_text(a, key, src);
+            else if (strcmp(kt, "string") == 0)
+                name = string_payload(a, key, src);
+            /* number / computed keys: skip, nothing honest to record */
+        } else if (strcmp(t, "method_definition") == 0) {
+            TSNode key = ts_node_child_by_field_name(c, "name", 4);
+            if (ts_node_is_null(key))
+                key = ts_node_child_by_field_name(c, "key", 3);
+            if (ts_node_is_null(key))
+                continue;
+            const char *kt = ts_node_type(key);
+            if (strcmp(kt, "property_identifier") == 0)
+                name = node_text(a, key, src);
+            else if (strcmp(kt, "string") == 0)
+                name = string_payload(a, key, src);
+        } else if (strcmp(t, "shorthand_property_identifier") == 0) {
+            name = node_text(a, c, src);
+        } else if (strcmp(t, "spread_element") == 0) {
+            *opaque = 1; /* names from the spread are unknowable */
+            continue;
+        } else {
+            continue; /* comment and anything else: nothing honest here */
+        }
+        if (!name || name[0] == '\0')
+            continue;
+        if (!cjs_seen_push(seen, n_seen, cap_seen, name)) {
+            *oom = 1;
+            return 0;
+        }
+        if (!oc_surface_export_push(exports, a, path, name, line, 0)) {
+            *oom = 1;
+            return 0;
+        }
+        (*n_pushed)++;
+    }
+    return 1;
+}
+
+/* Handles Object.assign(<target>, {...}, ...) -- either as the
+ * standalone statement pattern (verify_target: the first argument must
+ * itself be exactly a CJS export target) or as the RHS of
+ * `module.exports = Object.assign(...)` (target already implied by the
+ * assignment's LEFT). Pushes the honest keys of every object-literal
+ * argument after the target. Returns 1 = an Object.assign call that was
+ * processed (keys pushed, or honestly unknowable), -1 = not an
+ * Object.assign call at all (nothing recorded; the caller decides),
+ * 0 = allocation failure (*oom set). */
+static int cjs_push_object_assign(oc_arena *a, TSNode call, const char *src, const char *path,
+                                  size_t line, oc_export_vec *exports, char ***seen,
+                                  size_t *n_seen, size_t *cap_seen, int verify_target, int *oom) {
+    TSNode fn = ts_node_child_by_field_name(call, "function", 8);
+    if (ts_node_is_null(fn) || strcmp(ts_node_type(fn), "member_expression") != 0)
+        return -1; /* not Object.assign after all */
+    TSNode fobj = ts_node_child_by_field_name(fn, "object", 6);
+    TSNode fprop = ts_node_child_by_field_name(fn, "property", 8);
+    if (ts_node_is_null(fobj) || ts_node_is_null(fprop))
+        return -1;
+    char *oi = node_text(a, fobj, src);
+    char *op = node_text(a, fprop, src);
+    if (!oi || !op || strcmp(oi, "Object") != 0 || strcmp(op, "assign") != 0)
+        return -1;
+    TSNode args = ts_node_child_by_field_name(call, "arguments", 9);
+    if (ts_node_is_null(args))
+        return -1;
+    int first = 1;
+    uint32_t nc = ts_node_child_count(args);
+    for (uint32_t i = 0; i < nc; i++) {
+        TSNode c = ts_node_child(args, i);
+        if (!ts_node_is_named(c))
+            continue; /* parens / commas are anonymous */
+        if (first) {
+            first = 0;
+            if (!verify_target)
+                continue; /* RHS form: the target is the assignment's LEFT */
+            char *tt = node_text(a, c, src);
+            if (!tt ||
+                (strcmp(tt, "module.exports") != 0 && strcmp(tt, "exports") != 0))
+                return 1; /* some other Object.assign: nothing recorded */
+            continue;
+        }
+        if (strcmp(ts_node_type(c), "object") == 0) {
+            int np = 0, opq = 0;
+            if (!cjs_push_object_keys(a, c, src, path, line, exports, seen, n_seen, cap_seen,
+                                      oom, &np, &opq))
+                return 0;
+            if (np == 0 && opq) {
+                /* the merge carries unknowable names: record the
+                 * wholesale-change pseudo-name instead of guessing */
+                if (!cjs_seen_push(seen, n_seen, cap_seen, "default")) {
+                    *oom = 1;
+                    return 0;
+                }
+                if (!oc_surface_export_push(exports, a, path, "default", line, 0)) {
+                    *oom = 1;
+                    return 0;
+                }
+            }
+        }
+        /* non-object sources (identifier, require(...), spread): honest
+         * skip -- their names are not statically knowable */
+    }
+    return 1;
+}
 
 /* True when the node sits directly under the Python module (possibly
  * wrapped in a decorated_definition). Nested defs are not exports. */
@@ -5148,6 +5375,118 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
                 }
             }
             ts_query_cursor_delete(xcur);
+
+            /* CommonJS channel (BUGFIX N-3): module.exports / exports
+             * assignments and Object.assign export merges, extracted on
+             * a second cursor pass AFTER the ESM pass so the two
+             * channels never interleave. The ESM pass above only saw
+             * export_statement nodes, so every CommonJS module exported
+             * NOTHING as far as the module surface was concerned -- the
+             * v25.0.0 -> HEAD lib/ compat gate reported SAFE while
+             * functions were disappearing from lib/. Recorded names:
+             * object-literal keys (quoted keys unquoted), the member
+             * name of `exports.x = ...` / `module.exports.x = ...`, the
+             * keys of Object.assign export merges, and the pseudo-name
+             * "default" for an opaque wholesale reassignment. Never
+             * guessed: computed keys, spreads, nested member chains and
+             * opaque RHS shapes are recorded as NOTHING. */
+            if (!export_fail && e->q_exports_cjs) {
+                TSQueryCursor *ccur = ts_query_cursor_new();
+                if (!ccur) {
+                    oc_status_set(st, OC_ERR_ALLOC, "out of memory creating query cursor");
+                    return OC_ERR_ALLOC;
+                }
+                ts_query_cursor_exec(ccur, e->q_exports_cjs, root);
+                char **seen = NULL; /* per-file CJS dedup (arena-owned names) */
+                size_t n_seen = 0, cap_seen = 0;
+                int seen_oom = 0;
+                while (ts_query_cursor_next_match(ccur, &m) && !export_fail) {
+                    TSNode cjasg = match_capture(e->q_exports_cjs, &m, "cjasg");
+                    if (!ts_node_is_null(cjasg)) {
+                        TSNode cjsleft = match_capture(e->q_exports_cjs, &m, "cjsleft");
+                        TSNode cjsrhs = match_capture(e->q_exports_cjs, &m, "cjsrhs");
+                        if (ts_node_is_null(cjsleft) || ts_node_is_null(cjsrhs))
+                            continue;
+                        size_t line = (size_t)ts_node_start_point(cjasg).row + 1;
+                        char *lname = NULL;
+                        cjs_target_kind kind =
+                            cjs_classify_left(cjsleft, in->source, &lname, p->arena);
+                        if (kind == CJS_TARGET_NONE)
+                            continue; /* foreign member chain: not an export */
+                        if (kind == CJS_TARGET_MEMBER && lname) {
+                            if (!cjs_seen_push(&seen, &n_seen, &cap_seen, lname)) {
+                                seen_oom = 1;
+                                break;
+                            }
+                            if (!oc_surface_export_push(out->exports, p->arena, in->path, lname,
+                                                        line, 0)) {
+                                export_fail = 1;
+                                break;
+                            }
+                            continue;
+                        }
+                        /* whole-module form: the RHS shape decides what
+                         * is honestly recordable */
+                        int handled = 0;
+                        if (strcmp(ts_node_type(cjsrhs), "object") == 0) {
+                            int np = 0, opq = 0;
+                            if (!cjs_push_object_keys(p->arena, cjsrhs, in->source, in->path,
+                                                      line, out->exports, &seen, &n_seen,
+                                                      &cap_seen, &seen_oom, &np, &opq)) {
+                                export_fail = 1;
+                                break;
+                            }
+                            /* keys recorded (np > 0) or an honestly EMPTY
+                             * literal (np == 0, no spread) are final; a
+                             * spread-only literal is an unknowable
+                             * wholesale change */
+                            handled = (np > 0 || !opq);
+                        } else if (strcmp(ts_node_type(cjsrhs), "call_expression") == 0) {
+                            int rr = cjs_push_object_assign(p->arena, cjsrhs, in->source,
+                                                            in->path, line, out->exports, &seen,
+                                                            &n_seen, &cap_seen, 0, &seen_oom);
+                            if (rr == 0) {
+                                export_fail = 1;
+                                break;
+                            }
+                            handled = (rr == 1); /* -1: not Object.assign at all */
+                        }
+                        if (!handled) {
+                            /* opaque wholesale reassignment (identifier,
+                             * function, class, require(...), non-assign
+                             * call, spread-only literal): the module
+                             * surface is the module object itself */
+                            if (!cjs_seen_push(&seen, &n_seen, &cap_seen, "default")) {
+                                seen_oom = 1;
+                                break;
+                            }
+                            if (!oc_surface_export_push(out->exports, p->arena, in->path,
+                                                        "default", line, 0)) {
+                                export_fail = 1;
+                                break;
+                            }
+                        }
+                        continue;
+                    }
+                    TSNode oacall = match_capture(e->q_exports_cjs, &m, "oacall");
+                    if (!ts_node_is_null(oacall)) {
+                        size_t line = (size_t)ts_node_start_point(oacall).row + 1;
+                        if (!cjs_push_object_assign(p->arena, oacall, in->source, in->path, line,
+                                                    out->exports, &seen, &n_seen, &cap_seen, 1,
+                                                    &seen_oom)) {
+                            export_fail = 1;
+                            break;
+                        }
+                    }
+                }
+                ts_query_cursor_delete(ccur);
+                free(seen);
+                if (export_fail || seen_oom) {
+                    oc_status_set(st, OC_ERR_ALLOC,
+                                  "out of memory recording CommonJS exports");
+                    return OC_ERR_ALLOC;
+                }
+            }
         } else if (e->family == OC_LANG_GO) {
             /* Go: package-level declarations with an exported (upper-case
              * first rune) name; the query constrains every capture to

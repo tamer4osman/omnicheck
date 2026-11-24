@@ -1,0 +1,16 @@
+{
+ "binary": "omnicheck 0.3.0 + N-1..N-4 + OC002-R + N-6 (rebuilt 2026-11-25 from committed source, sandbox recycle restore)",
+ "purpose": "post-restore re-verification: vendor.sh re-fetch (16 pinned grammars, npm sha256 fallback for go/c-sharp), cmake rebuild, full ctest",
+ "determinism_run": "oc check src packs tests scripts --packs-dir packs --format json, twice",
+ "run1_sha256": "4dd2cc60f026aa3ed7f1b570b8ef810b3e443ef0a2af1f5d599f51de974fc924",
+ "run2_sha256": "4dd2cc60f026aa3ed7f1b570b8ef810b3e443ef0a2af1f5d599f51de974fc924",
+ "byte_identical": true,
+ "files_analyzed": 475,
+ "exit_code_note": "exit 2 by documented contract: tests/fixtures_broken ships files that fail to parse cleanly; stderr names them",
+ "ctest": "39/39 pass (239 s) after restoring the gitignored fixture stubs (commit 72e6f9a)",
+ "restore_leg_fixes": [
+  "tests/fixtures/js/node_modules/skip.js re-tracked",
+  "tests/fixtures_sprint2/dots/node_modules/dep.js re-tracked",
+  "tests/fixtures/scala_resolver/core.scala re-tracked (N-5 generator output now survives restores)"
+ ]
+}

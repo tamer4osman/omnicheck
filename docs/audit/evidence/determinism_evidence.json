@@ -1,0 +1,22 @@
+{
+ "claim": "byte-stable reports: same inputs -> same bytes",
+ "runs": [
+  {
+   "file": "oc_check_lib_report.json",
+   "sha256": "3af5cbc9456d4bc1df2a307a95cc06a07345c1666734d7dae70d66ce47ea7c95",
+   "when": "initial tour run"
+  },
+  {
+   "file": "oc_check_lib_rerun1.json",
+   "sha256": "3af5cbc9456d4bc1df2a307a95cc06a07345c1666734d7dae70d66ce47ea7c95",
+   "when": "rerun A"
+  },
+  {
+   "file": "oc_check_lib_rerun2.json",
+   "sha256": "3af5cbc9456d4bc1df2a307a95cc06a07345c1666734d7dae70d66ce47ea7c95",
+   "when": "rerun B"
+  }
+ ],
+ "byte_identical": true,
+ "note": "initial run and both reruns are byte-identical (cmp exit 0); triage run minus triage_rank/triage_confidence equals the plain run finding-for-finding"
+}

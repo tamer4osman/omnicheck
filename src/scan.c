@@ -47,6 +47,7 @@ typedef struct scan_impl {
     char **sources;
     size_t *source_lens;
     oc_manifest_vec manifests;
+    oc_manifest_skip_vec skips;
     oc_osv_snapshot osv;
     int have_osv;
 } scan_impl;
@@ -227,6 +228,7 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
     oc_coverage_init(&impl->cov);
     oc_packs_init(&impl->packs, arena);
     oc_manifests_init(&impl->manifests);
+    oc_manifest_skips_init(&impl->skips);
     oc_osv_init(&impl->osv);
 
     oc_graph_init(&res->graph, arena);
@@ -483,12 +485,33 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
         impl->have_osv = 1;
         res->osv_snapshot_date = impl->osv.snapshot_date;
     }
-    if (oc_supply_load_manifests(&impl->manifests, (const char *const *)impl->files.items,
-                                 impl->files.n, arena, st) != OC_OK) {
+    if (oc_supply_load_manifests_ex(&impl->manifests, &impl->skips,
+                                    (const char *const *)impl->files.items,
+                                    impl->files.n, arena, st) != OC_OK) {
         rc = st->code;
         goto cleanup;
     }
     res->manifests_scanned = impl->manifests.n;
+    /* BUGFIX N-2: expose the recorded manifest skips (named, never
+     * silent) to the report meta. Arena-owned parallel arrays. */
+    res->manifests_skipped = impl->skips.n;
+    if (impl->skips.n > 0) {
+        const char **sf = (const char **)oc_arena_alloc(arena,
+                                                        impl->skips.n * sizeof(*sf));
+        const char **sr = (const char **)oc_arena_alloc(arena,
+                                                        impl->skips.n * sizeof(*sr));
+        if (!sf || !sr) {
+            oc_status_set(st, OC_ERR_ALLOC, "out of memory recording manifest skips");
+            rc = OC_ERR_ALLOC;
+            goto cleanup;
+        }
+        for (size_t s = 0; s < impl->skips.n; s++) {
+            sf[s] = impl->skips.items[s].path;
+            sr[s] = impl->skips.items[s].reason;
+        }
+        res->manifest_skip_files = sf;
+        res->manifest_skip_reasons = sr;
+    }
     for (size_t m = 0; m < impl->manifests.n; m++) {
         oc_manifest *man = &impl->manifests.items[m];
         /* Manifests run through the pack that owns their ecosystem:
@@ -591,6 +614,7 @@ void oc_scan_result_destroy(oc_scan_result *res) {
         }
         oc_paths_destroy(&impl->files);
         oc_manifests_destroy(&impl->manifests);
+        oc_manifest_skips_destroy(&impl->skips);
         oc_osv_destroy(&impl->osv);
         oc_parser_free(impl->parser);
         free(impl);

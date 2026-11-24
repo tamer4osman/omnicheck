@@ -1,0 +1,68 @@
+[
+ {
+  "chunk": "chunk_00",
+  "files": 4200,
+  "findings": 9871,
+  "parse_errors": 1499
+ },
+ {
+  "chunk": "chunk_01",
+  "files": 4200,
+  "findings": 6781,
+  "parse_errors": 2115
+ },
+ {
+  "chunk": "chunk_02",
+  "files": 4200,
+  "findings": 15315,
+  "parse_errors": 1609
+ },
+ {
+  "chunk": "chunk_03",
+  "files": 4200,
+  "findings": 11846,
+  "parse_errors": 1379
+ },
+ {
+  "chunk": "chunk_04",
+  "files": 4200,
+  "findings": 5776,
+  "parse_errors": 2548
+ },
+ {
+  "chunk": "chunk_05",
+  "files": 4200,
+  "findings": 9359,
+  "parse_errors": 1533
+ },
+ {
+  "chunk": "chunk_06",
+  "files": 4200,
+  "findings": 7797,
+  "parse_errors": 1909
+ },
+ {
+  "chunk": "chunk_07",
+  "files": 4200,
+  "findings": 7341,
+  "parse_errors": 1611
+ },
+ {
+  "chunk": "chunk_08",
+  "files": 4200,
+  "findings": 6633,
+  "parse_errors": 192
+ },
+ {
+  "chunk": "chunk_09",
+  "files": 4200,
+  "findings": 5962,
+  "parse_errors": 0
+ },
+ {
+  "chunk": "chunk_10",
+  "files": 1719,
+  "findings": 3572,
+  "parse_errors": 13
+ }
+]

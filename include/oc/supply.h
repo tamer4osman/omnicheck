@@ -125,12 +125,44 @@ typedef struct oc_manifest_vec {
 void oc_manifests_init(oc_manifest_vec *v);
 void oc_manifests_destroy(oc_manifest_vec *v);
 
+/* One manifest that could not be read or parsed honestly (named, never
+ * silent, BUGFIX N-2): it is SKIPPED -- the scan continues without its
+ * licence and dependency data -- and the skip travels to the report
+ * meta ("manifests_skipped" + the named "manifest_skip" list). One
+ * corrupt package.json in a large tree must never veto the analysis of
+ * every other file; hiding it would be equally wrong, so the skip is
+ * recorded with its reason and reported. */
+typedef struct oc_manifest_skip {
+    const char *path;
+    const char *reason;
+} oc_manifest_skip;
+
+typedef struct oc_manifest_skip_vec {
+    oc_manifest_skip *items;
+    size_t n;
+    size_t cap;
+} oc_manifest_skip_vec;
+
+void oc_manifest_skips_init(oc_manifest_skip_vec *v);
+void oc_manifest_skips_destroy(oc_manifest_skip_vec *v);
+
 /* Scans the DISCOVERED file list for manifest basenames (package.json,
  * pyproject.toml, requirements.txt, go.mod, pom.xml, .csproj,
  * Cargo.toml, Cargo.lock) and parses
  * the ones found. All
- * strings live in the arena. Unreadable manifests are hard errors (fail
- * loud, never skip silently). */
+ * strings live in the arena. With a non-NULL `skips` vec, unreadable or
+ * unparseable manifests are RECORDED there (path + reason) and the run
+ * continues; only out-of-memory stays fatal. With NULL, the legacy
+ * fail-loud contract holds (any bad manifest fails the whole load).
+ * BUGFIX N-2: `oc check` passes a skip vec so a single corrupt manifest
+ * can no longer abort a scan of thousands of files; the skip is named
+ * in the report meta, never silent. */
+oc_code oc_supply_load_manifests_ex(oc_manifest_vec *out, oc_manifest_skip_vec *skips,
+                                    const char *const *files, size_t n_files, oc_arena *a,
+                                    oc_status *st);
+
+/* Legacy fail-loud wrapper (unchanged contract for direct API users):
+ * oc_supply_load_manifests_ex with skips == NULL. */
 oc_code oc_supply_load_manifests(oc_manifest_vec *out, const char *const *files, size_t n_files,
                                  oc_arena *a, oc_status *st);
 

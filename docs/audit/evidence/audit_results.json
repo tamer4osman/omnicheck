@@ -1,0 +1,374 @@
+{
+ "OC001": {
+  "tool_findings": 16042,
+  "tool_distinct": 15992,
+  "mine_distinct": 15678,
+  "exact_triple_agree": 15091,
+  "name_level_both": 15099,
+  "name_level_tool_only": 893,
+  "name_level_mine_only": 579,
+  "span_delta_mean": 0.038,
+  "span_delta_max": 208
+ },
+ "OC002": {
+  "tool": 9228,
+  "tool_distinct": 9228,
+  "mine_distinct": 9235,
+  "tp": 9228,
+  "fp": 0,
+  "fn": 7,
+  "fp_sample": [],
+  "fn_sample": [
+   [
+    "android_configure.py",
+    5,
+    "TODO"
+   ],
+   [
+    "deps/crates/vendor/calendrical_calculations-v0_2/src/astronomy.rs",
+    430,
+    "TODO"
+   ],
+   [
+    "deps/crates/vendor/calendrical_calculations-v0_2/src/astronomy.rs",
+    477,
+    "TODO"
+   ],
+   [
+    "deps/crates/vendor/libm-v0_2/src/math/support/float_traits.rs",
+    359,
+    "FIXME"
+   ],
+   [
+    "deps/crates/vendor/libm-v0_2/src/math/support/hex_float.rs",
+    318,
+    "FIXME"
+   ],
+   [
+    "deps/crates/vendor/libm-v0_2/src/math/support/hex_float.rs",
+    345,
+    "FIXME"
+   ]
+  ]
+ },
+ "OC003": {
+  "tool": 22,
+  "mine": 15,
+  "tp": 9,
+  "fp": 13,
+  "fn": 6,
+  "my_edges": 16010,
+  "fp_sample": [
+   [
+    "deps/v8/third_party/markupsafe/__init__.py",
+    "deps/v8/third_party/markupsafe/_native.py"
+   ],
+   [
+    "test/common/index.js",
+    "test/common/tmpdir.js"
+   ],
+   [
+    "test/fixtures/cycles/folder/foo.js",
+    "test/fixtures/cycles/root.js"
+   ]
+  ],
+  "fn_sample": [
+   [
+    "deps/LIEF/include/LIEF/third-party/internal/utfcpp/utf8/checked.h",
+    "deps/LIEF/include/LIEF/third-party/internal/utfcpp/utf8/cpp11.h",
+    "deps/LIEF/include/LIEF/third-party/internal/utfcpp/utf8/cpp17.h",
+    "deps/LIEF/include/LIEF/third-party/internal/utfcpp/utf8/cpp20.h"
+   ],
+   [
+    "deps/LIEF/third-party/spdlog/include/spdlog/fmt/bundled/base.h",
+    "deps/LIEF/third-party/spdlog/include/spdlog/fmt/bundled/format-inl.h",
+    "deps/LIEF/third-party/spdlog/include/spdlog/fmt/bundled/format.h"
+   ],
+   [
+    "deps/LIEF/third-party/utfcpp/source/utf8/checked.h",
+    "deps/LIEF/third-party/utfcpp/source/utf8/cpp11.h",
+    "deps/LIEF/third-party/utfcpp/source/utf8/cpp17.h",
+    "deps/LIEF/third-party/utfcpp/source/utf8/cpp20.h"
+   ]
+  ]
+ },
+ "OC004": {
+  "tool_findings": 8459,
+  "tool_distinct": 8421,
+  "mine_distinct": 8269,
+  "exact_triple_agree": 7947,
+  "name_level_both": 7954,
+  "name_level_tool_only": 467,
+  "name_level_mine_only": 315,
+  "complexity_delta_mean": 0.003,
+  "complexity_delta_max": 17
+ },
+ "OC006": {
+  "tool": 39228,
+  "mine": 38508,
+  "tp": 37262,
+  "fp": 1966,
+  "fn": 1246,
+  "my_edges": 16010,
+  "fp_sample": [
+   "benchmark/eslint.config_partial.mjs",
+   "deps/LIEF/include/LIEF/third-party/internal/utfcpp/utf8/checked.h",
+   "deps/LIEF/include/LIEF/third-party/internal/utfcpp/utf8/core.h",
+   "deps/LIEF/include/LIEF/third-party/internal/utfcpp/utf8/cpp11.h",
+   "deps/LIEF/include/LIEF/third-party/internal/utfcpp/utf8/cpp17.h",
+   "deps/LIEF/include/LIEF/third-party/internal/utfcpp/utf8/cpp20.h"
+  ],
+  "fn_sample": [
+   "android_configure.py",
+   "benchmark/_benchmark_progress.js",
+   "benchmark/_cli.js",
+   "benchmark/_http-benchmarkers.js",
+   "benchmark/_node-bench-analysis.js",
+   "benchmark/_node-bench.js"
+  ]
+ },
+ "OC010": {
+  "tool": 31,
+  "mine": 59,
+  "tp": 25,
+  "fp": 6,
+  "fn": 34,
+  "fp_sample": [
+   "deps/nbytes/pyproject.toml",
+   "deps/undici/src/deps/milo/scripts/Cargo.toml",
+   "test/fixtures/module-extension-over-directory/inner/package.json",
+   "test/fixtures/npm-install/install-dir/package.json",
+   "test/fixtures/require-bin/package.json",
+   "test/fixtures/test426/package.json"
+  ],
+  "fn_sample": [
+   "/home/z/my-project/repos/node/deps/libffi/testsuite/libffi.bhaible",
+   "/home/z/my-project/repos/node/deps/libffi/testsuite/libffi.call",
+   "/home/z/my-project/repos/node/deps/libffi/testsuite/libffi.closures",
+   "/home/z/my-project/repos/node/deps/libffi/testsuite/libffi.complex",
+   "/home/z/my-project/repos/node/deps/libffi/testsuite/libffi.go",
+   "/home/z/my-project/repos/node/deps/libffi/testsuite/libffi.jspi",
+   "/home/z/my-project/repos/node/deps/libffi/testsuite/libffi.threads",
+   "/home/z/my-project/repos/node/deps/libffi/testsuite/libffi.vector"
+  ]
+ },
+ "OC011": {
+  "tool": 696,
+  "tool_distinct": 696,
+  "mine_distinct": 700,
+  "tp": 696,
+  "fp": 0,
+  "fn": 4,
+  "fp_sample": [],
+  "fn_sample": [
+   [
+    "test/fixtures/es-modules/json-modules-attributes.mjs",
+    1,
+    "warn-assignment"
+   ],
+   [
+    "test/fixtures/es-modules/json-modules-attributes.mjs",
+    2,
+    "warn-assignment"
+   ],
+   [
+    "test/fixtures/es-modules/json-modules-attributes.mjs",
+    3,
+    "warn-assignment"
+   ],
+   [
+    "test/fixtures/es-modules/json-modules.mjs",
+    1,
+    "warn-assignment"
+   ]
+  ]
+ },
+ "OC008": {
+  "tool_total": 7951,
+  "sampled": 12,
+  "verified": 12,
+  "samples": [
+   {
+    "file": "deps/npm/tap-snapshots/test/lib/utils/reify-output.js.test.cjs",
+    "nlines": 13,
+    "locs": 6,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "src/inspector/dom_storage_agent.cc",
+    "nlines": 12,
+    "locs": 2,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "lib/internal/dtls/stats.js",
+    "nlines": 12,
+    "locs": 3,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "deps/openssl/config/archs/BSD-x86/asm/include/openssl/ui.h",
+    "nlines": 447,
+    "locs": 8,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "test/abort/test-abort-fatal-error.js",
+    "nlines": 20,
+    "locs": 8,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "benchmark/url/legacy-url-get-prop.js",
+    "nlines": 14,
+    "locs": 2,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "benchmark/net/tcp-raw-c2s.js",
+    "nlines": 18,
+    "locs": 3,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "src/node_sqlite.cc",
+    "nlines": 15,
+    "locs": 3,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "deps/openssl/config/archs/BSD-x86/asm/providers/common/include/prov/der_digests.h",
+    "nlines": 15,
+    "locs": 8,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "src/ffi/platforms/loong64.cc",
+    "nlines": 51,
+    "locs": 3,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "deps/openssl/config/archs/BSD-x86/asm/providers/common/include/prov/der_digests.h",
+    "nlines": 15,
+    "locs": 8,
+    "verdict": "verified",
+    "same_len": true
+   },
+   {
+    "file": "deps/openssl/config/archs/BSD-x86/asm/providers/common/include/prov/der_digests.h",
+    "nlines": 10,
+    "locs": 8,
+    "verdict": "verified",
+    "same_len": true
+   }
+  ]
+ },
+ "OC005": {
+  "tool_total": 1053,
+  "sampled": 10,
+  "confirmed": 10,
+  "samples": [
+   {
+    "file": "deps/v8/third_party/jinja2/nodes.py",
+    "symbol": "Concat",
+    "referencing_importers": 0,
+    "verdict": "confirmed-unused"
+   },
+   {
+    "file": "tools/inspector_protocol/jinja2/filters.py",
+    "symbol": "do_join",
+    "referencing_importers": 0,
+    "verdict": "confirmed-unused"
+   },
+   {
+    "file": "deps/v8/tools/gcmole/gcmole.py",
+    "symbol": "main",
+    "referencing_importers": 0,
+    "verdict": "confirmed-unused"
+   },
+   {
+    "file": "tools/gyp/pylib/gyp/input.py",
+    "symbol": "EvalCondition",
+    "referencing_importers": 0,
+    "verdict": "confirmed-unused"
+   },
+   {
+    "file": "tools/gyp/pylib/gyp/xcode_emulation.py",
+    "symbol": "XcodeArchsVariableMapping",
+    "referencing_importers": 0,
+    "verdict": "confirmed-unused"
+   },
+   {
+    "file": "tools/gyp/pylib/gyp/xcodeproj_file.py",
+    "symbol": "PBXNativeTarget",
+    "referencing_importers": 0,
+    "verdict": "confirmed-unused"
+   },
+   {
+    "file": "deps/v8/tools/clusterfuzz/foozzie/v8_foozzie.py",
+    "symbol": "main",
+    "referencing_importers": 0,
+    "verdict": "confirmed-unused"
+   },
+   {
+    "file": "tools/gyp/pylib/gyp/input.py",
+    "symbol": "MakePathRelative",
+    "referencing_importers": 0,
+    "verdict": "confirmed-unused"
+   },
+   {
+    "file": "deps/v8/tools/testrunner/testproc/util.py",
+    "symbol": "FixedSizeTopList",
+    "referencing_importers": 0,
+    "verdict": "confirmed-unused"
+   },
+   {
+    "file": "tools/inspector_protocol/jinja2/tests.py",
+    "symbol": "test_lower",
+    "referencing_importers": 0,
+    "verdict": "confirmed-unused"
+   }
+  ]
+ },
+ "parse_errors": {
+  "tool": 14397,
+  "mine": 14403,
+  "both": 14392,
+  "only_tool": 5,
+  "only_mine": 11,
+  "only_tool_sample": [
+   "deps/crates/vendor/tinystr-v0_8/src/ascii.rs",
+   "deps/openssl/openssl/include/internal/quic_ackm.h",
+   "deps/openssl/openssl/ssl/quic/quic_channel_local.h",
+   "deps/undici/src/deps/milo/scripts/src/bin/import-llhttp-tests.rs",
+   "deps/undici/src/deps/milo/scripts/src/lib.rs"
+  ],
+  "only_mine_sample": [
+   "test/fixtures/es-modules/import-builtin-module-intermediate.mjs",
+   "test/fixtures/es-modules/module-condition/dynamic_import.js",
+   "test/fixtures/es-modules/syntax-error.mjs",
+   "test/fixtures/es-modules/test-wasm-source-phase-identity-parent.mjs",
+   "test/fixtures/es-modules/test-wasm-source-phase-identity.mjs",
+   "test/fixtures/es-modules/test-wasm-source-phase-no-execute-dynamic.mjs"
+  ]
+ },
+ "OC007": {
+  "tool": 0,
+  "note": "requires --coverage composition; none composed in this run"
+ },
+ "OC009": {
+  "tool": 0,
+  "note": "requires --osv-snapshot; none provided in this run"
+ }
+}

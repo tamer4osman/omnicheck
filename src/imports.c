@@ -198,8 +198,21 @@ static int is_file_node_idx(const oc_resolve_ctx *cx, const char *path) {
     return 0;
 }
 
-/* Longest analysis root that is a path-prefix of the file, for bounding
- * the tsconfig upward search. Falls back to "." semantics. */
+/* Longest analysis root that is a DIRECTORY ancestor of the file, for
+ * bounding the tsconfig upward search and anchoring the dirname-joined
+ * resolvers. BUGFIX N-6: the old boundary rule let an explicit FILE
+ * root (oc check f0.c f1.c ...) match from_path exactly
+ * (from_path[rl] == '\0'), so the "analysis root" became the file
+ * itself and every dirname-anchored join was prefixed with the full
+ * file path -- C/C++ quoted includes, Ruby require_relative and the
+ * Python absolute-import fallback all went dead on file-root scans
+ * (the chunked nodejs/node rerun resolved ZERO quoted includes:
+ * header cycles like LIEF utfcpp went unreported and parse-error
+ * headers surfaced as phantom OC006). Directory-root scans never saw
+ * it: a directory root is always a strict path-prefix. A root now
+ * qualifies only when from_path CONTINUES with '/' past the root (a
+ * strict directory ancestor); the "." root keeps its documented
+ * lowest-priority meaning. Falls back to "." semantics. */
 static const char *analysis_root_for(const oc_resolve_ctx *cx, const char *from_path) {
     const char *best = NULL;
     size_t best_len = 0;
@@ -208,12 +221,16 @@ static const char *analysis_root_for(const oc_resolve_ctx *cx, const char *from_
         size_t rl = strlen(r);
         if (rl == 0)
             continue;
-        if (strncmp(from_path, r, rl) == 0 &&
-            (from_path[rl] == '/' || from_path[rl] == '\0' || strcmp(r, ".") == 0)) {
-            if (rl > best_len) {
+        if (strcmp(r, ".") == 0) {
+            if (1 > best_len) {
                 best = r;
-                best_len = rl;
+                best_len = 1;
             }
+            continue;
+        }
+        if (strncmp(from_path, r, rl) == 0 && from_path[rl] == '/' && rl > best_len) {
+            best = r;
+            best_len = rl;
         }
     }
     return best ? best : ".";

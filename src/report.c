@@ -100,11 +100,29 @@ void oc_report_write_json(oc_jsonw *w, const oc_scan_result *res) {
     oc_jsonw_obj_end(w);
     /* Supply tier (WBS 4.2): emitted only when a manifest was seen or a
      * snapshot was given, so runs without supply data stay byte-stable. */
-    if (res->manifests_scanned > 0 || res->osv_snapshot_date) {
+    if (res->manifests_scanned > 0 || res->osv_snapshot_date || res->manifests_skipped > 0) {
         oc_jsonw_key(w, "supply");
         oc_jsonw_obj_begin(w);
         oc_jsonw_key(w, "manifests_scanned");
         oc_jsonw_uint(w, res->manifests_scanned);
+        /* BUGFIX N-2: recorded manifest skips are named here (never
+         * silent); the block only appears when something was skipped,
+         * so clean runs keep their byte-stable meta. */
+        if (res->manifests_skipped > 0) {
+            oc_jsonw_key(w, "manifests_skipped");
+            oc_jsonw_uint(w, res->manifests_skipped);
+            oc_jsonw_key(w, "manifest_skip");
+            oc_jsonw_arr_begin(w);
+            for (size_t s = 0; s < res->manifests_skipped; s++) {
+                oc_jsonw_obj_begin(w);
+                oc_jsonw_key(w, "file");
+                oc_jsonw_str(w, res->manifest_skip_files[s]);
+                oc_jsonw_key(w, "reason");
+                oc_jsonw_str(w, res->manifest_skip_reasons[s]);
+                oc_jsonw_obj_end(w);
+            }
+            oc_jsonw_arr_end(w);
+        }
         oc_jsonw_key(w, "osv_snapshot_date");
         oc_jsonw_str(w, res->osv_snapshot_date); /* NULL emits null */
         oc_jsonw_obj_end(w);
@@ -251,9 +269,16 @@ void oc_report_write_human(FILE *out, const oc_scan_result *res) {
             n_warn, n_info);
     fprintf(out, "dup scan: %zu group(s)%s\n", res->dup ? res->dup->n_groups : 0,
             (res->dup && res->dup->groups_truncated) ? " (truncated)" : "");
-    if (res->manifests_scanned > 0 || res->osv_snapshot_date)
+    if (res->manifests_scanned > 0 || res->osv_snapshot_date || res->manifests_skipped > 0)
         fprintf(out, "supply: %zu manifest(s); OSV snapshot %s\n", res->manifests_scanned,
                 res->osv_snapshot_date ? res->osv_snapshot_date : "not provided");
+    /* BUGFIX N-2: skipped manifests are named in the human report too. */
+    if (res->manifests_skipped > 0) {
+        fprintf(out, "supply: %zu manifest(s) SKIPPED (unreadable/unparseable; named below):\n",
+                res->manifests_skipped);
+        for (size_t s = 0; s < res->manifests_skipped; s++)
+            fprintf(out, "  %s: %s\n", res->manifest_skip_files[s], res->manifest_skip_reasons[s]);
+    }
     if (res->cov && res->n_leaderboard > 0) {
         fputs("CRAP leaderboard (top 10):\n", out);
         for (size_t i = 0; i < res->n_leaderboard; i++) {

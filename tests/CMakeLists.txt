@@ -35,6 +35,7 @@ set(OC_TEST_SOURCES
     test_sprint22.c
     test_sprint23.c
     test_sprint24.c
+    test_sprint25.c
 )
 
 foreach(t ${OC_TEST_SOURCES})
@@ -173,3 +174,31 @@ target_compile_definitions(test_sprint23 PRIVATE
 target_compile_definitions(test_sprint24 PRIVATE
     OC_OC_BIN="$<TARGET_FILE:oc-cli>"
     OC_REPO_ROOT="${CMAKE_SOURCE_DIR}")
+target_compile_definitions(test_sprint25 PRIVATE
+    OC_OC_BIN="$<TARGET_FILE:oc-cli>"
+    OC_REPO_ROOT="${CMAKE_SOURCE_DIR}")
+if(TARGET oc-omnidecide-provider)
+    target_compile_definitions(test_sprint25 PRIVATE
+        OC_PROVIDER_BIN="$<TARGET_FILE:oc-omnidecide-provider>")
+endif()
+
+# ---------------------------------------------------------------------------
+# BUGFIX N-5: the Sprint-24 Scala fixtures under tests/fixtures/scala and
+# tests/fixtures/scala_resolver are GENERATED SOURCES
+# (scripts/gen_fixtures_scala.py). test_sprint24 runs `oc check`/`oc graph`
+# against them, so a source archive shipped without the generated trees
+# failed 1 of its 10 checks. The suite now regenerates them on demand:
+# when the sentinel fixture is missing at build time, the generator runs
+# before the test target is built. When the fixtures are present (git
+# checkouts, re-runs) nothing happens -- byte-identical sources in, the
+# determinism contract is untouched.
+# ---------------------------------------------------------------------------
+find_program(OC_PYTHON_EXECUTABLE python3)
+if(OC_PYTHON_EXECUTABLE AND NOT EXISTS "${CMAKE_SOURCE_DIR}/tests/fixtures/scala/decls.scala")
+    add_custom_target(oc_scala_fixtures
+        COMMAND ${CMAKE_COMMAND} -E echo "Generating Scala fixtures (BUGFIX N-5, gen_fixtures_scala.py)"
+        COMMAND ${OC_PYTHON_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/gen_fixtures_scala.py"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/scripts"
+        VERBATIM)
+    add_dependencies(test_sprint24 oc_scala_fixtures)
+endif()

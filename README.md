@@ -3,7 +3,7 @@
 **A deterministic, multi-language static-analysis engine in C11.**
 
 ![version](https://img.shields.io/badge/version-0.3.0-blue)
-![license](https://img.shields.io/badge/license-MIT-green)
+![license](https://img.shields.io/badge/license-Apache--2.0-blue)
 ![core](https://img.shields.io/badge/core-C11-555.svg)
 ![languages](https://img.shields.io/badge/languages-15%20packs-orange)
 ![rules](https://img.shields.io/badge/rules-OC001%E2%80%93OC011-yellow)
@@ -859,19 +859,8 @@ human-owned by design).
 
 ## License
 
-MIT for the first-party code. Vendored third-party components: MIT
-(tree-sitter runtime and grammars) and Apache-2.0 (OmniDecide-C kernel); see
-`THIRD_PARTY_NOTICES.md` for pinned versions and `third_party/omnidecide/PROVENANCE.md`
-for the kernel's integrity manifest.
-
-## Sprint-25 independent audit and fix wave
-
-An independent from-scratch audit (2026-11-24) recomputed every rule
-over the full nodejs/node corpus and drove six source fixes, each
-pinned by a regression unit in tests/test_sprint25.c: N-1 (silent
-256-root cap), N-2 (corrupt-manifest scan abort), N-3 (CommonJS
-compat blindness), N-4 (triage response truncation), OC002-R (Rust
-block comments) and N-6 (file-root include resolution). The
-closed-loop rerun reconciles OC002, OC010 and OC011 exactly (zero
-false positives, zero false negatives on 43,719 files) and finds no
-missed import cycle. Full reports and evidence: docs/audit/.
+Apache-2.0 for the first-party code; see `LICENSE` (canonical text) and
+`NOTICE` (copyright and attribution). Vendored third-party components keep
+their own licenses: MIT (tree-sitter runtime and grammars) and Apache-2.0
+(OmniDecide-C kernel); see `THIRD_PARTY_NOTICES.md` for pinned versions and
+`third_party/omnidecide/PROVENANCE.md` for the kernel's integrity manifest.

@@ -2,7 +2,7 @@
   "name": "omnicheck",
   "version": "0.3.0",
   "description": "Deterministic multi-language static analysis (CRAP-ms leaderboard, import cycles, duplication, supply-chain tier). This shim execs the native `oc` binary -- no analysis runs in JavaScript, so results are identical to the C build's.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bin": {
     "oc": "bin/oc-shim.js"
   },

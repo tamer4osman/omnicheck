@@ -1,0 +1,153 @@
+{
+ "contract": "docs/LANGUAGES.md (Kotlin section)",
+ "criteria": {
+  "1_parse_clean_pack_loaded": {
+   "files_analyzed": 14,
+   "kotlin_pack_loaded": true,
+   "parse_errors": 0,
+   "pass": true
+  },
+  "2_byte_identical": {
+   "distinct_digests": 1,
+   "pass": true,
+   "runs": 10
+  },
+  "3_enabled_rules_contracted_counts": {
+   "counts": {
+    "OC001": 1,
+    "OC002": 2,
+    "OC003": 0,
+    "OC004": 1,
+    "OC005": 0,
+    "OC006": 10,
+    "OC007": 0,
+    "OC008": 2,
+    "OC009": 0,
+    "OC010": 0,
+    "OC011": 1
+   },
+   "oc006_files_exact": true,
+   "pass": true
+  },
+  "4_edges_and_no_routing_block": {
+   "edges": [
+    [
+     "include_user.kt",
+     "kit.kt"
+    ],
+    [
+     "main_app.kt",
+     "tools.kt"
+    ],
+    [
+     "main_app.kt",
+     "widget.kt"
+    ]
+   ],
+   "header_routing_absent": true,
+   "pass": true
+  },
+  "5_resolver_v1_kotlin_exact": {
+   "counts": {
+    "OC003": 1,
+    "OC005": 0,
+    "OC006": 5
+   },
+   "edges": [
+    [
+     "alias.kt",
+     "core.kt"
+    ],
+    [
+     "alias.kt",
+     "lib.kt"
+    ],
+    [
+     "cyc_one.kt",
+     "cyc_two.kt"
+    ],
+    [
+     "cyc_two.kt",
+     "cyc_one.kt"
+    ],
+    [
+     "lib.kt",
+     "core.kt"
+    ],
+    [
+     "member.kt",
+     "core.kt"
+    ],
+    [
+     "user.kt",
+     "nopkg.kt"
+    ],
+    [
+     "wide.kt",
+     "core.kt"
+    ],
+    [
+     "wide.kt",
+     "extra.kt"
+    ]
+   ],
+   "pass": true
+  },
+  "6_coverage_composition": {
+   "functions_measured": 2,
+   "functions_total": 18,
+   "oc007": 1,
+   "pass": true
+  },
+  "7_supply_tier_honesty": {
+   "edges_unchanged": true,
+   "pass": true,
+   "supply_block_absent": true
+  },
+  "8_accessor_and_main_shape_pins": {
+   "accessors": {
+    "cached.get": 1,
+    "tracked.set": 2
+   },
+   "pass": true
+  },
+  "9_c_cpp_freeze_legs": {
+   "c_counts": {
+    "OC001": 1,
+    "OC002": 1,
+    "OC004": 1,
+    "OC006": 11,
+    "OC008": 2,
+    "OC011": 1
+   },
+   "c_resolver_oc003": 1,
+   "c_routing": {
+    "default_c": 2,
+    "default_cpp": 0,
+    "sniffed_c": 0,
+    "sniffed_cpp": 0
+   },
+   "cpp_counts": {
+    "OC001": 1,
+    "OC002": 1,
+    "OC004": 1,
+    "OC006": 12,
+    "OC008": 2,
+    "OC011": 1
+   },
+   "cpp_resolver_oc003": 1,
+   "pass": true
+  }
+ },
+ "date_executed": "2026-11-23",
+ "fixtures_resolver": "/home/z/my-project/work/tests/fixtures/kotlin_resolver",
+ "fixtures_structural": "/home/z/my-project/work/tests/fixtures/kotlin",
+ "gate": "Kotlin language adoption (SPRINT-22, full scope: resolver v1-kotlin declared-fact + accessors + the honest empty supply tier + the C/C++ freeze legs)",
+ "grammar_pin": "fwcd/tree-sitter-kotlin 0.3.8",
+ "schema": "omnicheck.evidence/v0",
+ "supporting": {
+  "corpus_a_wall_seconds": 0.544,
+  "runs": 10,
+  "single_core": true
+ }
+}

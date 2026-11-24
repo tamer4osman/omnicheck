@@ -1,0 +1,164 @@
+{
+ "contract": "docs/LANGUAGES.md (Swift section)",
+ "criteria": {
+  "1_parse_clean_pack_loaded": {
+   "files_analyzed": 17,
+   "parse_errors": 0,
+   "pass": true,
+   "swift_pack_loaded": true
+  },
+  "2_byte_identical": {
+   "distinct_digests": 1,
+   "pass": true,
+   "runs": 10
+  },
+  "3_enabled_rules_contracted_counts": {
+   "counts": {
+    "OC001": 1,
+    "OC002": 2,
+    "OC003": 0,
+    "OC004": 1,
+    "OC005": 0,
+    "OC006": 13,
+    "OC007": 0,
+    "OC008": 2,
+    "OC009": 0,
+    "OC010": 0,
+    "OC011": 1
+   },
+   "oc006_files_exact": true,
+   "pass": true
+  },
+  "4_edges_and_no_routing_block": {
+   "edges": [
+    [
+     "kituser.swift",
+     "Tag.swift"
+    ],
+    [
+     "main.swift",
+     "Helper.swift"
+    ],
+    [
+     "main.swift",
+     "Widget.swift"
+    ]
+   ],
+   "header_routing_absent": true,
+   "pass": true
+  },
+  "5_resolver_v1_swift_exact": {
+   "counts": {
+    "OC003": 1,
+    "OC005": 0,
+    "OC006": 7
+   },
+   "edges": [
+    [
+     "One.swift",
+     "Two.swift"
+    ],
+    [
+     "Two.swift",
+     "One.swift"
+    ],
+    [
+     "gamma.swift",
+     "Gamma.swift"
+    ],
+    [
+     "std.swift",
+     "Std.swift"
+    ],
+    [
+     "sub.swift",
+     "Gamma.swift"
+    ],
+    [
+     "testable.swift",
+     "Engine.swift"
+    ],
+    [
+     "testable.swift",
+     "Extra.swift"
+    ],
+    [
+     "wide.swift",
+     "Core.swift"
+    ],
+    [
+     "wide.swift",
+     "Deep.swift"
+    ]
+   ],
+   "pass": true
+  },
+  "6_coverage_composition": {
+   "functions_measured": 3,
+   "functions_total": 34,
+   "oc007": 1,
+   "pass": true
+  },
+  "7_supply_tier_honesty": {
+   "edges_unchanged": true,
+   "pass": true,
+   "supply_block_absent": true
+  },
+  "8_accessor_and_entry_shape_pins": {
+   "accessors": {
+    "doubled.get": 1,
+    "observed.willSet": 2,
+    "tracked.get": 1,
+    "tracked.set": 1
+   },
+   "pass": true
+  },
+  "9_c_cpp_kotlin_freeze_legs": {
+   "c_counts": {
+    "OC001": 1,
+    "OC002": 1,
+    "OC004": 1,
+    "OC006": 11,
+    "OC008": 2,
+    "OC011": 1
+   },
+   "c_resolver_oc003": 1,
+   "c_routing": {
+    "default_c": 2,
+    "default_cpp": 0,
+    "sniffed_c": 0,
+    "sniffed_cpp": 0
+   },
+   "cpp_counts": {
+    "OC001": 1,
+    "OC002": 1,
+    "OC004": 1,
+    "OC006": 12,
+    "OC008": 2,
+    "OC011": 1
+   },
+   "cpp_resolver_oc003": 1,
+   "kotlin_counts": {
+    "OC001": 1,
+    "OC002": 2,
+    "OC004": 1,
+    "OC006": 10,
+    "OC008": 2,
+    "OC011": 1
+   },
+   "kotlin_resolver_oc003": 1,
+   "pass": true
+  }
+ },
+ "date_executed": "2026-11-23",
+ "fixtures_resolver": "/home/z/my-project/work/tests/fixtures/swift_resolver",
+ "fixtures_structural": "/home/z/my-project/work/tests/fixtures/swift",
+ "gate": "Swift language adoption (SPRINT-23, full scope: resolver v1-swift declared-fact modules + accessors + the honest empty supply tier + the C/C++/Kotlin freeze legs)",
+ "grammar_pin": "alex-pinkus/tree-sitter-swift 0.7.1-with-generated-files",
+ "schema": "omnicheck.evidence/v0",
+ "supporting": {
+  "corpus_a_wall_seconds": 0.541,
+  "runs": 10,
+  "single_core": true
+ }
+}

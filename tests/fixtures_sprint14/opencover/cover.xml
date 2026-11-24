@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<CoverageSession xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Modules>
+    <Module>
+      <Files>
+        <File uid="1" fullPath="tests/fixtures_sprint14/opencover/Acc.cs" />
+        <File uid="2" fullPath="tests/fixtures_sprint14/opencover/Other.cs" />
+      </Files>
+      <Classes>
+        <Class>
+          <Methods>
+            <Method>
+              <SequencePoints>
+                <SequencePoint vc="2" sl="3" el="5" fileid="1" />
+                <SequencePoint vc="0" sl="6" el="6" fileid="1" />
+                <SequencePoint vc="1" sl="9" el="10" fileid="1" />
+                <SequencePoint vc="4" sl="20" el="20" fileid="99" />
+              </SequencePoints>
+            </Method>
+          </Methods>
+        </Class>
+      </Classes>
+    </Module>
+  </Modules>
+</CoverageSession>

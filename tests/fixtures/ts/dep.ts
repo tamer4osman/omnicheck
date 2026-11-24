@@ -1,0 +1,3 @@
+export function dep(n: number): number {
+  return n + 1;
+}

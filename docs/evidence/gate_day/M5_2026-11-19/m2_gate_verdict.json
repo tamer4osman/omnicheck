@@ -1,0 +1,46 @@
+{
+  "gate": "M2 Alpha",
+  "date_executed": "2026-11-19",
+  "scope": "/home/z/my-project/omnicheck/work/eslint-pin/eslint-21026992e3520869b31ca4500905665942bb2cf0/lib",
+  "corpus_files": 394,
+  "corpus_loc": 107039,
+  "runs": 10,
+  "criteria": {
+    "1_three_analyses_no_silent_partial": {
+      "pass": true,
+      "rules": [
+        "OC001",
+        "OC002",
+        "OC004",
+        "OC006",
+        "OC008",
+        "OC011"
+      ],
+      "files_analyzed": 394,
+      "files_with_parse_errors": 0
+    },
+    "2_fingerprints_stable": {
+      "pass": true,
+      "runs": 10,
+      "distinct_sha256": 1
+    },
+    "3_json_and_human_output": {
+      "pass": true,
+      "human_bytes": 1960606,
+      "human_deterministic": true
+    },
+    "4_wall_time_under_budget": {
+      "pass": true,
+      "budget_s": 60.0,
+      "best_s": 0.67,
+      "median_s": 0.67,
+      "single_core": true
+    }
+  },
+  "dup": {
+    "files_skipped_oversize": 0,
+    "groups": 256,
+    "groups_truncated": 101
+  },
+  "all_pass": true
+}

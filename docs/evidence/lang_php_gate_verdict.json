@@ -1,0 +1,128 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "PHP language adoption (SPRINT-19, full scope: resolver v1-php + Clover + composer manifests)",
+  "date_executed": "2026-11-22",
+  "fixtures_structural": "/home/z/my-project/work/tests/fixtures/php",
+  "fixtures_resolver": "/home/z/my-project/work/tests/fixtures/php_resolver",
+  "contract": "docs/LANGUAGES.md (PHP section)",
+  "grammar_pin": "tree-sitter/tree-sitter-php v0.24.2",
+  "criteria": {
+    "1_parse_clean_pack_loaded": {
+      "pass": true,
+      "files_analyzed": 9,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "tsx",
+        "python",
+        "rust",
+        "csharp",
+        "ruby",
+        "ts-js",
+        "php",
+        "typescript",
+        "go",
+        "java"
+      ]
+    },
+    "2_byte_identical_reports": {
+      "pass": true,
+      "runs": 10,
+      "distinct_sha256": 1
+    },
+    "3_enabled_rules_contracted_counts": {
+      "pass": true,
+      "counts": {
+        "OC006": 8,
+        "OC002": 1,
+        "OC011": 1,
+        "OC001": 1,
+        "OC004": 1,
+        "OC008": 2
+      },
+      "forbidden_seen": [],
+      "oc006_on_bin_tool": false
+    },
+    "4_unresolved_outside_the_analyzed_set": {
+      "pass": true,
+      "import_edges": 0,
+      "file_nodes": 9
+    },
+    "5_resolver_v1_php_exact": {
+      "pass": true,
+      "files_analyzed": 15,
+      "files_with_parse_errors": 0,
+      "byte_identical_runs": 10,
+      "imports_edges": 11,
+      "edge_pairs": [
+        "index.php -> src/loader.php",
+        "src/Shop.php -> src/Contracts/Mapper.php",
+        "src/Shop.php -> src/Order.php",
+        "src/Shop.php -> src/Product.php",
+        "src/Shop.php -> src/Store/Types.php",
+        "src/Shop.php -> src/helpers/sum.php",
+        "src/a.php -> src/b.php",
+        "src/b.php -> src/a.php",
+        "src/loader.php -> src/Contracts/Mapper.php",
+        "src/loader.php -> src/Shop.php",
+        "src/uses_legacy.php -> lib/Acme/Legacy/Legacy.php"
+      ],
+      "decoys_unresolved": true,
+      "counts": {
+        "OC010": 2,
+        "OC003": 1,
+        "OC006": 3
+      },
+      "oc006_files": [
+        "lonely.php",
+        "orphan.php",
+        "uses_legacy.php"
+      ],
+      "oc010_dirs": [
+        "/home/z/my-project/work/tests/fixtures/php_resolver",
+        "/home/z/my-project/work/tests/fixtures/php_resolver/src/nested"
+      ],
+      "oc003_message": "Import cycle among 2 files (sorted): /home/z/my-project/work/tests/fixtures/php_resolver/src/a.php -> /home/z/my-project/work/tests/fixtures/php_resolver/src/b.php"
+    },
+    "6_clover_composition": {
+      "pass": true,
+      "functions_total": 8,
+      "functions_measured": 8,
+      "files_matched": 9,
+      "distinct_sha256": 1,
+      "counts": {
+        "OC006": 8,
+        "OC002": 1,
+        "OC011": 1,
+        "OC001": 1,
+        "OC004": 1,
+        "OC007": 1,
+        "OC008": 2
+      },
+      "oc007_symbols": [
+        "rollup"
+      ]
+    },
+    "7_manifest_tier": {
+      "pass": true,
+      "manifests_scanned": 3,
+      "base_counts": {
+        "OC010": 2,
+        "OC003": 1,
+        "OC006": 3
+      },
+      "osv_counts": {
+        "OC009": 2,
+        "OC010": 2,
+        "OC003": 1,
+        "OC006": 3
+      },
+      "oc009_rows": [
+        "composer.json:acme/log:error",
+        "composer.lock:acme/log:error"
+      ],
+      "edges": 11
+    }
+  },
+  "wall_best_s": 0.23,
+  "all_pass": true
+}

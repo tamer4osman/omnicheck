@@ -1,0 +1,12 @@
+{
+    "name": "acme/decoy",
+    "description": "The resolver reads the composer.json of the ANALYSIS ROOT only; this nested manifest must never contribute resolver config (its psr-4 mapping points at a directory that does not hold the classes). It IS manifest-tier material: OC010 fires on it (no licence field).",
+    "require": {
+        "acme/decoy-dep": "1.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Acme\\Shop\\": "fake/"
+        }
+    }
+}

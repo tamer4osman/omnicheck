@@ -1,0 +1,118 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "M5",
+  "gate_date": "2027-12-31",
+  "steps": {
+    "tree-clean": {
+      "pass": true,
+      "details": {
+        "branch": "main",
+        "dirty_entries": [],
+        "exempted_own_gate_dir": "docs/evidence/gate_day/M5_2026-11-20"
+      },
+      "recorded": "2026-11-20T18:04:34"
+    },
+    "matrix": {
+      "pass": true,
+      "details": {
+        "default": {
+          "pass": true,
+          "tests": "100% tests passed out of 27",
+          "seconds": 36.4
+        },
+        "sanitize": {
+          "pass": true,
+          "tests": "100% tests passed out of 27",
+          "seconds": 153.2
+        },
+        "clang-release": {
+          "pass": true,
+          "tests": "100% tests passed out of 27",
+          "seconds": 32.7
+        },
+        "clang-sanitize": {
+          "pass": true,
+          "tests": "100% tests passed out of 27",
+          "seconds": 193.5
+        }
+      },
+      "recorded": "2026-11-20T18:13:25"
+    },
+    "harnesses": {
+      "pass": true,
+      "details": {
+        "m2": {
+          "pass": true,
+          "verdict": "verdict: PASS -> /tmp/omnicheck_m2_gate/m2_gate_verdict.json"
+        },
+        "m3": {
+          "pass": true,
+          "verdict": "VERDICT: PASS"
+        },
+        "m4": {
+          "pass": true,
+          "verdict": "verdict written: docs/evidence/gate_day/M5_2026-11-20/m4_gate_verdict.json"
+        },
+        "m5": {
+          "pass": true,
+          "verdict": "verdict written: docs/evidence/gate_day/M5_2026-11-20/m5_gate_verdict.json"
+        },
+        "tag_left_to_human": true
+      },
+      "recorded": "2026-11-20T18:19:25"
+    },
+    "audit": {
+      "pass": true,
+      "details": {
+        "pass": true,
+        "distinct_digests": 1,
+        "budget_check": {
+          "m2_target_60s": true,
+          "note": "single-core (taskset -c 0), Release cells only",
+          "sprint_gate_90s": true,
+          "worst_release_wall_seconds": 11.64,
+          "worst_sanitize_wall_seconds": 145.06
+        }
+      },
+      "recorded": "2026-11-20T18:25:02"
+    },
+    "docs": {
+      "pass": true,
+      "details": {
+        "tail": "verdict written: docs/evidence/docs_completeness.json"
+      },
+      "recorded": "2026-11-20T18:25:05"
+    },
+    "package": {
+      "pass": true,
+      "details": {
+        "package_sh": {
+          "pass": true,
+          "tail": "1298f0676c267793da97c163d724ca633439703d99b870a146206b70c70ad70e  /tmp/tmp.jRq0mLh34Y/omnicheck-0.3.0-linux-x86_64/bin/oc"
+        },
+        "shim_oc_bin": {
+          "pass": true,
+          "exit": 1,
+          "stderr_tail": ""
+        },
+        "shim_native": {
+          "pass": true,
+          "stdout": "omnicheck 0.3.0"
+        },
+        "npm_pack": {
+          "pass": true
+        },
+        "npm_install": {
+          "pass": true,
+          "stub_exists": true
+        },
+        "npm_install_smoke": {
+          "pass": true,
+          "exit_passthrough": true,
+          "report_bytes_equal_to_repo_build": true
+        }
+      },
+      "recorded": "2026-11-20T18:25:07"
+    }
+  }
+}

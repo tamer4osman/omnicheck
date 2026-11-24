@@ -1,0 +1,56 @@
+{
+ "schema": "omnicheck.evidence/v0",
+ "item": "gcc-vs-clang byte-stability re-verification (carried since Sprint 0)",
+ "closed": "2026-11-18, Sprint 5 session (fifth session carrying it)",
+ "how_clang_was_obtained": {
+  "method": "apt-get download + dpkg -x (no sudo needed)",
+  "packages": [
+   "clang-19",
+   "libclang-cpp19",
+   "libllvm19",
+   "libclang-common-19-dev",
+   "libclang-rt-19-dev"
+  ],
+  "version": "Debian clang 19.1.7",
+  "note": "Debian's clang-rt package ships lib/clang/19/lib/linux; the driver expects lib/x86_64-pc-linux-gnu -- a copy (symlinks disallowed) fixed the resource-dir layout mismatch."
+ },
+ "cells": {
+  "gcc_release": {
+   "compiler": "gcc 14.2.0 (Debian 14.2.0-19)",
+   "tests": "19/19"
+  },
+  "gcc_sanitize": {
+   "compiler": "gcc 14.2.0",
+   "tests": "19/19",
+   "flags": "Debug + ASan + UBSan + LSan (detect_leaks=1)"
+  },
+  "clang_release": {
+   "compiler": "clang 19.1.7",
+   "tests": "19/19"
+  },
+  "clang_sanitize": {
+   "compiler": "clang 19.1.7",
+   "tests": "19/19",
+   "flags": "Debug + ASan + UBSan + LSan (detect_leaks=1)"
+  }
+ },
+ "byte_identity": {
+  "examples_json": "cmp identical (gcc vs clang Release)",
+  "examples_human": "cmp identical",
+  "fixtures_compat_mutation_json": "cmp identical",
+  "corpus_10k_json": "cmp identical (13,302,920 bytes both compilers)",
+  "corpus_vs_sprint4_baseline": "cmp identical -- the Sprint 5 additions (supply tier, leaderboard, source retention) add zero byte drift on manifest-free trees"
+ },
+ "perf_smoke_10k": {
+  "gcc_seconds": 12.43,
+  "clang_seconds": 11.65,
+  "gate_seconds": 90,
+  "note": "Sprint 4 measured 8.87s; source retention for OC011 costs ~2-3s; still ~5x inside the M2 60s target and ~7x inside the 90s sprint gate"
+ },
+ "sanitize_cell_yield": [
+  "LSan: oc_manifests_destroy missed the per-manifest deps array (fixed)",
+  "LSan: oc_osv_destroy missed per-record packages + per-package ranges (fixed)",
+  "ASan: mutation report printer read arena strings after oc_arena_destroy -- use-after-free on the success path only (fixed: report before teardown)",
+  "LSan: cmd mutate leaked the partially-collected mutants array on the error path (fixed: destroy before status dispatch)"
+ ]
+}

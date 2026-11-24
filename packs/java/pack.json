@@ -1,0 +1,28 @@
+{
+  "schema": "omnicheck.pack/v0",
+  "id": "java",
+  "display_name": "Java",
+  "version": "0.1.0",
+  "grammar": "java",
+  "extensions": [
+    ".java"
+  ],
+  "entry_points": [
+    "Main.java",
+    "**/Application.java"
+  ],
+  "enabled_passes": [
+    "OC001",
+    "OC002",
+    "OC003",
+    "OC004",
+    "OC005",
+    "OC006",
+    "OC007",
+    "OC008",
+    "OC009",
+    "OC010",
+    "OC011"
+  ],
+  "notes": "SPRINT-11 adoption (docs/LANGUAGES.md §Java, contract pre-approved before any code). Resolver v1-java landed in the SAME sprint: single-type/static import qualifiers resolve to the one class file they name (a/b/C.java under an analysis root, dotted-to-slash class-file model); wildcard a.b.* is a package claim (fan-out edges + package-level fail-open marking); nested classes and every external name (JDK, classpath, Maven) stay unresolved, never guessed -- no classpath, build tool or manifest is ever read by the resolver. Because the resolver is live, OC003 (import-cycle; Java has real cycles -- it is the point of the resolver sprint) and OC005 (unused-export; single-type/static imports bind the class name, wildcard imports fail-open the whole package) are enabled. OC007 enabled with the pre-committed JaCoCo XML adapter (method-level counters onto definition spans through the standard path rule); OC009/OC010 enabled with the pre-committed pom.xml support (OSV ecosystem Maven, group:artifact pins, version ranges/property references never guessed, unpinned = warn; build.gradle(.kts) is a recorded descope v1). Entry points are documented file-name approximations (Main.java, Spring Boot **/Application.java); 'public static void main' claiming is reserved for a resolver sprint. The first pack with the full OC001-OC011 set."
+}

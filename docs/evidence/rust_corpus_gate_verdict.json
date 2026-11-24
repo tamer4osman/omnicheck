@@ -1,0 +1,63 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "Rust reference corpus (SPRINT-15): Debian librust-tokio-dev 1.43.1-1, 516 files",
+  "date_executed": "2026-11-21",
+  "deb": "librust-tokio-dev_1.43.1-1_amd64.deb",
+  "deb_sha256": "e524b6230af1fad10489c2021eec35c1fa78d1c5cc041c4ba300638a31eef90a",
+  "corpus_digest": "0b77bb9b98847f041519b252b6f2e663ea62d443fae6f8175a388481d7a588d6",
+  "contract": "docs/LANGUAGES.md (Rust section)",
+  "grammar_pin": "tree-sitter/tree-sitter-rust v0.24.0",
+  "criteria": {
+    "1_corpus_integrity": {
+      "pass": true,
+      "deb_sha256": true,
+      "digest": "0b77bb9b98847f041519b252b6f2e663ea62d443fae6f8175a388481d7a588d6",
+      "rs_files": 516
+    },
+    "2_parse_clean": {
+      "pass": true,
+      "analyzed": 516,
+      "parse_errors": 0,
+      "error_nodes": 0
+    },
+    "3_determinism": {
+      "pass": true,
+      "runs": 5,
+      "distinct_sha256": 1
+    },
+    "4_resolver_realism": {
+      "pass": true,
+      "edges": 779,
+      "targets": 247,
+      "outside_edges": 0,
+      "zero_in_degree": 269,
+      "tests_convention": 169,
+      "entries": 1,
+      "oc006_expected": 99,
+      "oc006_measured": 99
+    },
+    "5_rule_honesty": {
+      "pass": true,
+      "counts": {
+        "OC005": 87,
+        "OC003": 17,
+        "OC001": 80,
+        "OC006": 99,
+        "OC008": 735,
+        "OC002": 53,
+        "OC004": 10
+      },
+      "supply": {
+        "manifests_scanned": 1,
+        "osv_snapshot_date": null
+      },
+      "note": "OC003=17: Rust module cycles are LEGAL (parent mod declaration + child crate:: use, items resolve globally); one SCC verified by hand (src/fs/). The deliberate contrast with the Go corpus's OC003=0."
+    },
+    "6_wall_budget": {
+      "pass": true,
+      "best_s": 1.56,
+      "budget_s": 60.0
+    }
+  },
+  "all_pass": true
+}

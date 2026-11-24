@@ -1,0 +1,118 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "C# language adoption, full scope (SPRINT-13)",
+  "date_executed": "2026-11-21",
+  "fixtures_structural": "/home/z/my-project/work/tests/fixtures/csharp",
+  "fixtures_resolver": "/home/z/my-project/work/tests/fixtures/csharp_resolver",
+  "contract": "docs/LANGUAGES.md (C# section)",
+  "grammar_pin": "tree-sitter-grammars/tree-sitter-c-sharp v0.24.0",
+  "criteria": {
+    "1_parse_clean_pack_loaded": {
+      "pass": true,
+      "files_analyzed": 5,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "java",
+        "rust",
+        "typescript",
+        "python",
+        "tsx",
+        "ts-js",
+        "go",
+        "csharp"
+      ]
+    },
+    "2_byte_identical_reports": {
+      "pass": true,
+      "runs": 10,
+      "distinct_sha256": 1
+    },
+    "3_enabled_rules_contracted_counts": {
+      "pass": true,
+      "counts": {
+        "OC006": 4,
+        "OC008": 2,
+        "OC004": 1,
+        "OC001": 1,
+        "OC002": 1,
+        "OC011": 1
+      },
+      "forbidden_seen": [],
+      "oc006_on_main_fact_file": false
+    },
+    "4_unresolved_outside_the_analyzed_set": {
+      "pass": true,
+      "import_edges": 0,
+      "file_nodes": 5
+    },
+    "5_resolver_v1_csharp_exact": {
+      "pass": true,
+      "files_analyzed": 10,
+      "files_with_parse_errors": 0,
+      "byte_identical_runs": 10,
+      "imports_edges": 11,
+      "edge_pairs": [
+        "MyApp/A/A.cs -> MyApp/B/B.cs",
+        "MyApp/App/Program.cs -> MyApp/Store/Deep/Nested.cs",
+        "MyApp/App/Program.cs -> MyApp/Store/Inventory.cs",
+        "MyApp/App/Program.cs -> MyApp/Store/Store.cs",
+        "MyApp/App/Program.cs -> MyApp/Store/StoreInfo.cs",
+        "MyApp/App/Program.cs -> MyApp/Store/Types.cs",
+        "MyApp/B/B.cs -> MyApp/A/A.cs",
+        "MyApp/Client/Client.cs -> MyApp/Store/Inventory.cs",
+        "MyApp/Client/Client.cs -> MyApp/Store/Store.cs",
+        "MyApp/Client/Client.cs -> MyApp/Store/StoreInfo.cs",
+        "MyApp/Client/Client.cs -> MyApp/Store/Types.cs"
+      ],
+      "decoy_unresolved": [
+        "Example.External.Lib",
+        true
+      ],
+      "counts": {
+        "OC003": 1,
+        "OC006": 2
+      },
+      "oc006_files": [
+        "MyApp/Client/Client.cs",
+        "MyApp/Lonely/Lonely.cs"
+      ],
+      "oc003_message": "Import cycle among 2 files (sorted): /home/z/my-project/work/tests/fixtures/csharp_resolver/MyApp/A/A.cs -> /home/z/my-project/work/tests/fixtures/csharp_resolver/MyApp/B/B.cs"
+    },
+    "6_cobertura_composition": {
+      "pass": true,
+      "functions_total": 6,
+      "functions_measured": 6,
+      "files_matched": 5,
+      "distinct_sha256": 1,
+      "counts": {
+        "OC006": 4,
+        "OC008": 2,
+        "OC004": 1,
+        "OC001": 1,
+        "OC002": 1,
+        "OC011": 1
+      }
+    },
+    "7_manifest_coverage_tier": {
+      "pass": true,
+      "manifests_scanned": 2,
+      "plain_counts": {
+        "OC006": 2,
+        "OC010": 1
+      },
+      "snapshot_counts": {
+        "OC006": 2,
+        "OC009": 5,
+        "OC010": 1
+      },
+      "coverage_counts": {
+        "OC006": 2,
+        "OC007": 1,
+        "OC010": 1
+      },
+      "fail_loud": true
+    }
+  },
+  "wall_best_s": 0.16,
+  "all_pass": true
+}

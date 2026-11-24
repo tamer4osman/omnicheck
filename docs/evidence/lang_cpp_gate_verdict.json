@@ -1,0 +1,175 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "C++ language adoption (SPRINT-21, full scope: resolver v1-cpp + the .h routing treatment + gcovr Cobertura + the honest empty supply tier + the C-pack freeze leg)",
+  "date_executed": "2026-11-23",
+  "fixtures_structural": "/home/z/my-project/work/tests/fixtures/cpp",
+  "fixtures_resolver": "/home/z/my-project/work/tests/fixtures/cpp_resolver",
+  "contract": "docs/LANGUAGES.md (C++ section)",
+  "grammar_pin": "tree-sitter/tree-sitter-cpp v0.23.4",
+  "criteria": {
+    "1_parse_clean_pack_loaded": {
+      "pass": true,
+      "files_analyzed": 14,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "php",
+        "csharp",
+        "tsx",
+        "java",
+        "typescript",
+        "ruby",
+        "kotlin",
+        "go",
+        "c",
+        "ts-js",
+        "swift",
+        "cpp",
+        "python",
+        "rust"
+      ]
+    },
+    "2_byte_identical_reports": {
+      "pass": true,
+      "runs": 10,
+      "distinct_sha256": 1
+    },
+    "3_enabled_rules_contracted_counts": {
+      "pass": true,
+      "counts": {
+        "OC006": 12,
+        "OC011": 1,
+        "OC008": 2,
+        "OC001": 1,
+        "OC004": 1,
+        "OC002": 1
+      },
+      "forbidden_seen": [],
+      "oc006_files": [
+        "app_test.cpp",
+        "cfg/secret.hpp",
+        "decls.cpp",
+        "dup_a.cpp",
+        "dup_b.cpp",
+        "engine.cpp",
+        "include_user.cpp",
+        "longfn.cpp",
+        "mathx.cpp",
+        "rollup.cpp",
+        "todo.cpp",
+        "types.h"
+      ]
+    },
+    "4_resolved_edges_stay_in_the_analyzed_set": {
+      "pass": true,
+      "import_edges": 2,
+      "edge_pairs": [
+        "include_user.cpp -> local_util.h",
+        "main_app.cpp -> local_util.h"
+      ],
+      "file_nodes": 14
+    },
+    "5_header_routing_block": {
+      "pass": true,
+      "routing": {
+        "sniffed_cpp": 1,
+        "sniffed_c": 0,
+        "default_cpp": 1,
+        "default_c": 0
+      },
+      "expected": {
+        "sniffed_cpp": 1,
+        "sniffed_c": 0,
+        "default_cpp": 1,
+        "default_c": 0
+      }
+    },
+    "6_resolver_v1_cpp_exact": {
+      "pass": true,
+      "files_analyzed": 10,
+      "files_with_parse_errors": 0,
+      "byte_identical_runs": 10,
+      "imports_edges": 9,
+      "edge_pairs": [
+        "cyc/a.hpp -> cyc/b.hpp",
+        "cyc/b.hpp -> cyc/a.hpp",
+        "cyc/cycle_driver.cpp -> cyc/a.hpp",
+        "cyc/cycle_driver.cpp -> cyc/b.hpp",
+        "include/outer.hpp -> include/sub/inner.hpp",
+        "src/main.cpp -> src/util/log.hpp",
+        "src/main.cpp -> third/p.hpp",
+        "src/util/log.cpp -> src/util/log.hpp",
+        "third/p.cpp -> third/p.hpp"
+      ],
+      "decoys_unresolved": true,
+      "counts": {
+        "OC003": 1,
+        "OC006": 5
+      },
+      "oc006_files": [
+        "cyc/cycle_driver.cpp",
+        "include/outer.hpp",
+        "src/main.cpp",
+        "src/util/log.cpp",
+        "third/p.cpp"
+      ],
+      "oc003_message": "Import cycle among 2 files (sorted): /home/z/my-project/work/tests/fixtures/cpp_resolver/cyc/a.hpp -> /home/z/my-project/work/tests/fixtures/cpp_resolver/cyc/b.hpp"
+    },
+    "7_cobertura_composition": {
+      "pass": true,
+      "functions_total": 16,
+      "functions_measured": 16,
+      "files_matched": 14,
+      "distinct_sha256": 1,
+      "counts": {
+        "OC006": 12,
+        "OC011": 1,
+        "OC008": 2,
+        "OC001": 1,
+        "OC004": 1,
+        "OC007": 1,
+        "OC002": 1
+      },
+      "oc007_symbols": [
+        "sum26"
+      ]
+    },
+    "8_supply_tier_honesty": {
+      "pass": true,
+      "supply_block_present": false,
+      "osv_supply_block": {
+        "manifests_scanned": 0,
+        "osv_snapshot_date": "2026-11-22"
+      },
+      "base_counts": {
+        "OC003": 1,
+        "OC006": 5
+      },
+      "osv_counts": {
+        "OC003": 1,
+        "OC006": 5
+      },
+      "edges": 9
+    },
+    "9_c_pack_regression_freeze": {
+      "pass": true,
+      "c_counts": {
+        "OC006": 11,
+        "OC011": 1,
+        "OC008": 2,
+        "OC001": 1,
+        "OC004": 1,
+        "OC002": 1
+      },
+      "c_routing": {
+        "sniffed_cpp": 0,
+        "sniffed_c": 0,
+        "default_cpp": 0,
+        "default_c": 2
+      },
+      "c_resolver_edges": 9,
+      "c_resolver_exact": true
+    }
+  },
+  "wall_best_s": 0.52,
+  "all_pass": true
+}

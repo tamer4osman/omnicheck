@@ -1,0 +1,26 @@
+{
+  "schema": "omnicheck.pack/v0",
+  "id": "c",
+  "display_name": "C",
+  "version": "0.1.0",
+  "grammar": "c",
+  "extensions": [
+    ".c",
+    ".h"
+  ],
+  "entry_points": [],
+  "enabled_passes": [
+    "OC001",
+    "OC002",
+    "OC003",
+    "OC004",
+    "OC005",
+    "OC006",
+    "OC007",
+    "OC008",
+    "OC009",
+    "OC010",
+    "OC011"
+  ],
+  "notes": "SPRINT-20 adoption, full scope in one sprint (docs/LANGUAGES.md C section): all eleven passes enabled -- the SIXTH full-scope pack. The pinned tree-sitter-c v0.23.4 grammar ships NO external scanner (src/ holds parser.c, grammar.json, node-types.json only). Symbols: function DEFINITIONS with a body (the whole definition is the span); the grammar has no name field, so the symbol name is the identifier at the bottom of the declarator chain (plain, pointer-return, parenthesized and function-pointer-return shapes; resolved by descending declarator fields, never guessed). Prototypes are NOT symbols -- the definition normally exists in the same analysis root and counting both would double every function and give OC007 two anchors per name; the header API surface is the exports query's job. Decision table: if_statement (else-if is a NESTED if_statement, so each branch increments by itself) + while/do/for + case_statement WITH a value field (a default arm is the same node type WITHOUT the value and counts 0, the gocyclo discipline; fall-through case labels are separate nodes) + the ternary conditional_expression, plus && and || inside the shared binary_expression container. Preprocessor conditionals (#if/#ifdef/#elif) are NOT decisions -- they select code at COMPILE time and the analysis runs on raw source. Resolver v1-c: the include channel -- quoted includes resolve against the INCLUDING file's directory (the C preprocessor's own rule, lexical .. pops, the PHP include-channel discipline); angle-bracket system includes NEVER resolve (recorded-and-unresolved, the Go module-boundary precedent -- the dependency signal stays visible without a manifest tier); a macro path (#include HEADER) records NOTHING (not a static payload); the imports relation is a SET. NO mate marking (link order is not a parse fact). OC005 marking: an include binds NULL -- a whole-file claim (the Ruby require discipline). Entry points: NO name-glob convention -- the entry claim is the PARSE FACT of a function DEFINITION named main (the Q_C_MAIN fact, the Go package-main class; a main behind an #ifdef wrapper still claims, the honest over-claim direction, OC006 severity is INFO); entry_points is empty because no basename glob can express 'defines main'. .h files belong to this pack while C++ is not registered -- the KNOWN FUTURE BOUNDARY: when the cpp pack registers, .h routing gets the content-sniff + project-root-default treatment written into the report (the approved C/C++ architecture decision); until then every .h is C. Test conventions: none registered in v1 (no runner-executed C convention is name-pinned; a *_test.c name claims nothing). OC007 fires with a Cobertura-shaped XML via --coverage; gcovr emits Cobertura XML natively (class filename= records + line number=/hits=), so a gcovr report works through the existing reader; lcov tracefiles (.info) are out of scope in v1 and would be rejected as unrecognized. Supply tier (the honest delineation, SPRINT-20): C has NO canonical dependency manifest -- OC009 and OC010 are enabled pack data but there is no C manifest reader, so nothing is ever discovered for them (no fabricated pkg-config/vendored tier: a versionless include is not a pin and a vendored tree is not a manifest); without their inputs the passes produce nothing and the report meta says so (manifests_scanned: 0). No OSV ecosystem exists for C includes and none is invented. OC010's licence-file probe (LICENSE/COPYING basenames) is a manifest-reader convention and is likewise deferred with the same rationale. Metaprogramming (X-macros, token pasting, macro-generated declarations) is not a parse fact -- the Rust macro boundary, accepted in the over-report direction for OC006. As-written analysis: no preprocessing is performed; conditional-compilation variants are reported as the single parsed configuration."
+}

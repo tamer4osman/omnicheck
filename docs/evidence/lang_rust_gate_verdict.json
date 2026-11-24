@@ -1,0 +1,133 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "Rust language adoption (SPRINT-15, full scope: resolver v1-rust + LCOV + Cargo manifests)",
+  "date_executed": "2026-11-21",
+  "fixtures_structural": "/home/z/my-project/work/tests/fixtures/rust",
+  "fixtures_resolver": "/home/z/my-project/work/tests/fixtures/rust_resolver",
+  "contract": "docs/LANGUAGES.md (Rust section)",
+  "grammar_pin": "tree-sitter/tree-sitter-rust v0.24.0",
+  "criteria": {
+    "1_parse_clean_pack_loaded": {
+      "pass": true,
+      "files_analyzed": 5,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "java",
+        "rust",
+        "typescript",
+        "python",
+        "tsx",
+        "ts-js",
+        "go",
+        "csharp"
+      ]
+    },
+    "2_byte_identical_reports": {
+      "pass": true,
+      "runs": 10,
+      "distinct_sha256": 1
+    },
+    "3_enabled_rules_contracted_counts": {
+      "pass": true,
+      "counts": {
+        "OC006": 4,
+        "OC011": 1,
+        "OC008": 2,
+        "OC002": 1,
+        "OC001": 1,
+        "OC004": 1
+      },
+      "forbidden_seen": [],
+      "oc006_on_lib_rs": false
+    },
+    "4_unresolved_outside_the_analyzed_set": {
+      "pass": true,
+      "import_edges": 0,
+      "file_nodes": 5
+    },
+    "5_resolver_v1_rust_exact": {
+      "pass": true,
+      "files_analyzed": 11,
+      "files_with_parse_errors": 0,
+      "byte_identical_runs": 10,
+      "imports_edges": 12,
+      "edge_pairs": [
+        "src/a.rs -> src/b.rs",
+        "src/b.rs -> src/a.rs",
+        "src/lib.rs -> src/a.rs",
+        "src/lib.rs -> src/b.rs",
+        "src/lib.rs -> src/lonely.rs",
+        "src/lib.rs -> src/store/mod.rs",
+        "src/lib.rs -> src/store/types.rs",
+        "src/lib.rs -> src/util.rs",
+        "src/store/mod.rs -> src/a.rs",
+        "src/store/mod.rs -> src/store/types.rs",
+        "src/util.rs -> src/b.rs",
+        "src/util.rs -> src/util/helper.rs"
+      ],
+      "decoy_unresolved": true,
+      "bin_own_crate": true,
+      "counts": {
+        "OC010": 1,
+        "OC003": 1,
+        "OC005": 4,
+        "OC006": 1
+      },
+      "oc005_exports": [
+        "fmt_inner",
+        "fmt_name",
+        "isolated",
+        "store_root"
+      ],
+      "oc006_files": [
+        "orphan.rs"
+      ],
+      "oc010_files": [
+        "Cargo.toml"
+      ],
+      "oc003_message": "Import cycle among 2 files (sorted): /home/z/my-project/work/tests/fixtures/rust_resolver/src/a.rs -> /home/z/my-project/work/tests/fixtures/rust_resolver/src/b.rs"
+    },
+    "6_lcov_composition": {
+      "pass": true,
+      "functions_total": 10,
+      "functions_measured": 10,
+      "files_matched": 5,
+      "distinct_sha256": 1,
+      "counts": {
+        "OC006": 4,
+        "OC011": 1,
+        "OC008": 2,
+        "OC002": 1,
+        "OC001": 1,
+        "OC004": 1,
+        "OC007": 1
+      },
+      "oc007_symbols": [
+        "rust_long_function"
+      ]
+    },
+    "7_manifest_tier": {
+      "pass": true,
+      "manifests_scanned": 1,
+      "base_counts": {
+        "OC010": 1,
+        "OC003": 1,
+        "OC005": 4,
+        "OC006": 1
+      },
+      "osv_counts": {
+        "OC010": 1,
+        "OC009": 1,
+        "OC003": 1,
+        "OC005": 4,
+        "OC006": 1
+      },
+      "oc009_files": [
+        "Cargo.toml"
+      ],
+      "edges": 12
+    }
+  },
+  "wall_best_s": 0.16,
+  "all_pass": true
+}

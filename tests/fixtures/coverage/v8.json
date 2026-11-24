@@ -1,0 +1,47 @@
+{
+ "result": [
+  {
+   "url": "file://@@OC_REPO_ROOT@@/examples/js/demo.js",
+   "functions": [
+    {
+     "functionName": "",
+     "isBlockCoverage": true,
+     "ranges": [
+      {
+       "startOffset": 0,
+       "endOffset": 2937,
+       "count": 1
+      }
+     ]
+    },
+    {
+     "functionName": "add",
+     "isBlockCoverage": true,
+     "ranges": [
+      {
+       "startOffset": 217,
+       "endOffset": 255,
+       "count": 3
+      }
+     ]
+    },
+    {
+     "functionName": "processOrder",
+     "isBlockCoverage": true,
+     "ranges": [
+      {
+       "startOffset": 257,
+       "endOffset": 2826,
+       "count": 2
+      },
+      {
+       "startOffset": 1548,
+       "endOffset": 1608,
+       "count": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

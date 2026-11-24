@@ -1,0 +1,62 @@
+{
+ "audit": "SPRINT-8 L-track adoption evidence (memo L1/L2/L6 landed; L3/L4/L7 designed in docs/TRIAGE_CALIBRATION_WORKFLOW.md)",
+ "date": "2026-11-20",
+ "constraints_unchanged": {
+  "rank_only": true,
+  "prose_only": true,
+  "confidence_exposed": true,
+  "fail_open": true,
+  "vendored_tree_unmodified": "VENDOR.sha256 verified OK",
+  "note": "artifacts are documentation only and never an input to the pipeline; stdout emitted first, proven byte-identical with the channel on and off"
+ },
+ "cells": {
+  "default": "24/24 suites (test_triage_audit new, 134 checks)",
+  "sanitize": "24/24 suites, ASan+UBSan+LSan clean incl. auditor and provider artifacts paths",
+  "runs_per_cell": 2
+ },
+ "real_corpus_tree_sitter": {
+  "command": "oc check third_party/tree-sitter --packs-dir packs --triage",
+  "files_parsed": 124,
+  "findings": 160,
+  "annotated": 160,
+  "report_bytes": 68289,
+  "report_sha256_artifacts_on": "ede9d7b783bcc067e8fff9d13db5de017a9ec49c0031aaca2f227f270eafa89e",
+  "report_sha256_artifacts_off": "ede9d7b783bcc067e8fff9d13db5de017a9ec49c0031aaca2f227f270eafa89e",
+  "wall_seconds_on": 0.16,
+  "wall_seconds_off": 0.16,
+  "request_pin_bytes": 29822,
+  "triage_artifact_bytes": 44316,
+  "artifact_schema": "oc-triage-artifact/1",
+  "artifact_items": 160,
+  "artifact_ranked": 160,
+  "artifact_emitted": 160,
+  "explain_agreement": true,
+  "pipeline_annotations_vs_artifact": "160 agree, 0 differ (4-decimal)",
+  "replay_reruns": "byte-identical (9051-byte response, sha256 31e7a0bf5e333e14fd325b2950f2edb18437cfc206d27a1c9c37dad888deb3b6)",
+  "auditor_check_mode": "OK: 160/160 entries agree with the explained probabilities (sibling-model aware)"
+ },
+ "pilot_scale_eslint_capture": {
+  "request": "work_src/eslint_req_full.json (PRE-fix capture, 2,398 items, 1,348,133 bytes)",
+  "provider_wall_off_seconds": 0.26,
+  "provider_wall_on_seconds": 0.38,
+  "overhead": "x1.5 (the explain pass); measured, recorded in README budget note",
+  "stdout_capped_entries": 928,
+  "stdout_bytes": 52827,
+  "stdout_byte_identical_on_vs_off": true,
+  "artifact_ranks": 2398,
+  "artifact_bytes": 668558,
+  "artifact_prefix_equals_stdout": true,
+  "pin_byte_equals_source_request": true,
+  "replay_byte_identical": true,
+  "auditor_verdict": "REFUSED with the fba5242 diagnostic (correct): exactly 2 ids behind two different texts (OC001 constructor 62/114 lines, fix 90/100 lines); 2,398 items over 2,374 distinct ids -- the check-mode auditor detects the historical fingerprint-collision class live"
+ },
+ "contract_finding": {
+  "title": "auditor aligned to the seam's sibling-identity model",
+  "detail": "fingerprints deliberately exclude line numbers (src/triage.c apply loop): byte-identical siblings share one identity and are annotated together. The auditor accepts duplicate ids ONLY when every carrier's text is identical; one id behind two different texts (fba5242 class) is refused as an ambiguous join. Both directions test-locked (tests/test_triage_audit A9/A10)."
+ },
+ "not_measured_here": {
+  "L3": "designed workflow only; no outcome data exists (docs/TRIAGE_CALIBRATION_WORKFLOW.md, pre-committed exposure rule)",
+  "L4": "gated on L3; brain OFF in every shipped path",
+  "L7": "research track; no model ships, no OC_OMNIDECIDE_MODEL passthrough"
+ }
+}

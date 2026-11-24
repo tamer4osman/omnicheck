@@ -1,0 +1,11 @@
+<!-- a project whose root declares no licence at all: OC010 warns
+     (SPRINT-13 fixture). The dependency below is NOT in the test OSV
+     snapshot, so OC009 stays silent for it. -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Clean.Lib" Version="1.0.0" />
+  </ItemGroup>
+</Project>

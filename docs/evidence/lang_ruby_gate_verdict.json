@@ -1,0 +1,124 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "Ruby language adoption (SPRINT-16, full scope: resolver v1-ruby + SimpleCov + Gemfile manifests)",
+  "date_executed": "2026-11-21",
+  "fixtures_structural": "/home/z/my-project/work/tests/fixtures/ruby",
+  "fixtures_resolver": "/home/z/my-project/work/tests/fixtures/ruby_resolver",
+  "contract": "docs/LANGUAGES.md (Ruby section)",
+  "grammar_pin": "tree-sitter/tree-sitter-ruby v0.23.1",
+  "criteria": {
+    "1_parse_clean_pack_loaded": {
+      "pass": true,
+      "files_analyzed": 7,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "java",
+        "rust",
+        "typescript",
+        "ruby",
+        "python",
+        "tsx",
+        "ts-js",
+        "go",
+        "csharp"
+      ]
+    },
+    "2_byte_identical_reports": {
+      "pass": true,
+      "runs": 10,
+      "distinct_sha256": 1
+    },
+    "3_enabled_rules_contracted_counts": {
+      "pass": true,
+      "counts": {
+        "OC006": 5,
+        "OC002": 1,
+        "OC001": 1,
+        "OC011": 1,
+        "OC004": 1,
+        "OC008": 2
+      },
+      "forbidden_seen": [],
+      "oc006_on_bin_tool": false
+    },
+    "4_unresolved_outside_the_analyzed_set": {
+      "pass": true,
+      "import_edges": 0,
+      "file_nodes": 7
+    },
+    "5_resolver_v1_ruby_exact": {
+      "pass": true,
+      "files_analyzed": 11,
+      "files_with_parse_errors": 0,
+      "byte_identical_runs": 10,
+      "imports_edges": 8,
+      "edge_pairs": [
+        "lib/mycorp.rb -> lib/mycorp/cli.rb",
+        "lib/mycorp.rb -> lib/mycorp/store.rb",
+        "lib/mycorp.rb -> lib/mycorp/version.rb",
+        "lib/mycorp/a.rb -> lib/mycorp/b.rb",
+        "lib/mycorp/b.rb -> lib/mycorp/a.rb",
+        "lib/mycorp/store.rb -> lib/mycorp/store/types.rb",
+        "test/mycorp/store_test.rb -> lib/mycorp.rb",
+        "test/mycorp/store_test.rb -> lib/mycorp/store.rb"
+      ],
+      "decoys_unresolved": true,
+      "counts": {
+        "OC010": 2,
+        "OC003": 1,
+        "OC006": 2
+      },
+      "oc006_files": [
+        "lonely.rb",
+        "orphan.rb"
+      ],
+      "oc010_files": [
+        "Gemfile",
+        "Gemfile.lock"
+      ],
+      "oc003_message": "Import cycle among 2 files (sorted): /home/z/my-project/work/tests/fixtures/ruby_resolver/lib/mycorp/a.rb -> /home/z/my-project/work/tests/fixtures/ruby_resolver/lib/mycorp/b.rb"
+    },
+    "6_simplecov_composition": {
+      "pass": true,
+      "functions_total": 15,
+      "functions_measured": 15,
+      "files_matched": 7,
+      "distinct_sha256": 1,
+      "counts": {
+        "OC006": 5,
+        "OC002": 1,
+        "OC001": 1,
+        "OC011": 1,
+        "OC004": 1,
+        "OC007": 1,
+        "OC008": 2
+      },
+      "oc007_symbols": [
+        "inventory"
+      ]
+    },
+    "7_manifest_tier": {
+      "pass": true,
+      "manifests_scanned": 2,
+      "base_counts": {
+        "OC010": 2,
+        "OC003": 1,
+        "OC006": 2
+      },
+      "osv_counts": {
+        "OC010": 2,
+        "OC009": 3,
+        "OC003": 1,
+        "OC006": 2
+      },
+      "oc009_rows": [
+        "Gemfile:rake:warn",
+        "Gemfile:nopin:warn",
+        "Gemfile.lock:rake:error"
+      ],
+      "edges": 8
+    }
+  },
+  "wall_best_s": 0.21,
+  "all_pass": true
+}

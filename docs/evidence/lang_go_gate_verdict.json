@@ -1,0 +1,107 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "Go language adoption + resolver v1-go + closeout (SPRINT-9 spike, SPRINT-10 resolver, SPRINT-11 coverage+manifests)",
+  "date_executed": "2026-11-21",
+  "fixtures_structural": "/home/z/my-project/work/tests/fixtures/go",
+  "fixtures_resolver": "/home/z/my-project/work/tests/fixtures/go_resolver",
+  "contract": "docs/LANGUAGES.md (Go section)",
+  "grammar_pin": "tree-sitter-grammars/tree-sitter-go v0.25.0",
+  "criteria": {
+    "1_parse_clean_pack_loaded": {
+      "pass": true,
+      "files_analyzed": 5,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "java",
+        "rust",
+        "typescript",
+        "python",
+        "tsx",
+        "ts-js",
+        "go",
+        "csharp"
+      ]
+    },
+    "2_byte_identical_reports": {
+      "pass": true,
+      "runs": 10,
+      "distinct_sha256": 1
+    },
+    "3_enabled_rules_contracted_counts": {
+      "pass": true,
+      "counts": {
+        "OC006": 4,
+        "OC011": 1,
+        "OC008": 2,
+        "OC002": 1,
+        "OC001": 1,
+        "OC004": 1
+      },
+      "forbidden_seen": [],
+      "oc006_on_main_go": false
+    },
+    "4_unresolved_outside_the_analyzed_set": {
+      "pass": true,
+      "import_edges": 0,
+      "file_nodes": 5
+    },
+    "5_resolver_v1_go_exact": {
+      "pass": true,
+      "files_analyzed": 10,
+      "files_with_parse_errors": 0,
+      "byte_identical_runs": 10,
+      "imports_edges": 6,
+      "edge_pairs": [
+        "a/a.go -> b/b.go",
+        "b/b.go -> a/a.go",
+        "cmd/main.go -> example.org/app/store/store.go",
+        "cmd/main.go -> store/store.go",
+        "cmd/main.go -> store/types.go",
+        "cmd/main.go -> util/util.go"
+      ],
+      "decoy_unresolved": [
+        "mycorp/store",
+        false
+      ],
+      "counts": {
+        "OC003": 1,
+        "OC010": 1,
+        "OC006": 1
+      },
+      "oc006_files": [
+        "lonely.go"
+      ],
+      "oc003_message": "Import cycle among 2 files (sorted): /home/z/my-project/work/tests/fixtures/go_resolver/a/a.go -> /home/z/my-project/work/tests/fixtures/go_resolver/b/b.go"
+    },
+    "6_coverprofile_composition": {
+      "pass": true,
+      "functions_total": 7,
+      "functions_measured": 7,
+      "files_matched": 5,
+      "distinct_sha256": 1,
+      "counts": {
+        "OC006": 4,
+        "OC011": 1,
+        "OC008": 2,
+        "OC002": 1,
+        "OC001": 1,
+        "OC004": 1,
+        "OC007": 1
+      }
+    },
+    "7_manifest_tier": {
+      "pass": true,
+      "manifests_scanned": 1,
+      "counts": {
+        "OC003": 1,
+        "OC010": 1,
+        "OC006": 1
+      },
+      "oc010_files": [
+        "go.mod"
+      ]
+    }
+  },
+  "wall_best_s": 0.16,
+  "all_pass": true
+}

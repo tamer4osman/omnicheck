@@ -1,0 +1,32 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    exact (2.0.1)
+    pinned (1.2.3)
+    rake (13.0.6)
+      racc (~> 1.4)
+    tilde (3.1.4)
+    json (2.7.1)
+
+GIT
+  remote: https://example.com/edge/edgegem.git
+  revision: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+  specs:
+    edgegem (0.1.0)
+
+PATH
+  remote: ../excluded
+  specs:
+    excluded (0.2.0)
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  pinned (~> 1.0)
+  exact
+  excluded!
+
+BUNDLED WITH
+   2.5.6

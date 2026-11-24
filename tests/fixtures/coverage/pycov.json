@@ -1,0 +1,24 @@
+{
+ "meta": {
+  "format": 3
+ },
+ "files": {
+  "examples/py/demo.py": {
+   "executed_lines": [
+    7,
+    8,
+    11,
+    73
+   ],
+   "missing_lines": [
+    16,
+    83
+   ],
+   "summary": {
+    "covered_lines": 4,
+    "num_statements": 80
+   }
+  }
+ },
+ "totals": {}
+}

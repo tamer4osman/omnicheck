@@ -1,0 +1,51 @@
+{
+ "schema": "omnicheck.osv_snapshot/v0",
+ "snapshot_date": "2026-11-22",
+ "records": [
+  {
+   "id": "GHSA-ruby-rake-0001",
+   "affected": [
+    {
+     "package": {
+      "name": "rake",
+      "ecosystem": "rubygems"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "14.0.0"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "GHSA-ruby-json-0002",
+   "affected": [
+    {
+     "package": {
+      "name": "json",
+      "ecosystem": "rubygems"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "99.0"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

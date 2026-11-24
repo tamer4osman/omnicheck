@@ -1,0 +1,16 @@
+{
+  "name": "omnicheck",
+  "version": "0.3.0",
+  "description": "Deterministic multi-language static analysis (CRAP-ms leaderboard, import cycles, duplication, supply-chain tier). This shim execs the native `oc` binary -- no analysis runs in JavaScript, so results are identical to the C build's.",
+  "license": "MIT",
+  "bin": {
+    "oc": "bin/oc-shim.js"
+  },
+  "files": [
+    "bin/",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "Java reference corpus (google/gson gson-parent-2.11.0, codeload tarball)",
+  "date_executed": "2026-11-21",
+  "corpus": "/home/z/my-project/work/work/java-pin/gson-gson-parent-2.11.0",
+  "corpus_digest": "d4bce44ace56060d132ae5306e86150078bf74154fb13dd80907e72ce2b5eb4d",
+  "provenance": "Codeload tarball of the pinned upstream tag (sha256 in work/), Apache-2.0; no network fetch inside the gate -- a missing or mismatched archive fails loudly",
+  "criteria": {
+    "1_corpus_integrity": {
+      "pass": true,
+      "tarball_sha256": "29eaca60adf107a057ed292e92eb0b01f2d569e858ecfb0306659841181c298f",
+      "tag": "gson-parent-2.11.0",
+      "tag_commit": "3b7c2ad8ce8dd471449ccbaee6d22f64c9816a38",
+      "corpus_digest": "d4bce44ace56060d132ae5306e86150078bf74154fb13dd80907e72ce2b5eb4d",
+      "java_files": 249
+    },
+    "2_parse_clean": {
+      "pass": true,
+      "files_analyzed": 202,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "java",
+        "rust",
+        "typescript",
+        "python",
+        "tsx",
+        "ts-js",
+        "go",
+        "csharp"
+      ]
+    },
+    "3_byte_identical_reports": {
+      "pass": true,
+      "runs": 5,
+      "distinct_sha256": 1
+    },
+    "4_resolver_realism": {
+      "pass": true,
+      "imports_edges": 820,
+      "distinct_target_files": 77,
+      "outside_corpus": 0
+    },
+    "5_rule_honesty": {
+      "pass": true,
+      "oc003_findings": 2,
+      "oc005_findings": 0,
+      "oc006_test_class_findings": 0,
+      "counts": {
+        "OC008": 1205,
+        "OC003": 2,
+        "OC001": 29,
+        "OC002": 16,
+        "OC006": 13,
+        "OC004": 16
+      },
+      "counts_pinned": {
+        "OC001": 29,
+        "OC002": 16,
+        "OC003": 2,
+        "OC004": 16,
+        "OC006": 13,
+        "OC008": 1205
+      }
+    },
+    "6_wall_budget": {
+      "pass": true,
+      "wall_s": 0.59,
+      "budget_s": 60.0
+    }
+  },
+  "all_pass": true
+}

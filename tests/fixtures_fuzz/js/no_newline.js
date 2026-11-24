@@ -1,0 +1,1 @@
+function last() { return 42; }

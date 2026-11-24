@@ -1,0 +1,28 @@
+{
+  "schema": "omnicheck.pack/v0",
+  "id": "rust",
+  "display_name": "Rust",
+  "version": "0.1.0",
+  "grammar": "rust",
+  "extensions": [
+    ".rs"
+  ],
+  "entry_points": [
+    "lib.rs",
+    "main.rs"
+  ],
+  "enabled_passes": [
+    "OC001",
+    "OC002",
+    "OC003",
+    "OC004",
+    "OC005",
+    "OC006",
+    "OC007",
+    "OC008",
+    "OC009",
+    "OC010",
+    "OC011"
+  ],
+  "notes": "SPRINT-15 adoption, full scope in one sprint (docs/LANGUAGES.md Rust section): all eleven passes enabled. Resolver v1-rust: two declaration-level channels -- the mod-tree (mod name; -> the module file by the stem rule) and the use-tree (crate::/self::/super:: leaves -> the self/crate/super anchors with the item-reading pop ladder; external crate heads stay unresolved, no manifest is ever read). OC003 cycles at file granularity; OC005 marking is by use-leaf binding name (globs fail-open), mod declarations mark nothing (declaring is not using), and there is NO same-directory mate marking (Rust has no same-module mate hole: every cross-file reference goes through a path). Entry points: the pack globs (lib.rs/main.rs) plus the fn main parse fact (claims src/bin/*.rs binaries). Test convention: a .rs file directly inside a tests/ directory is cargo runner data (never OC006 material). OC007 fires only with an LCOV profile passed via --coverage (grcov/cargo-llvm-cov --lcov/cargo-tarpaulin emit it; DA lines are the anchors, covered when the hit count > 0); OC009 only with a vendored OSV snapshot (ecosystem crates.io) via --osv-snapshot; OC010 checks the Cargo.toml licence layering (license / license-file / the project-root licence file). Manifests: Cargo.toml (exact =version requirements are pins; caret/tilde/star/ranges are NOT pins -- unpinned = warn, Cargo's own semantics; path deps are in-repo links, not OC009 material; workspace inheritance resolves within the same manifest only) and Cargo.lock (resolved pins for [[package]] entries with a source field). Trait/extern function signatures are symbols with complexity 1 (the Java discipline); const/static items whose value is a closure are symbols (the item-level named closures); local let-bound closures are never symbols (inclusive counting). cfg attributes are NOT evaluated (the C# #if deliberate keep: both branches stay analyzed, over-report never hides). Without their inputs OC007/OC009/OC010 produce nothing and the report meta says so. Passes are pack data, zero tool-code change to flip."
+}

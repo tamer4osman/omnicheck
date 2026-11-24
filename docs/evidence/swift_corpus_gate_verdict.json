@@ -1,0 +1,66 @@
+{
+ "contract": "docs/LANGUAGES.md (Swift section)",
+ "corpus_digest": "3bb0ac6fce3b582eb3b5d37ba4c21ff4a2bff77be1b3e773e8058bb8943665fa",
+ "criteria": {
+  "1_corpus_integrity": {
+   "digest_ok": true,
+   "pass": true,
+   "swift_files": 146,
+   "tarball_sha256_ok": true,
+   "total_files": 194
+  },
+  "2_parse_honesty": {
+   "analyzed": 146,
+   "error_nodes": 142,
+   "parse_errors": 28,
+   "pass": true,
+   "swift_pack_loaded": true
+  },
+  "3_determinism": {
+   "pass": true,
+   "runs": 5
+  },
+  "4_resolver_honesty": {
+   "claimed": 3,
+   "claimed_toplevel_shape": 3,
+   "edges": 3294,
+   "oc006": 98,
+   "pass": true,
+   "targets_outside": 0,
+   "zero_in_degree": 101
+  },
+  "5_rule_honesty": {
+   "counts": {
+    "OC001": 18,
+    "OC002": 38,
+    "OC004": 7,
+    "OC006": 98,
+    "OC008": 900
+   },
+   "pass": true,
+   "supply_block_absent": true,
+   "swift_pack_rows": 0
+  },
+  "6_no_header_routing": {
+   "pass": true,
+   "routing": null
+  },
+  "7_wall_budget": {
+   "best_wall_seconds": 0.91,
+   "budget": 60.0,
+   "pass": true
+  }
+ },
+ "date_executed": "2026-11-23",
+ "gate": "Swift reference corpus (SPRINT-23): apple/swift-argument-parser 1.5.0 tag tarball, 146 .swift files (the multi-target SPM tree; no other pack's extension exists)",
+ "grammar_pin": "alex-pinkus/tree-sitter-swift 0.7.1-with-generated-files",
+ "parse_error_classes": {
+  "attribute_empty_parens": 27,
+  "directive_adjacent": 1
+ },
+ "pass": true,
+ "schema": "omnicheck.evidence/v0",
+ "tarball": "swift-argument-parser_1.5.0.tar.gz",
+ "tarball_sha256": "946a4cf7bdd2e4f0f8b82864c56332238ba3f0a929c6d1a15f55affdb10634e6",
+ "tarball_url": "https://github.com/apple/swift-argument-parser/archive/refs/tags/1.5.0.tar.gz"
+}

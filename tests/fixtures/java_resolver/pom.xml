@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Resolver corpus B decoy manifest (SPRINT-11): the SUPPLY tier reads
+     this file (OC010 licence + OC009 dependency pins) -- the RESOLVER
+     never does. It declares a com.example.ghost artifact whose directory
+     does NOT exist in the analyzed set; Main.java's ghost import stays
+     unresolved regardless (no edge may appear through the pom). The
+     licence clause is deliberately absent -> exactly one OC010 warn. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>resolver-corpus</artifactId>
+  <version>1.0.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <!-- managed, not a real dependency: never counted -->
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>5.10.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>com.example.ghost</groupId>
+      <artifactId>ghost-lib</artifactId>
+      <version>1.2.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <!-- no version: inherited -> unpinned, OC009 warn -->
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring.version}</version>
+      <!-- property reference: never substituted, never guessed -> unpinned -->
+    </dependency>
+    <dependency>
+      <groupId>com.wide</groupId>
+      <artifactId>range-artifact</artifactId>
+      <version>[1.0,2.0)</version>
+      <!-- Maven range: cannot be matched honestly -> unpinned -->
+    </dependency>
+  </dependencies>
+</project>

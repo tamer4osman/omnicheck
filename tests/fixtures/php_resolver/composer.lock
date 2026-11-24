@@ -1,0 +1,15 @@
+{
+    "_readme": [
+        "The resolver corpus lockfile: the packages/packages-dev name+version entries are the RESOLVED pins (OC009 rows); platform packages record nothing."
+    ],
+    "content-hash": "0000000000000000000000000000000000000000",
+    "packages": [
+        { "name": "acme/log", "version": "1.2.3" },
+        { "name": "acme/gear", "version": "2.4.0" },
+        { "name": "php-64bit", "version": "8.2.0" }
+    ],
+    "packages-dev": [
+        { "name": "acme/devtool", "version": "0.9.0" }
+    ],
+    "plugin-api-version": "2.6.0"
+}

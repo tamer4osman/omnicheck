@@ -1,0 +1,49 @@
+{
+ "all_pass": true,
+ "audit": "mutation CI-budget re-measure (carried item, Sprint 5)",
+ "oc": "build/default/oc",
+ "runs": [
+  {
+   "budget_target_s": 600.0,
+   "engine_wall_seconds": 0.62,
+   "killed": 9,
+   "mutants_total": 10,
+   "pass": true,
+   "scope": "demo (tests/fixtures/mutation/pyproj)",
+   "survived": 1,
+   "survivor_ops": [
+    "arg-swap"
+   ],
+   "test_cmd": "python3 test_calc.py (REAL suite)",
+   "wall_seconds": 0.62,
+   "within_budget": true
+  },
+  {
+   "engine_s_per_mutant": 0.188,
+   "engine_wall_seconds": 1.88,
+   "executed": 10,
+   "killed": 0,
+   "mutants_total": 9565,
+   "note": "budget math: a real suite costing T s/run affords floor(600/T)-1 mutants per CI run inside the 600 s target; survival counts here are NOT quality claims (the minimal test command kills nothing by design)",
+   "pass": true,
+   "scope": "black @ pin (src/black)",
+   "survived": 10,
+   "test_cmd": "python3 -c pass (minimal -- isolates engine cost; REAL suite execution stays descoped, per Sprint 5)",
+   "wall_seconds": 1.89
+  },
+  {
+   "engine_s_per_mutant": 0.33,
+   "engine_wall_seconds": 3.3,
+   "executed": 10,
+   "killed": 0,
+   "mutants_total": 25989,
+   "note": "budget math: a real suite costing T s/run affords floor(600/T)-1 mutants per CI run inside the 600 s target; survival counts here are NOT quality claims (the minimal test command kills nothing by design)",
+   "pass": true,
+   "scope": "eslint @ pin (lib)",
+   "survived": 10,
+   "test_cmd": "node -e 0 (minimal -- isolates engine cost; REAL suite execution stays descoped, per Sprint 5)",
+   "wall_seconds": 3.34
+  }
+ ],
+ "schema": "omnicheck.evidence/v0"
+}

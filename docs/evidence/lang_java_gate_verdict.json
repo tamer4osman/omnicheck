@@ -1,0 +1,103 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "Java language adoption + resolver v1-java + JaCoCo adapter (SPRINT-11)",
+  "date_executed": "2026-11-21",
+  "fixtures_structural": "/home/z/my-project/work/tests/fixtures/java",
+  "fixtures_resolver": "/home/z/my-project/work/tests/fixtures/java_resolver",
+  "fixture_jacoco": "/home/z/my-project/work/tests/fixtures/java_cov/jacoco.xml",
+  "contract": "docs/LANGUAGES.md (Java section, pre-approved before any code)",
+  "grammar_pin": "tree-sitter/tree-sitter-java v0.23.5",
+  "criteria": {
+    "1_parse_clean_pack_loaded": {
+      "pass": true,
+      "files_analyzed": 9,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "java",
+        "rust",
+        "typescript",
+        "python",
+        "tsx",
+        "ts-js",
+        "go",
+        "csharp"
+      ]
+    },
+    "1b_metadata_files_symbol_free": {
+      "pass": true,
+      "module_info_symbols": 0,
+      "package_info_symbols": 0
+    },
+    "1c_describe_complexity_25": {
+      "pass": true,
+      "complexity": 25
+    },
+    "2_byte_identical_reports": {
+      "pass": true,
+      "runs": 10,
+      "distinct_sha256": 1
+    },
+    "3_enabled_rules_contracted_counts": {
+      "pass": true,
+      "counts": {
+        "OC006": 8,
+        "OC011": 1,
+        "OC001": 1,
+        "OC008": 2,
+        "OC002": 1,
+        "OC004": 1
+      },
+      "forbidden_seen": [],
+      "oc006_on_main_java": false
+    },
+    "4_unresolved_outside_the_analyzed_set": {
+      "pass": true,
+      "import_edges": 0,
+      "file_nodes": 9
+    },
+    "5_resolver_v1_java_exact": {
+      "pass": true,
+      "files_analyzed": 7,
+      "files_with_parse_errors": 0,
+      "byte_identical_runs": 10,
+      "imports_edges": 11,
+      "edge_pairs_multiset": [
+        "app/Main.java -> com/example/store/Store.java",
+        "app/Main.java -> com/example/store/Store.java",
+        "app/Main.java -> com/example/store/Store.java",
+        "app/Main.java -> com/example/store/StoreTest.java",
+        "app/Main.java -> com/example/store/StoreTest.java",
+        "app/Main.java -> com/example/store/Types.java",
+        "app/Main.java -> com/example/store/Types.java",
+        "app/Main.java -> com/example/util/Helper.java",
+        "com/example/store/Store.java -> com/example/store/Types.java",
+        "com/example/store/Types.java -> com/example/store/Store.java",
+        "com/example/util/Helper.java -> com/example/deep/Nested.java"
+      ],
+      "ghost_pom_decoy_unresolved": true,
+      "nested_class_unresolved": true,
+      "test_file_is_fanout_target": true,
+      "counts": {
+        "OC003": 1,
+        "OC006": 1,
+        "OC010": 1
+      },
+      "oc006_files": [
+        "Lonely.java"
+      ],
+      "oc010_files": [
+        "pom.xml"
+      ],
+      "oc003_message": "Import cycle among 2 files (sorted): /home/z/my-project/work/tests/fixtures/java_resolver/com/example/store/Store.java -> /home/z/my-project/work/tests/fixtures/java_resolver/com/example/store/Types.java"
+    },
+    "6_jacoco_adapter_mapping": {
+      "pass": true,
+      "oc007_findings": 1,
+      "oc007_symbol": "describe",
+      "coverage_files_matched": 1,
+      "coverage_functions_measured": 2
+    }
+  },
+  "wall_best_s": 0.16,
+  "all_pass": true
+}

@@ -1,0 +1,14 @@
+# The decoy manifest: the RESOLVER never reads it (the go.mod
+# discipline). It declares the crate name "mycorp" and tests/intg.rs
+# imports `mycorp::...` while the crate is RIGHT HERE -- stripping the
+# crate name would require the manifest, so the specifier stays
+# unresolved (the Go `mycorp/store` precedent). The supply tier DOES
+# read it: no licence field -> OC010 fires; the caret `serde = "1.0"`
+# is NOT a pin -> OC009 warns (Cargo's own semantics; never guessed).
+[package]
+name = "mycorp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = "1.0"

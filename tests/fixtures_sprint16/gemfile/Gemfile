@@ -1,0 +1,19 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+# The supply-tier unit fixture (docs/LANGUAGES.md Ruby section 6):
+#   pinned  '1.2.3'    -- the bare version form IS a pin
+#   exact   '= 2.0.1'  -- the explicit "= x.y.z" form is a pin
+#   tilde   '~> 3.1'   -- a comparator range is NOT a pin
+#   ranged  '>= 4.0'   -- NOT a pin
+#   excluded path:     -- an in-repo link, not OC009 material
+#   nospec             -- no spec at all: unpinned
+# The commented gem below is a comment, never a dependency:
+#   gem 'ghost', '9.9.9'
+gem 'pinned', '1.2.3'
+gem 'exact', '= 2.0.1'
+gem 'tilde', '~> 3.1'
+gem 'ranged', '>= 4.0'
+gem 'excluded', path: '../excluded'
+gem 'nospec'

@@ -1,0 +1,13 @@
+{
+ "RSpec": "this suite is not an object",
+ "Minitest": {
+  "coverage": {
+   "app/models/user.rb": {
+    "lines": [
+     1,
+     0
+    ]
+   }
+  }
+ }
+}

@@ -1,0 +1,13 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    implementation 'com.google.guava:guava:32.1.2-jre'
+    testImplementation 'junit:junit:4.13.2'
+    implementation platform('io.netty:netty-bom:4.1.100.Final')
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.15.0"
+    implementation 'org.example:dynamic:1.+'
+    implementation "${jacksonGroup}:property-artifact:1.0"
+    implementation group: 'org.mapdb', name: 'mapdb', version: '3.0.8'
+}

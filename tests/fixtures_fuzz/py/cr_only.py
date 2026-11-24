@@ -1,0 +1,1 @@
+def cr():    return 1

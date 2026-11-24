@@ -1,0 +1,29 @@
+[package]
+name = "sample"
+version = "0.4.0"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+exact = "=1.2.3"
+caret = "1.2"
+tilde = "~1.2.4"
+star = "*"
+range = ">=1.2, <2.0"
+inlined = { version = "=0.9.1", features = ["std"] }
+inlined_unpinned = { version = "0.3", default-features = false }
+pathdep = { path = "../local" }
+gitdep = { git = "https://example.com/x" }
+inherited = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+nixy = "=0.27.1"
+
+[dev-dependencies]
+devpin = "=2.0.0"
+devcaret = "2.1"
+
+[build-dependencies]
+buildpin = { version = "=3.3.3" }
+
+[workspace.dependencies]
+shared = "5.0"

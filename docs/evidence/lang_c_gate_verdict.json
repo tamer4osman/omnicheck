@@ -1,0 +1,140 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "C language adoption (SPRINT-20, full scope: resolver v1-c + gcovr Cobertura + the honest empty supply tier)",
+  "date_executed": "2026-11-23",
+  "fixtures_structural": "/home/z/my-project/work/tests/fixtures/c",
+  "fixtures_resolver": "/home/z/my-project/work/tests/fixtures/c_resolver",
+  "contract": "docs/LANGUAGES.md (C section)",
+  "grammar_pin": "tree-sitter/tree-sitter-c v0.23.4",
+  "criteria": {
+    "1_parse_clean_pack_loaded": {
+      "pass": true,
+      "files_analyzed": 13,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "php",
+        "csharp",
+        "tsx",
+        "java",
+        "typescript",
+        "ruby",
+        "kotlin",
+        "go",
+        "c",
+        "ts-js",
+        "swift",
+        "cpp",
+        "python",
+        "rust"
+      ]
+    },
+    "2_byte_identical_reports": {
+      "pass": true,
+      "runs": 10,
+      "distinct_sha256": 1
+    },
+    "3_enabled_rules_contracted_counts": {
+      "pass": true,
+      "counts": {
+        "OC006": 11,
+        "OC011": 1,
+        "OC008": 2,
+        "OC001": 1,
+        "OC004": 1,
+        "OC002": 1
+      },
+      "forbidden_seen": [],
+      "oc006_files": [
+        "app_test.c",
+        "cfg/secret.h",
+        "decls.c",
+        "dup_a.c",
+        "dup_b.c",
+        "include_user.c",
+        "longfn.c",
+        "mathx.c",
+        "rollup.c",
+        "todo.c",
+        "types.c"
+      ]
+    },
+    "4_resolved_edges_stay_in_the_analyzed_set": {
+      "pass": true,
+      "import_edges": 2,
+      "edge_pairs": [
+        "include_user.c -> local_util.h",
+        "main_app.c -> local_util.h"
+      ],
+      "file_nodes": 13
+    },
+    "5_resolver_v1_c_exact": {
+      "pass": true,
+      "files_analyzed": 10,
+      "files_with_parse_errors": 0,
+      "byte_identical_runs": 10,
+      "imports_edges": 9,
+      "edge_pairs": [
+        "cyc/a.h -> cyc/b.h",
+        "cyc/b.h -> cyc/a.h",
+        "cyc/cycle_driver.c -> cyc/a.h",
+        "cyc/cycle_driver.c -> cyc/b.h",
+        "include/outer.h -> include/sub/inner.h",
+        "src/main.c -> src/util/log.h",
+        "src/main.c -> third/p.h",
+        "src/util/log.c -> src/util/log.h",
+        "third/p.c -> third/p.h"
+      ],
+      "decoys_unresolved": true,
+      "counts": {
+        "OC003": 1,
+        "OC006": 5
+      },
+      "oc006_files": [
+        "cycle_driver.c",
+        "log.c",
+        "main.c",
+        "outer.h",
+        "p.c"
+      ],
+      "oc003_message": "Import cycle among 2 files (sorted): /home/z/my-project/work/tests/fixtures/c_resolver/cyc/a.h -> /home/z/my-project/work/tests/fixtures/c_resolver/cyc/b.h"
+    },
+    "6_cobertura_composition": {
+      "pass": true,
+      "functions_total": 13,
+      "functions_measured": 13,
+      "files_matched": 13,
+      "distinct_sha256": 1,
+      "counts": {
+        "OC006": 11,
+        "OC011": 1,
+        "OC008": 2,
+        "OC001": 1,
+        "OC004": 1,
+        "OC007": 1,
+        "OC002": 1
+      },
+      "oc007_symbols": [
+        "sum26"
+      ]
+    },
+    "7_supply_tier_honesty": {
+      "pass": true,
+      "supply_block_present": false,
+      "osv_supply_block": {
+        "manifests_scanned": 0,
+        "osv_snapshot_date": "2026-11-22"
+      },
+      "base_counts": {
+        "OC003": 1,
+        "OC006": 5
+      },
+      "osv_counts": {
+        "OC003": 1,
+        "OC006": 5
+      },
+      "edges": 9
+    }
+  },
+  "wall_best_s": 0.52,
+  "all_pass": true
+}

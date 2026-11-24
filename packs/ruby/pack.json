@@ -1,0 +1,28 @@
+{
+  "schema": "omnicheck.pack/v0",
+  "id": "ruby",
+  "display_name": "Ruby",
+  "version": "0.1.0",
+  "grammar": "ruby",
+  "extensions": [
+    ".rb"
+  ],
+  "entry_points": [
+    "bin/*",
+    "exe/*"
+  ],
+  "enabled_passes": [
+    "OC001",
+    "OC002",
+    "OC003",
+    "OC004",
+    "OC005",
+    "OC006",
+    "OC007",
+    "OC008",
+    "OC009",
+    "OC010",
+    "OC011"
+  ],
+  "notes": "SPRINT-16 adoption, full scope in one sprint (docs/LANGUAGES.md Ruby section): all eleven passes enabled -- the fourth full-scope pack. Symbols: method + singleton_method (endless defs are the same node); empty methods are symbols with complexity exactly 1 (the Java discipline); blocks never are (inclusive counting). Decision table: if/unless/while/until/for + when (one per clause) + in_clause (one per clause; if_guard does not count separately) + rescue + the five postfix modifier forms + the ternary, plus &&/||/and/or inside binary (the descriptor names its ops container: the Ruby node is `binary`; the shared walker matches kinds on NAMED nodes only -- the Ruby keyword tokens share type strings with their constructs). Resolver v1-ruby: require_relative resolves against the requiring file's directory (.rb appended); bare require probes the two documented load-root conventions under the analysis root (<root>/p.rb, then <root>/lib/p.rb -- the gemspec/bundler layout); $LOAD_PATH is never read from any manifest; the imports relation is a SET. OC005 marking: a require binds NULL -- a whole-file claim (requiring loads all top-level constants); NO same-directory mate marking (Ruby's global-constant visibility is decided at runtime load order; over-report is the accepted direction). Entry points: the pack globs (bin/*, exe/* -- the bundler executable conventions) plus the pre-existing shebang hint (#! is a comment to the Ruby parser, so a #! first line is ALWAYS a kernel shebang). Test conventions: the runner-collected NAME conventions test_*.rb / *_test.rb / *_spec.rb (minitest/RSpec) -- name-based only, no directory claiming. OC007 fires only with a SimpleCov .resultset.json profile passed via --coverage (lines array positional: index i is line i+1, numeric entries are anchors, covered when > 0; null entries are not-relevant and NOT anchors); OC009 only with a vendored OSV snapshot (ecosystem rubygems) via --osv-snapshot; OC010 checks the Gemfile/Gemfile.lock licence layering (no licence field -- the project-root licence-FILE probe, the go.mod discipline). Manifests: Gemfile (bounded single-line gem-call reader; bare-version and = specs are pins, comparator ranges are NOT -- bundler's own semantics; path: options are in-repo links, not OC009 material) and Gemfile.lock (GEM>specs 4-space entries are the resolved pins; 6-space sub-entries and GIT/PATH sections record nothing). .gemspec files are not read in v1 (the DSL's evaluation semantics exceed a bounded reader). Metaprogramming (define_method/attr_accessor/eval) generates methods at runtime -- not parse facts (the Rust macro boundary's analogue). Without their inputs OC007/OC009/OC010 produce nothing and the report meta says so. Passes are pack data, zero tool-code change to flip."
+}

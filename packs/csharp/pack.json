@@ -1,0 +1,27 @@
+{
+  "schema": "omnicheck.pack/v0",
+  "id": "csharp",
+  "display_name": "C#",
+  "version": "0.1.0",
+  "grammar": "csharp",
+  "extensions": [
+    ".cs"
+  ],
+  "entry_points": [
+    "Program.cs"
+  ],
+  "enabled_passes": [
+    "OC001",
+    "OC002",
+    "OC003",
+    "OC004",
+    "OC005",
+    "OC006",
+    "OC007",
+    "OC008",
+    "OC009",
+    "OC010",
+    "OC011"
+  ],
+  "notes": "SPRINT-13 full-scope adoption (docs/LANGUAGES.md C# section): all eleven passes live. Resolver v1-csharp: plain usings resolve to the namespace directory A/B/C (verbatim dots-to-slashes, whole-namespace fan-out, direct-children rule), static usings resolve to the type file A/B/C.cs, alias usings probe in the documented order (type file first, namespace directory second); no project/MSBuild reading by the resolver. Entry points: pack glob Program.cs plus the parsed static-Main fact (accessibility not required) and the C# 9 top-level-statements fact. OC007 consumes Coverlet Cobertura XML (class filename + line records, covered = hits > 0) via --coverage; OC009 consumes .csproj PackageReference entries against a vendored OSV snapshot (ecosystem NuGet, exact literal versions only -- $()/floating */ranges are not pins) via --osv-snapshot; OC010 licence layered honestly (PackageLicenseExpression, then PackageLicenseFile verified among the discovered files, then the project-root licence FILE convention). Without their inputs they produce nothing and the report meta says so. packages.config / packages.lock.json / OpenCover / MSBuild .coverage are recorded descopes. Passes are pack data, zero tool-code change to flip."
+}

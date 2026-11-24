@@ -1,0 +1,29 @@
+{
+  "schema": "omnicheck.pack/v0",
+  "id": "typescript",
+  "display_name": "TypeScript",
+  "version": "0.5.0",
+  "grammar": "typescript",
+  "extensions": [
+    ".ts",
+    ".mts",
+    ".cts"
+  ],
+  "entry_points": [
+    "**/index.ts"
+  ],
+  "enabled_passes": [
+    "OC001",
+    "OC002",
+    "OC003",
+    "OC004",
+    "OC005",
+    "OC006",
+    "OC007",
+    "OC008",
+    "OC009",
+    "OC010",
+    "OC011"
+  ],
+  "notes": "Sprint 5: supply-chain tier enabled (OC009/OC010/OC011); grammar shares the ts-js module surface and resolver contracts."
+}

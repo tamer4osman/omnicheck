@@ -1,0 +1,9 @@
+{
+ "RSpec": {
+  "coverage": {
+   "app/models/user.rb": {
+    "branches": {}
+   }
+  }
+ }
+}

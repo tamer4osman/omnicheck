@@ -1,0 +1,323 @@
+{
+ "all_pass": true,
+ "criteria": {
+  "c1_leaderboard": {
+   "coverage_meta": {
+    "files_loaded": 2,
+    "files_matched": 2,
+    "functions_measured": 4,
+    "functions_total": 4
+   },
+   "pass": true,
+   "rows": [
+    {
+     "complexity": 18,
+     "coverage_pct": 66,
+     "crap": 128,
+     "file": "examples/py/demo.py",
+     "line": 11,
+     "symbol": "process_order"
+    },
+    {
+     "complexity": 21,
+     "coverage_pct": 97,
+     "crap": 34,
+     "file": "examples/js/demo.js",
+     "line": 11,
+     "symbol": "processOrder"
+    },
+    {
+     "complexity": 1,
+     "coverage_pct": 100,
+     "crap": 1,
+     "file": "examples/js/demo.js",
+     "line": 7,
+     "symbol": "add"
+    },
+    {
+     "complexity": 1,
+     "coverage_pct": 100,
+     "crap": 1,
+     "file": "examples/py/demo.py",
+     "line": 7,
+     "symbol": "add"
+    }
+   ]
+  },
+  "c2_mutation": {
+   "harness_wall_seconds": 0.811,
+   "pass": true,
+   "report": {
+    "cache_hits": 0,
+    "executed": 10,
+    "files_mutated": 1,
+    "killed": 9,
+    "mutants": [
+     {
+      "file": "./calc.py",
+      "line": 5,
+      "op": "ret-change",
+      "original": "a + b",
+      "replacement": "None",
+      "status": "killed"
+     },
+     {
+      "file": "./calc.py",
+      "line": 9,
+      "op": "rel-swap",
+      "original": "<",
+      "replacement": ">=",
+      "status": "killed"
+     },
+     {
+      "file": "./calc.py",
+      "line": 10,
+      "op": "ret-change",
+      "original": "lo",
+      "replacement": "None",
+      "status": "killed"
+     },
+     {
+      "file": "./calc.py",
+      "line": 11,
+      "op": "rel-swap",
+      "original": ">",
+      "replacement": "<=",
+      "status": "killed"
+     },
+     {
+      "file": "./calc.py",
+      "line": 12,
+      "op": "ret-change",
+      "original": "hi",
+      "replacement": "None",
+      "status": "killed"
+     },
+     {
+      "file": "./calc.py",
+      "line": 13,
+      "op": "ret-change",
+      "original": "n",
+      "replacement": "None",
+      "status": "killed"
+     },
+     {
+      "file": "./calc.py",
+      "line": 17,
+      "op": "stmt-del",
+      "original": "v = v * factor",
+      "replacement": "",
+      "status": "killed"
+     },
+     {
+      "file": "./calc.py",
+      "line": 18,
+      "op": "ret-change",
+      "original": "v",
+      "replacement": "None",
+      "status": "killed"
+     },
+     {
+      "file": "./calc.py",
+      "line": 24,
+      "op": "ret-change",
+      "original": "add(a, b)",
+      "replacement": "None",
+      "status": "killed"
+     },
+     {
+      "file": "./calc.py",
+      "line": 24,
+      "op": "arg-swap",
+      "original": "a, b",
+      "replacement": "b, a",
+      "status": "survived"
+     }
+    ],
+    "mutants_total": 10,
+    "schema": "omnicheck.mutation_report/v0",
+    "survived": 1,
+    "test_cmd": "python3 test_calc.py",
+    "timeout": 0,
+    "timeout_s": 60,
+    "wall_seconds": 0.81
+   }
+  },
+  "c3_compat_gate": {
+   "breaking_report": {
+    "baseline": "/home/z/my-project/work/tests/fixtures/compat/v1",
+    "breaking": [
+     {
+      "kind": "removed-export",
+      "path": "pkg.py",
+      "symbol": "going_away"
+     },
+     {
+      "kind": "removed-function",
+      "path": "pkg.py",
+      "symbol": "going_away"
+     }
+    ],
+    "counts": {
+     "breaking": 2,
+     "informational": 2
+    },
+    "current": "/home/z/my-project/work/tests/fixtures/compat/v2",
+    "informational": [
+     {
+      "kind": "added-export",
+      "path": "pkg.py",
+      "symbol": "replacement_fn"
+     },
+     {
+      "kind": "added-function",
+      "path": "pkg.py",
+      "symbol": "replacement_fn"
+     }
+    ],
+    "schema": "omnicheck.compat_report/v1",
+    "verdict": "BREAKING"
+   },
+   "pass": true,
+   "safe_report": {
+    "baseline": "/home/z/my-project/work/tests/fixtures/compat/v1",
+    "breaking": [],
+    "counts": {
+     "breaking": 0,
+     "informational": 2
+    },
+    "current": "/home/z/my-project/work/tests/fixtures/compat/v2safe",
+    "informational": [
+     {
+      "kind": "added-export",
+      "path": "pkg.py",
+      "symbol": "extra_fn"
+     },
+     {
+      "kind": "added-function",
+      "path": "pkg.py",
+      "symbol": "extra_fn"
+     }
+    ],
+    "schema": "omnicheck.compat_report/v1",
+    "verdict": "SAFE"
+   }
+  },
+  "c3b_signature_diffs": {
+   "pairs": {
+    "csharp": {
+     "informational": [
+      "added-overload",
+      "added-overload"
+     ],
+     "kinds": [
+      "changed-param-count",
+      "changed-param-count",
+      "changed-param-type",
+      "param-renamed"
+     ]
+    },
+    "go": {
+     "informational": [],
+     "kinds": [
+      "changed-param-count",
+      "changed-param-count",
+      "changed-param-type",
+      "param-reordered"
+     ]
+    },
+    "java": {
+     "informational": [
+      "added-overload",
+      "added-overload"
+     ],
+     "kinds": [
+      "changed-param-count",
+      "changed-param-type"
+     ]
+    },
+    "js": {
+     "informational": [
+      "added-param-default",
+      "param-renamed"
+     ],
+     "kinds": [
+      "changed-param-count",
+      "param-reordered"
+     ]
+    },
+    "py": {
+     "informational": [
+      "added-param-default"
+     ],
+     "kinds": [
+      "changed-param-count",
+      "changed-param-type",
+      "param-renamed",
+      "param-reordered"
+     ]
+    },
+    "ruby": {
+     "informational": [
+      "added-param-default"
+     ],
+     "kinds": [
+      "changed-param-count",
+      "changed-param-count",
+      "param-reordered"
+     ]
+    },
+    "rust": {
+     "informational": [],
+     "kinds": [
+      "changed-param-count",
+      "changed-param-type",
+      "param-reordered"
+     ]
+    },
+    "ts": {
+     "informational": [
+      "added-param-default"
+     ],
+     "kinds": [
+      "changed-param-type",
+      "param-reordered"
+     ]
+    }
+   },
+   "pass": true
+  },
+  "c4_supply": {
+   "counts": {
+    "OC006": 2,
+    "OC009": 4,
+    "OC010": 2,
+    "OC011": 4
+   },
+   "pass": true,
+   "supply_meta": {
+    "manifests_scanned": 3,
+    "osv_snapshot_date": "2026-11-19"
+   }
+  }
+ },
+ "gate": "M4 Release Candidate",
+ "kpis": {
+  "analysis_count": {
+   "pass": true,
+   "per_pack": 11
+  },
+  "crap_coverage": {
+   "functions_checked": [
+    "processOrder",
+    "process_order"
+   ],
+   "pass": true
+  },
+  "mutation_budget": {
+   "measured_seconds": 0.811,
+   "pass": true
+  }
+ },
+ "oc_binary": "/home/z/my-project/work/build/default/oc"
+}

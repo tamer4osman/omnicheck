@@ -1,0 +1,98 @@
+# OmniCheck CI gate (composite action, WBS 3.6 / Sprint 4).
+#
+# Builds `oc` from the calling repository and runs the deterministic
+# analysis gate: `oc check` with the fail-on exit policy. The step fails
+# (exit 1) when findings meet or exceed the threshold, and fails (exit 2)
+# when any analyzed file does not parse cleanly -- a broken file can never
+# yield a silent green run (OmniCheck honesty contract, M1 criterion #2).
+#
+# Requirements in the calling repository:
+#   - the OmniCheck sources (this template assumes the action sits next to
+#     a checkout that can build them), or a pack directory to analyze;
+#   - network access the first time (scripts/vendor.sh pins tree-sitter
+#     and the grammars; a cached third_party/ tree is reused as-is).
+#
+# Inputs are plain strings; multi-value inputs use one value per line.
+name: 'OmniCheck gate'
+description: >-
+  Deterministic static-analysis gate: oc check with rank-only OmniDecide
+  triage optional. Exit 1 at the fail-on threshold, exit 2 on parse
+  failures. Byte-stable findings and fingerprints across runs.
+inputs:
+  paths:
+    description: 'Analysis roots (space separated) passed to oc check'
+    required: false
+    default: '.'
+  packs-dir:
+    description: 'Language pack directory (declarative packs, register-not-train)'
+    required: false
+    default: 'packs'
+  fail-on:
+    description: 'Exit-1 threshold: info | warn | error'
+    required: false
+    default: 'warn'
+  config:
+    description: 'Pass options as KEY=VALUE, one per line (e.g. OC001.max_lines=40)'
+    required: false
+    default: ''
+  coverage:
+    description: 'Coverage JSON files (Istanbul / coverage.py), one per line'
+    required: false
+    default: ''
+  triage:
+    description: "'true' to enable the OmniDecide rank-only sidecar (fail-open)"
+    required: false
+    default: 'false'
+  oc-bin:
+    description: >-
+      Path to a prebuilt oc binary. When set, the build steps are skipped
+      (the binary must be compatible with the runner OS).
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Fetch vendored grammars (skipped when third_party/ is cached)'
+      if: ${{ inputs.oc-bin == '' }}
+      shell: bash
+      run: |
+        if [ ! -f third_party/tree-sitter/lib/src/parser.c ]; then
+          ./scripts/vendor.sh
+        else
+          echo "third_party/ already populated; vendor.sh skipped"
+        fi
+
+    - name: 'Build oc (Release)'
+      if: ${{ inputs.oc-bin == '' }}
+      shell: bash
+      run: |
+        cmake --preset default
+        cmake --build --preset default -j
+
+    - name: 'OmniCheck gate'
+      shell: bash
+      env:
+        OC_PATHS: ${{ inputs.paths }}
+        OC_PACKS_DIR: ${{ inputs.packs-dir }}
+        OC_FAIL_ON: ${{ inputs.fail-on }}
+        OC_CONFIG: ${{ inputs.config }}
+        OC_COVERAGE: ${{ inputs.coverage }}
+        OC_TRIAGE: ${{ inputs.triage }}
+        OC_BIN: ${{ inputs.oc-bin }}
+      run: |
+        set -e
+        BIN="${OC_BIN:-./build/default/oc}"
+        [ -x "$BIN" ] || { echo "omnicheck: oc binary not found at $BIN" >&2; exit 2; }
+        ARGS=()
+        ARGS+=("--packs-dir" "$OC_PACKS_DIR")
+        ARGS+=("--fail-on" "$OC_FAIL_ON")
+        while IFS= read -r kv; do
+          [ -n "$kv" ] && ARGS+=("--config" "$kv")
+        done <<< "$OC_CONFIG"
+        while IFS= read -r cov; do
+          [ -n "$cov" ] && ARGS+=("--coverage" "$cov")
+        done <<< "$OC_COVERAGE"
+        [ "$OC_TRIAGE" = "true" ] && ARGS+=("--triage")
+        # shellcheck disable=SC2086
+        "$BIN" check $OC_PATHS "${ARGS[@]}"

@@ -1,0 +1,78 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "Go reference corpus (golang.org/x/net v0.27.0, Debian 1:0.27.0-2)",
+  "date_executed": "2026-11-21",
+  "corpus": "/home/z/my-project/work/work/go-pin/usr/share/gocode/src",
+  "corpus_digest": "508979551c7968d81d49f39d91b32948e47d66437aa833022d5ea322a9b82273",
+  "provenance": "Debian source package (dfsg) pinned by sha256 in work/; no network fetch inside the gate -- a missing or mismatched archive fails loudly",
+  "criteria": {
+    "1_corpus_integrity": {
+      "pass": true,
+      "deb_sha256": "1f7576dfed2b293220186dd8a9c5c97b0858334ad67a700eb8569252b97ff395",
+      "corpus_digest": "508979551c7968d81d49f39d91b32948e47d66437aa833022d5ea322a9b82273",
+      "go_files": 676
+    },
+    "2_parse_clean": {
+      "pass": true,
+      "files_analyzed": 439,
+      "build_tag_excluded": 237,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "java",
+        "rust",
+        "typescript",
+        "python",
+        "tsx",
+        "ts-js",
+        "go",
+        "csharp"
+      ]
+    },
+    "3_byte_identical_reports": {
+      "pass": true,
+      "runs": 5,
+      "distinct_sha256": 1
+    },
+    "4_resolver_realism": {
+      "pass": true,
+      "imports_edges": 11719,
+      "distinct_target_files": 377,
+      "test_file_targets": 0,
+      "outside_corpus": 0
+    },
+    "5_rule_honesty": {
+      "pass": true,
+      "oc003_findings": 0,
+      "oc005_findings": 0,
+      "counts": {
+        "OC002": 141,
+        "OC001": 195,
+        "OC004": 135,
+        "OC008": 854,
+        "OC006": 39,
+        "OC010": 1,
+        "OC011": 3
+      },
+      "counts_pinned": {
+        "OC001": 195,
+        "OC002": 141,
+        "OC004": 135,
+        "OC006": 39,
+        "OC008": 854,
+        "OC011": 3
+      },
+      "oc010_findings": 1,
+      "oc010_files": [
+        "go.mod"
+      ],
+      "manifests_scanned": 1,
+      "osv_snapshot_date": null
+    },
+    "6_wall_budget": {
+      "pass": true,
+      "wall_s": 1.24,
+      "budget_s": 60.0
+    }
+  },
+  "all_pass": true
+}

@@ -1,0 +1,31 @@
+{
+  "schema": "omnicheck.pack/v0",
+  "id": "ts-js",
+  "display_name": "JavaScript",
+  "version": "0.5.0",
+  "grammar": "javascript",
+  "extensions": [
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".cjs"
+  ],
+  "entry_points": [
+    "main.js",
+    "**/index.js"
+  ],
+  "enabled_passes": [
+    "OC001",
+    "OC002",
+    "OC003",
+    "OC004",
+    "OC005",
+    "OC006",
+    "OC007",
+    "OC008",
+    "OC009",
+    "OC010",
+    "OC011"
+  ],
+  "notes": "Sprint 5: supply-chain tier enabled -- OC009 dep-vuln (vendored OSV snapshot via --osv-snapshot; npm ecosystem), OC010 licence, OC011 secret-pattern. V8 coverage adapter feeds the CRAP leaderboard."
+}

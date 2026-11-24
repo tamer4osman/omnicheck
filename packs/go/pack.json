@@ -1,0 +1,34 @@
+{
+  "schema": "omnicheck.pack/v0",
+  "id": "go",
+  "display_name": "Go",
+  "version": "0.3.0",
+  "grammar": "go",
+  "extensions": [
+    ".go"
+  ],
+  "entry_points": [
+    "main.go"
+  ],
+  "build_context": {
+    "goos": "linux",
+    "goarch": "amd64",
+    "compiler": "gc",
+    "cgo": false,
+    "tags": []
+  },
+  "enabled_passes": [
+    "OC001",
+    "OC002",
+    "OC003",
+    "OC004",
+    "OC005",
+    "OC006",
+    "OC007",
+    "OC008",
+    "OC009",
+    "OC010",
+    "OC011"
+  ],
+  "notes": "SPRINT-9 spike, resolver v1-go SPRINT-10, coverage + manifests SPRINT-11, descope closures SPRINT-14 (docs/LANGUAGES.md): all eleven passes enabled. Documented OC005 consequence: at whole-package resolution granularity its verdict set for Go is empty by construction -- the honest outcome, versus guessing name-level usage. Entry points: pack glob main.go plus parsed package_clause (package main). build_context (SPRINT-14, Go.8): the DECLARED deterministic build target for //go:build and // +build constraint evaluation -- a file whose constraint is false under this context leaves the analyzed set and the report meta counts it; this is pack data, not the analysis host. Named function-value assignments are symbols (SPRINT-14, Go.2). OC007 fires only with a go test -coverprofile profile passed via --coverage; OC009 only with a vendored OSV snapshot (ecosystem Go) via --osv-snapshot; OC010 checks the module-root licence file next to each go.mod (go.mod carries no licence field -- docs/LANGUAGES.md Go.6 amendment). Without their inputs they produce nothing and the report meta says so. Passes are pack data, zero tool-code change to flip."
+}

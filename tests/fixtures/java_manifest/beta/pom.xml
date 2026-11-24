@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- a module whose root declares no licence: OC010 warns (SPRINT-12
+     fixture). The dep below is NOT in the test OSV snapshot, so OC009
+     stays silent for it. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+	<groupId>com.example</groupId>
+	<artifactId>beta</artifactId>
+	<version>1.0.0</version>
+	<dependencies>
+		<dependency>
+			<groupId>clean.example</groupId>
+			<artifactId>ok</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+	</dependencies>
+</project>

@@ -1,0 +1,77 @@
+{
+ "contract": "docs/LANGUAGES.md (Scala section)",
+ "corpus_digest": "dce540a7768e1449003e58ff8ea90c193870995a8e2c3f9d47ead37f140d0072",
+ "criteria": {
+  "1_corpus_integrity": {
+   "digest_ok": true,
+   "java_files": 582,
+   "pass": true,
+   "sc_files": 22,
+   "scala_files": 14246,
+   "tarball_sha256_ok": true
+  },
+  "2_parse_honesty": {
+   "analyzed": 14872,
+   "error_nodes": 7232,
+   "packs_scala_and_java": true,
+   "parse_errors": 1489,
+   "pass": true
+  },
+  "3_determinism": {
+   "pass": true,
+   "runs": 2
+  },
+  "4_resolver_honesty": {
+   "claimed": 292,
+   "claimed_missing_entry_shape": [],
+   "edges": 131995,
+   "oc006": 4135,
+   "pass": true,
+   "targets_outside": 0,
+   "zero_in_degree": 4427
+  },
+  "5_rule_honesty": {
+   "counts": {
+    "OC001": 808,
+    "OC002": 857,
+    "OC003": 12,
+    "OC004": 980,
+    "OC005": 13094,
+    "OC006": 4135,
+    "OC008": 622,
+    "OC010": 2,
+    "OC011": 9
+   },
+   "pass": true,
+   "scala_pack_rows": 0,
+   "supply": {
+    "manifests_scanned": 3,
+    "osv_snapshot_date": null
+   }
+  },
+  "6_wall_budget": {
+   "best_wall_seconds": 168.4,
+   "budget": 300.0,
+   "pass": true
+  }
+ },
+ "date_executed": "2026-11-23",
+ "gate": "Scala reference corpus (SPRINT-24): scala/scala3 3.3.1 tag tarball, 14246 .scala + 22 .sc files (+582 .java routed to the Java pack)",
+ "grammar_pin": "tree-sitter/tree-sitter-scala v0.23.4",
+ "parse_error_classes": {
+  "given_import": 28,
+  "indented_constructs": 99,
+  "inline_defs": 32,
+  "match_or_union_type": 64,
+  "nn_postfix": 70,
+  "quotes_splices": 116,
+  "repeated_star_type": 43,
+  "residual": 760,
+  "using_or_given_term": 277
+ },
+ "pass": true,
+ "schema": "omnicheck.evidence/v0",
+ "tarball": "scala3_3.3.1.tar.gz",
+ "tarball_sha256": "7532561a2b2eac3b3e2340e2469bbd2b6225cae4d8251e9d49cb8af3c0e435a6",
+ "tarball_url": "https://github.com/scala/scala3/archive/refs/tags/3.3.1.tar.gz"
+}

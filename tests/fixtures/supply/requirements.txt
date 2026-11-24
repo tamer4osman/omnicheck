@@ -1,0 +1,4 @@
+# seeded supply fixture
+requests==2.20.0
+flask==2.0.0
+click

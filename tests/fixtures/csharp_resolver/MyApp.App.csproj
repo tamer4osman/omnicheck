@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- the resolver NEVER reads this file: the coordinate below names
+       Example.External.Lib which exists nowhere in the analyzed set -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Example.External.Lib" Version="9.9.9" />
+  </ItemGroup>
+</Project>

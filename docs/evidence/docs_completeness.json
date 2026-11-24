@@ -1,0 +1,355 @@
+{
+ "all_documented": true,
+ "audit": "M5 GA docs completeness (plan Table 3: 100 percent)",
+ "coverage_pct": 100.0,
+ "derived_counts": {
+  "cli_commands": 7,
+  "packs": 15,
+  "rules": 11,
+  "schemas": 6
+ },
+ "items": [
+  {
+   "architecture": true,
+   "id": "OC001",
+   "kind": "rule",
+   "name": "long-function",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "OC002",
+   "kind": "rule",
+   "name": "todo-comment",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "OC003",
+   "kind": "rule",
+   "name": "import-cycle",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "OC004",
+   "kind": "rule",
+   "name": "complex-function",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "OC005",
+   "kind": "rule",
+   "name": "unused-export",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "OC006",
+   "kind": "rule",
+   "name": "unreferenced-module",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "OC007",
+   "kind": "rule",
+   "name": "crap-hotspot",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "OC008",
+   "kind": "rule",
+   "name": "duplicate-code",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "OC009",
+   "kind": "rule",
+   "name": "dep-vuln",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "OC010",
+   "kind": "rule",
+   "name": "licence",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "OC011",
+   "kind": "rule",
+   "name": "secret-pattern",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "check",
+   "kind": "cli",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "compat",
+   "kind": "cli",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "graph",
+   "kind": "cli",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "lsp",
+   "kind": "cli",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "mcp",
+   "kind": "cli",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "mutate",
+   "kind": "cli",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "packs",
+   "kind": "cli",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "omnicheck.compat_report/v1",
+   "kind": "schema",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "omnicheck.mutation_cache/v0",
+   "kind": "schema",
+   "pass": true,
+   "readme": false
+  },
+  {
+   "architecture": true,
+   "id": "omnicheck.mutation_report/v0",
+   "kind": "schema",
+   "pass": true,
+   "readme": false
+  },
+  {
+   "architecture": true,
+   "id": "omnicheck.osv_snapshot/v0",
+   "kind": "schema",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "omnicheck.pack/v0",
+   "kind": "schema",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "id": "omnicheck.report/v0",
+   "kind": "schema",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "c",
+   "id": "c",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "cpp",
+   "id": "cpp",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "csharp",
+   "id": "csharp",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "go",
+   "id": "go",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "java",
+   "id": "java",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "kotlin",
+   "id": "kotlin",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "php",
+   "id": "php",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "python",
+   "id": "python",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "ruby",
+   "id": "ruby",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "rust",
+   "id": "rust",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "scala",
+   "id": "scala",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "swift",
+   "id": "swift",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "javascript",
+   "id": "ts-js",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "tsx",
+   "id": "tsx",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  },
+  {
+   "architecture": true,
+   "grammar": "typescript",
+   "id": "typescript",
+   "kind": "pack",
+   "pass": true,
+   "readme": true
+  }
+ ],
+ "loc_stats": {
+  "note": "src/passes is a SUBSET of src/ (listed separately for visibility, not re-summed); see derive_loc component defs",
+  "readme_total_match": true,
+  "rows": {
+   "include": {
+    "files": 27,
+    "lines": 2263
+   },
+   "packs": {
+    "files": 15,
+    "lines": 416
+   },
+   "passes": {
+    "files": 11,
+    "lines": 927
+   },
+   "scripts": {
+    "files": 46,
+    "lines": 15515
+   },
+   "src_impl": {
+    "files": 31,
+    "lines": 22089
+   },
+   "templates": {
+    "files": 3,
+    "lines": 194
+   },
+   "tests": {
+    "files": 36,
+    "lines": 16183
+   },
+   "tools": {
+    "files": 4,
+    "lines": 1074
+   }
+  },
+  "total": {
+   "files": 173,
+   "lines": 58661
+  }
+ },
+ "schema": "omnicheck.evidence/v0"
+}

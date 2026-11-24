@@ -1,0 +1,50 @@
+# OmniCheck CI gate workflow template (WBS 3.6 / Sprint 4).
+#
+# Copy this file into .github/workflows/omnicheck.yml of the repository
+# under analysis, or keep it in the OmniCheck repo and reference the
+# composite action in templates/github-action/ (see templates/ci/README.md
+# for the two wiring options). The gate is deterministic: identical trees
+# produce identical findings and fingerprints, so the job is safe to
+# re-run and its output is safe to diff across commits.
+name: omnicheck-gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  omnicheck:
+    name: 'OmniCheck analysis gate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: 'Checkout (caller repository sources)'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Option A: the OmniCheck engine is checked out beside the caller's
+      # sources (submodule, vendored copy, or a second checkout step as
+      # below). Point `oc-bin` at a prebuilt binary to skip the build.
+      - name: 'Checkout OmniCheck engine (adjust repository/ref to your setup)'
+        uses: actions/checkout@v4
+        with:
+          repository: YOUR_ORG/omnicheck
+          ref: main
+          path: omnicheck-engine
+
+      - name: 'Build + gate'
+        uses: ./omnicheck-engine/templates/github-action
+        with:
+          paths: '.'
+          packs-dir: 'omnicheck-engine/packs'
+          fail-on: 'warn'
+          # config: |
+          #   OC001.max_lines=40
+          #   OC008.min_block=12
+          # coverage: |
+          #   coverage/coverage-final.json

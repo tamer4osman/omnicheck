@@ -1,0 +1,116 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "M1",
+  "gate_date": "2026-12-31",
+  "steps": {
+    "tree-clean": {
+      "pass": true,
+      "details": {
+        "branch": "main",
+        "dirty_entries": []
+      },
+      "recorded": "2026-11-18T21:22:02"
+    },
+    "matrix": {
+      "pass": true,
+      "details": {
+        "wiped": true,
+        "default": {
+          "pass": true,
+          "tests": "100% tests passed out of 20",
+          "seconds": 23.2
+        },
+        "sanitize": {
+          "pass": true,
+          "tests": "100% tests passed out of 20",
+          "seconds": 121.4
+        },
+        "clang-release": {
+          "pass": true,
+          "tests": "100% tests passed out of 20",
+          "seconds": 21.6
+        },
+        "clang-sanitize": {
+          "pass": true,
+          "tests": "100% tests passed out of 20",
+          "seconds": 153.1
+        }
+      },
+      "recorded": "2026-11-18T21:27:48"
+    },
+    "m1-replay": {
+      "pass": true,
+      "details": {
+        "clone": true,
+        "vendor_sh": true,
+        "fresh_ctest": true,
+        "broken_exit_2": true,
+        "cross_tree_cmp": true,
+        "examples_sha256": "769a904ebf1cdb9b",
+        "perf_10k_single_core_s": 10.37,
+        "perf_under_90s_gate": true
+      },
+      "recorded": "2026-11-18T21:28:48"
+    },
+    "harnesses": {
+      "pass": true,
+      "details": {
+        "note": "no harness script due at M1: the drift replay obligation is discharged by the m1-replay step"
+      },
+      "recorded": "2026-11-18T21:28:50"
+    },
+    "audit": {
+      "pass": true,
+      "details": {
+        "pass": true,
+        "distinct_digests": 1,
+        "budget_check": {
+          "m2_target_60s": true,
+          "note": "single-core (taskset -c 0), Release cells only",
+          "sprint_gate_90s": true,
+          "worst_release_wall_seconds": 9.46,
+          "worst_sanitize_wall_seconds": 135.64
+        }
+      },
+      "recorded": "2026-11-18T21:33:45"
+    },
+    "docs": {
+      "pass": true,
+      "details": {
+        "tail": "verdict written: docs/evidence/docs_completeness.json"
+      },
+      "recorded": "2026-11-18T21:33:48"
+    },
+    "package": {
+      "pass": true,
+      "details": {
+        "package_sh": {
+          "pass": true,
+          "tail": "a90c374323f889a231a470025abcae137a0cf5373ecd61bd97142015573a9f1f  /tmp/tmp.Mp3x6qSVnl/omnicheck-0.3.0-linux-x86_64/bin/oc"
+        },
+        "shim_oc_bin": {
+          "pass": true,
+          "exit": 1,
+          "stderr_tail": ""
+        },
+        "shim_native": {
+          "pass": true,
+          "stdout": "omnicheck 0.3.0"
+        },
+        "npm_pack": {
+          "pass": true
+        },
+        "npm_install": {
+          "pass": true,
+          "stub_exists": true
+        },
+        "npm_install_smoke": {
+          "pass": true,
+          "exit_passthrough": true,
+          "report_bytes_equal_to_repo_build": true
+        }
+      },
+      "recorded": "2026-11-18T21:34:15"
+    }
+  }
+}

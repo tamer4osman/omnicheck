@@ -1,0 +1,13 @@
+{
+ "RSpec": {
+  "coverage": {
+   "app/models/user.rb": {
+    "lines": [
+     1,
+     "oops",
+     0
+    ]
+   }
+  }
+ }
+}

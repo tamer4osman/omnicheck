@@ -1,0 +1,72 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "C++ reference corpus (SPRINT-21): Debian abseil 20240722.0 orig tarball, 811 .cc/.h files (+5 python pack files, +1 C pack file)",
+  "date_executed": "2026-11-23",
+  "tarball": "abseil_20240722.0.orig.tar.gz",
+  "tarball_sha256": "df6d1f5ef540725f3851201176a60486aab332410788465c9877910bb471c34a",
+  "tarball_url": "http://deb.debian.org/debian/pool/main/a/abseil/abseil_20240722.0.orig.tar.gz",
+  "corpus_digest": "a855f0723c683e5a735c72c8f4bb98d1ee2bae943ee11b7211515b6747d2dc70",
+  "contract": "docs/LANGUAGES.md (C++ section)",
+  "grammar_pin": "tree-sitter/tree-sitter-cpp v0.23.4",
+  "criteria": {
+    "1_corpus_integrity": {
+      "pass": true,
+      "tarball_sha256": true,
+      "digest": "a855f0723c683e5a735c72c8f4bb98d1ee2bae943ee11b7211515b6747d2dc70",
+      "cc_h_files": 811
+    },
+    "2_parse_honesty": {
+      "pass": true,
+      "analyzed": 817,
+      "parse_errors": 646,
+      "parse_error_nodes": 4606,
+      "packs_note": "5 python test utilities + 1 C compat file (absl/base/c_header_test.c) join the C-family files -- the multi-pack scan is part of the honest measurement",
+      "boundary_note": "646/817 analyzed files carry at least one raw-source parse error (pinned): 581 carry the macro-namespace class (ABSL_NAMESPACE_BEGIN/END expand to `namespace absl {`), 207+ the ABSL_ATTRIBUTE_*/ABSL_FLAG_* macro families, token pasting and X-macros in the test support, ~20 residual. No canonical C++ corpus parses 100% clean as-written (catch2 3.7.1 135/427, spdlog 1.15.2 74/132); the pinned count IS the kill-switch -- a grammar or tool regression moves it."
+    },
+    "3_determinism": {
+      "pass": true,
+      "runs": 5,
+      "distinct_sha256": 1
+    },
+    "4_resolver_honesty": {
+      "pass": true,
+      "edges": 21,
+      "targets": 8,
+      "targets_outside_analyzed_set": 0,
+      "zero_in_degree": 809,
+      "claimed": 18,
+      "claimed_with_main_or_py_entry": 18,
+      "oc006_measured": 791,
+      "note": "abseil's canonical ROOT-RELATIVE quoted include style resolves only the same-directory payload forms under the file-relative rule; every unresolved system/macro/root-relative include stays recorded-and-unresolved."
+    },
+    "5_rule_honesty": {
+      "pass": true,
+      "counts": {
+        "OC008": 1724,
+        "OC006": 791,
+        "OC001": 568,
+        "OC002": 199,
+        "OC004": 152,
+        "OC005": 1
+      },
+      "supply_block": null,
+      "note": "OC003=0: no same-dir include cycle exists in this corpus (the resolver-cycle semantics are pinned by the lang gate corpus B). OC005=1: a PYTHON-pack finding (copts.py's GccStyleFilterAndCombine -- the python pack's named-bind semantics), measured, not fabricated. No manifest tier exists for C++: the supply block is absent and the meta says so."
+    },
+    "6_header_routing": {
+      "pass": true,
+      "routing": {
+        "sniffed_cpp": 1,
+        "sniffed_c": 0,
+        "default_cpp": 358,
+        "default_c": 0
+      },
+      "note": "every .h routed through the approved treatment: the literal-namespace header sniffs cpp, the macro-namespace headers are inconclusive (both grammars error on the raw macro tokens) and the ROOT DEFAULT claims them for cpp (the corpus carries .cc sources)."
+    },
+    "7_wall_budget": {
+      "pass": true,
+      "best_s": 5.65,
+      "budget_s": 60.0
+    }
+  },
+  "all_pass": true
+}

@@ -1,0 +1,29 @@
+{
+  "schema": "omnicheck.pack/v0",
+  "id": "python",
+  "display_name": "Python 3",
+  "version": "0.5.0",
+  "grammar": "python",
+  "extensions": [
+    ".py"
+  ],
+  "entry_points": [
+    "main.py",
+    "**/__main__.py",
+    "**/__init__.py"
+  ],
+  "enabled_passes": [
+    "OC001",
+    "OC002",
+    "OC003",
+    "OC004",
+    "OC005",
+    "OC006",
+    "OC007",
+    "OC008",
+    "OC009",
+    "OC010",
+    "OC011"
+  ],
+  "notes": "Sprint 5: supply-chain tier enabled -- OC009 dep-vuln (vendored OSV snapshot; PyPI ecosystem, requirements.txt pins carry real line numbers), OC010 licence (pyproject.toml), OC011 secret-pattern. Resolver v3 landed Sprint 4."
+}

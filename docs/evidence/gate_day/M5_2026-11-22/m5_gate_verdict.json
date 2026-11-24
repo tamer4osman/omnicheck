@@ -1,0 +1,101 @@
+{
+ "all_pass": true,
+ "criteria": {
+  "c1_determinism_audit": {
+   "audit": {
+    "all_identical": true,
+    "audit": "M5 GA determinism audit (full corpus, cross-build)",
+    "budget_check": {
+     "m2_target_60s": true,
+     "note": "single-core (taskset -c 0), Release cells only",
+     "sprint_gate_90s": true,
+     "worst_release_wall_seconds": 13.86,
+     "worst_sanitize_wall_seconds": 175.27
+    },
+    "corpus": {
+     "digest": "a4ec9ac931be3e26e8006f8d37dd539b74095bf9c5052ba91e99763661337ecc",
+     "files": 10000
+    },
+    "distinct_digests": 1,
+    "runs": [
+     {
+      "binary": "build/default/oc",
+      "exit": 1,
+      "report_bytes": 19108765,
+      "report_sha256": "9c180200bc671e1167bbe31e802ca5b7bf9dbb30aee7864e27643d7ad417f977",
+      "run": 1,
+      "wall_seconds": 12.94
+     },
+     {
+      "binary": "build/default/oc",
+      "exit": 1,
+      "report_bytes": 19108765,
+      "report_sha256": "9c180200bc671e1167bbe31e802ca5b7bf9dbb30aee7864e27643d7ad417f977",
+      "run": 2,
+      "wall_seconds": 13.06
+     },
+     {
+      "binary": "build/sanitize/oc",
+      "exit": 1,
+      "report_bytes": 19108765,
+      "report_sha256": "9c180200bc671e1167bbe31e802ca5b7bf9dbb30aee7864e27643d7ad417f977",
+      "run": 1,
+      "wall_seconds": 156.81
+     },
+     {
+      "binary": "build/clang-release/oc",
+      "exit": 1,
+      "report_bytes": 19108765,
+      "report_sha256": "9c180200bc671e1167bbe31e802ca5b7bf9dbb30aee7864e27643d7ad417f977",
+      "run": 1,
+      "wall_seconds": 13.67
+     },
+     {
+      "binary": "build/clang-release/oc",
+      "exit": 1,
+      "report_bytes": 19108765,
+      "report_sha256": "9c180200bc671e1167bbe31e802ca5b7bf9dbb30aee7864e27643d7ad417f977",
+      "run": 2,
+      "wall_seconds": 13.86
+     },
+     {
+      "binary": "build/clang-sanitize/oc",
+      "exit": 1,
+      "report_bytes": 19108765,
+      "report_sha256": "9c180200bc671e1167bbe31e802ca5b7bf9dbb30aee7864e27643d7ad417f977",
+      "run": 1,
+      "wall_seconds": 175.27
+     }
+    ],
+    "schema": "omnicheck.evidence/v0"
+   },
+   "pass": true
+  },
+  "c2_fuzz_suite": {
+   "layers": {},
+   "pass": true,
+   "summary": "/home/z/my-project/work/tests/test_fuzz.c: 718 checks, 0 failures"
+  },
+  "c3_docs_completeness": {
+   "pass": true
+  },
+  "c4_npm_shim": {
+   "detail": "shim exit 1, report 3807 bytes, identical=True",
+   "pass": true
+  },
+  "c4_packaging_tarball": {
+   "artifact": "/home/z/my-project/work/dist/omnicheck-0.3.0-linux-x86_64.tar.gz",
+   "pass": true
+  }
+ },
+ "gate": "M5 GA (formal date 2027-12-31; rehearsal executed early)",
+ "kpis": {
+  "analysis_count": {
+   "pass": true,
+   "per_pack": 11
+  },
+  "docs_completeness_pct": 100.0
+ },
+ "oc_binary": "/home/z/my-project/work/build/default/oc",
+ "rehearsal_date": "2026-11-22"
+}

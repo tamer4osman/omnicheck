@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "dependencies": {
+    "Direct.Package": {
+      "type": "Direct",
+      "requested": "[2.0.0, )",
+      "resolved": "2.0.0"
+    },
+    "Transitive.Package": {
+      "type": "Transitive",
+      "requested": "(1.0.0, )",
+      "resolved": "1.1.0"
+    },
+    "Floating.Package": {
+      "type": "Direct",
+      "requested": "1.0.0-*",
+      "resolved": "1.0.0"
+    }
+  }
+}

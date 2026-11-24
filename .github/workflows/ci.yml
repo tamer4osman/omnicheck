@@ -1,0 +1,52 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, cc: gcc }
+          - { os: ubuntu-latest, cc: clang }
+          - { os: macos-latest, cc: clang }
+    runs-on: ${{ matrix.os }}
+    env:
+      CC: ${{ matrix.cc }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vendor tree-sitter sources
+        run: ./scripts/vendor.sh
+      - name: Configure (warnings as errors)
+        run: cmake --preset default -DOC_WERROR=ON
+      - name: Build
+        run: cmake --build --preset default -j
+      - name: Test
+        run: ctest --preset default
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/vendor.sh
+      - name: Configure ASan+UBSan (warnings as errors)
+        run: cmake --preset sanitize -DOC_WERROR=ON
+      - name: Build
+        run: cmake --build --preset sanitize -j
+      - name: Test (leak detection on)
+        run: ctest --preset sanitize
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-format-19 (pinned to the version the tree is formatted with)
+        run: sudo apt-get update && sudo apt-get install -y clang-format-19
+      - name: Check formatting
+        run: PATH="/usr/lib/llvm-19/bin:$PATH" ./scripts/check-format.sh

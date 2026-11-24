@@ -1,0 +1,54 @@
+{
+ "schema": "omnicheck.osv_snapshot/v0",
+ "snapshot_date": "2026-11-20",
+ "records": [
+  {
+   "id": "GO-TEST-fake-alpha-dep-0001",
+   "affected": [
+    {
+     "package": {
+      "name": "example.com/dep",
+      "ecosystem": "Go"
+     },
+     "ranges": [
+      {
+       "type": "SEMVER",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "1.2.4"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "GO-TEST-fake-alpha-indirect-0002",
+   "affected": [
+    {
+     "package": {
+      "name": "example.com/indirect",
+      "ecosystem": "Go"
+     },
+     "ranges": [
+      {
+       "type": "SEMVER",
+       "events": [
+        {
+         "introduced": "0.1.0"
+        },
+        {
+         "fixed": "0.5.0"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

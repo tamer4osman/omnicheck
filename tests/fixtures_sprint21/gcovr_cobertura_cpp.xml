@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The SPRINT-21 OC007 fixture: a gcovr-shaped Cobertura XML over the
+     cpp corpus A (the same language-blind reader as SPRINT-20). Paths
+     are repo-relative to the analysis root, the corpus convention. -->
+<coverage branch-rate="0.0" branches-covered="0" branches-valid="4"
+          complexity="0" line-rate="0.8" lines-covered="6" lines-valid="8"
+          timestamp="1764100000" version="gcovr 7.2">
+  <sources>
+    <source>.</source>
+  </sources>
+  <packages>
+    <package name="tests.fixtures.cpp" line-rate="0.8">
+      <classes>
+        <class name="one" filename="tests/fixtures/cpp/rollup.cpp" line-rate="1.0"
+               branch-rate="0.0" complexity="0.0">
+          <methods/>
+          <lines>
+            <line number="50" hits="4" branch="False"/>
+            <line number="51" hits="4" branch="False"/>
+            <line number="52" hits="4" branch="False"/>
+          </lines>
+        </class>
+        <class name="add3" filename="tests/fixtures/cpp/decls.cpp" line-rate="0.5"
+               branch-rate="0.0" complexity="0.0">
+          <methods/>
+          <lines>
+            <line number="15" hits="2" branch="False"/>
+            <line number="16" hits="2" branch="False"/>
+            <line number="17" hits="0" branch="False"/>
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>

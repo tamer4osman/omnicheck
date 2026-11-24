@@ -1,0 +1,71 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "C# reference corpus (mono 6.8.0.105+dfsg, 26 mcs/class libraries)",
+  "date_executed": "2026-11-21",
+  "corpus": "/home/z/my-project/work/work/csharp-pin/mcs/class",
+  "corpus_digest": "8a3146f15425cbc2467e11b7178d0980ab2a5e48d9bab03ac93be6f8265b6a20",
+  "provenance": "Debian mono orig tarball pinned by sha256 in work/; the gate analyzes the 26 libraries of >= 40 product .cs files that parse with ZERO errors under the pinned grammar (measured at pin time); no network fetch inside the gate -- a missing or mismatched archive fails loudly",
+  "criteria": {
+    "1_corpus_integrity": {
+      "pass": true,
+      "tar_sha256": "6cde75aefc19c55c4dcdae7f22a1f67bdc30f47e41079054bebafeaee3c4d900",
+      "corpus_digest": "8a3146f15425cbc2467e11b7178d0980ab2a5e48d9bab03ac93be6f8265b6a20",
+      "cs_files": 3702
+    },
+    "2_parse_clean": {
+      "pass": true,
+      "files_analyzed": 3704,
+      "files_with_parse_errors": 0,
+      "packs": [
+        "java",
+        "rust",
+        "typescript",
+        "python",
+        "tsx",
+        "ts-js",
+        "go",
+        "csharp"
+      ]
+    },
+    "3_byte_identical_reports": {
+      "pass": true,
+      "runs": 3,
+      "distinct_sha256": 1
+    },
+    "4_resolver_realism": {
+      "pass": true,
+      "imports_edges": 89313,
+      "distinct_target_files": 1959,
+      "outside_corpus": 0
+    },
+    "5_rule_honesty": {
+      "pass": true,
+      "counts": {
+        "OC006": 1738,
+        "OC002": 315,
+        "OC008": 1895,
+        "OC001": 207,
+        "OC004": 158,
+        "OC003": 13,
+        "OC011": 4
+      },
+      "counts_pinned": {
+        "OC001": 207,
+        "OC002": 315,
+        "OC003": 13,
+        "OC004": 158,
+        "OC006": 1738,
+        "OC008": 1895,
+        "OC011": 4
+      },
+      "oc003_real_cycles": 13,
+      "manifests_scanned": 0
+    },
+    "6_wall_budget": {
+      "pass": true,
+      "wall_s": 15.56,
+      "budget_s": 60.0
+    }
+  },
+  "all_pass": true
+}

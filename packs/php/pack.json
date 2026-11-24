@@ -1,0 +1,28 @@
+{
+  "schema": "omnicheck.pack/v0",
+  "id": "php",
+  "display_name": "PHP",
+  "version": "0.1.0",
+  "grammar": "php",
+  "extensions": [
+    ".php"
+  ],
+  "entry_points": [
+    "index.php",
+    "**/bin/*"
+  ],
+  "enabled_passes": [
+    "OC001",
+    "OC002",
+    "OC003",
+    "OC004",
+    "OC005",
+    "OC006",
+    "OC007",
+    "OC008",
+    "OC009",
+    "OC010",
+    "OC011"
+  ],
+  "notes": "SPRINT-19 adoption, full scope in one sprint (docs/LANGUAGES.md PHP section): all eleven passes enabled -- the FIFTH full-scope pack. The MIXED php+html grammar (php/src/) is the one compiled: HTML-mixed template files parse with text/text_interpolation nodes that are inert to every analysis; one descriptor handles both file kinds. Symbols: function_definition + method_declaration with a real body; EMPTY methods (interface signatures, abstract) are symbols with complexity exactly 1 (the Java bodyless-slot discipline); anonymous_function/arrow_function/anonymous_class never are (the Ruby blocks precedent -- their decisions count inward, inclusive). Decision table: if_statement (elseif is its own else_if_clause) + while/do/for/foreach + case_statement (one per clause; a default arm is the DISTINCT default_statement and counts 0 -- the gocyclo discipline) + match arms (one per match_conditional_expression arm, comma condition lists are ONE arm -- the Ruby when-clause discipline; the match_default_expression arm IS an arm) + catch_clause + conditional_expression (full and short ternary are the SAME node), plus &&/||/and/or inside the shared binary_expression container (cx_ops_node stays NULL). ?? is a value operator, not a branch. Resolver v1-php: use declarations resolve through the composer.json PSR-4/PSR-0 mapping read from the ANALYSIS ROOT (longest-prefix rule, backslash->slash, anchored at the root; PSR-4 strips the prefix, PSR-0 keeps the full name path); a use whose leading prefix matches NO composer prefix stays recorded-and-UNRESOLVED (external, the Go module-boundary precedent -- nothing guessed from include_path or runtime autoloading); require/require_once/include/include_once resolve their ONE static string argument (the parser's argument guard: a concatenation like __DIR__ . '/x.php' records NOTHING) relative to the requiring file's directory; the imports relation is a SET; NO mate marking (runtime load order is not a parse fact -- the Rust/Ruby no-mate decision). PSR-4 autoload is resolver CONFIG, not an imports edge. OC005 marking: a use binds its alias or last backslash segment (the class simple name); a require/include binds NULL -- a whole-file claim (the Ruby require discipline). Entry points: NAME conventions only -- index.php (the web entry, a pack bare name that matches the basename at any depth) and **/bin/* runner scripts (the pack glob dialect of the bin/* convention, the Java **/Application.java precedent); the shebang hint does not exist for PHP (a #! line outside PHP blocks is template text and is inert). Test conventions: none registered in v1 (PHPUnit's conventions are not name-pinned in the pack; a *_test.php name claims nothing). OC007 fires only with a Clover XML report (php-code-coverage's clover.xml: <coverage> -> <file name=...> -> <line num= count=>; count > 0 covered; dispatched before the Cobertura reader on the shared <coverage> root; a file entry whose path resolves to no analyzed file lands in the ambiguity meta, never guessed) via --coverage; OC009 only with a vendored OSV snapshot (ecosystem packagist) via --osv-snapshot; OC010 checks the composer.json licence field (the package.json conventions) and skips composer.lock honestly (the lockfile tier is OC009-only). Manifests: composer.json (bounded reader; require/require-dev exact pins are digits-and-dots with optional leading v -- composer constraint ranges ^ ~ > < >= <= * x || - record NOTHING (the npm discipline: a constraint range is not a pin and composer resolves the truth in the lockfile, so no unpinned row is manufactured); platform requirements php/ext-*/lib-*/php-*/composer/hhvm record nothing; autoload prefixes are resolver config; path repos are in-repo links) and composer.lock (packages + packages-dev name+version are the RESOLVED pins). Metaprogramming (variable class names, class_exists gates, runtime autoloading) is not a parse fact -- the Rust macro / Ruby metaprogramming boundary, accepted in the over-report direction for OC006. As-written analysis: declare(strict_types=1) is recorded as nothing. Without their inputs OC007/OC009/OC010 produce nothing and the report meta says so. Passes are pack data, zero tool-code change to flip."
+}

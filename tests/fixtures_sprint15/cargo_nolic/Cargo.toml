@@ -1,0 +1,7 @@
+[package]
+name = "nolic"
+version = "0.1.0"
+license-file = "LICENSE.txt"
+
+[dependencies]
+dep = "=1.0.0"

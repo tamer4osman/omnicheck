@@ -1,0 +1,59 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "Ruby reference corpus (SPRINT-16): Debian ruby-sequel 5.63.0-2, 280 files",
+  "date_executed": "2026-11-21",
+  "deb": "ruby-sequel_5.63.0-2_all.deb",
+  "deb_sha256": "c2ec42e71d5538c9438cbd1faeee755653fe5eda70688887c76b297dd0b0567c",
+  "corpus_digest": "395923ce6d7f1e7afd496d3499a3be79264349d193d85c9389bb1f5c88073e31",
+  "contract": "docs/LANGUAGES.md (Ruby section)",
+  "grammar_pin": "tree-sitter/tree-sitter-ruby v0.23.1",
+  "criteria": {
+    "1_corpus_integrity": {
+      "pass": true,
+      "deb_sha256": true,
+      "digest": "395923ce6d7f1e7afd496d3499a3be79264349d193d85c9389bb1f5c88073e31",
+      "rb_files": 280
+    },
+    "2_parse_clean": {
+      "pass": true,
+      "analyzed": 280,
+      "parse_errors": 0,
+      "error_nodes": 0
+    },
+    "3_determinism": {
+      "pass": true,
+      "runs": 5,
+      "distinct_sha256": 1
+    },
+    "4_resolver_realism": {
+      "pass": true,
+      "edges": 94,
+      "targets": 61,
+      "outside_edges": 0,
+      "zero_in_degree": 219,
+      "tests_convention": 0,
+      "entries": 0,
+      "oc006_expected": 219,
+      "oc006_measured": 219
+    },
+    "5_rule_honesty": {
+      "pass": true,
+      "counts": {
+        "OC006": 219,
+        "OC011": 1,
+        "OC008": 109,
+        "OC002": 3,
+        "OC004": 55,
+        "OC001": 33
+      },
+      "supply": {},
+      "note": "OC003=0: sequel's require_relative web is a DAG (the recorded contrast with the Rust corpus). OC006=219: sequel loads most extension/adapter files DYNAMICALLY (Sequel.extension / plugin autoloads are runtime requires -- the metaprogramming boundary), so the honest zero-in-degree count is large; the over-report direction is the accepted one. OC005 is empty by construction (the whole-file require claim)."
+    },
+    "6_wall_budget": {
+      "pass": true,
+      "best_s": 0.88,
+      "budget_s": 60.0
+    }
+  },
+  "all_pass": true
+}

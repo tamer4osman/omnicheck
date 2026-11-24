@@ -1,0 +1,67 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "C reference corpus (SPRINT-20, re-pinned SPRINT-21 for the .h routing treatment): Debian curl 7.88.1 orig tarball, 799 .c/.h files (+1 cpp pack file, +4 python pack files)",
+  "date_executed": "2026-11-23",
+  "tarball": "curl_7.88.1.orig.tar.gz",
+  "tarball_sha256": "cdb38b72e36bc5d33d5b8810f8018ece1baa29a8f215b4495e495ded82bbf3c7",
+  "tarball_url": "http://deb.debian.org/debian/pool/main/c/curl/curl_7.88.1.orig.tar.gz",
+  "corpus_digest": "d288deee29327ead32d9e51d64ce418012008c2b520874a31280294306c653ba",
+  "contract": "docs/LANGUAGES.md (C section)",
+  "grammar_pin": "tree-sitter/tree-sitter-c v0.23.4",
+  "criteria": {
+    "1_corpus_integrity": {
+      "pass": true,
+      "tarball_sha256": true,
+      "digest": "d288deee29327ead32d9e51d64ce418012008c2b520874a31280294306c653ba",
+      "c_files": 799
+    },
+    "2_parse_honesty": {
+      "pass": true,
+      "analyzed": 804,
+      "parse_errors": 203,
+      "parse_error_nodes": 2383,
+      "header_routing": {
+        "sniffed_cpp": 0,
+        "sniffed_c": 0,
+        "default_cpp": 232,
+        "default_c": 0
+      },
+      "boundary_note": "203/804 analyzed files carry at least one raw-source parse error (pinned): preprocessor-interleaved expressions and control flow, extern \"C\" guards closed inside #ifdef __cplusplus, GNU named-variadic macros, comment token pasting; the SPRINT-21 routing delta routes 232 inconclusive headers to the cpp grammar (fewer error nodes on the same files). No canonical C corpus parses 100% clean as-written (zlib 46/53, musl 382/2248, sqlite tree 230/436); the pinned count IS the kill-switch -- a grammar or tool regression moves it."
+    },
+    "3_determinism": {
+      "pass": true,
+      "runs": 5,
+      "distinct_sha256": 1
+    },
+    "4_resolver_honesty": {
+      "pass": true,
+      "edges": 2218,
+      "targets": 227,
+      "targets_outside_analyzed_set": 0,
+      "zero_in_degree": 577,
+      "claimed": 129,
+      "claimed_with_main_or_py_entry": 129,
+      "oc006_measured": 448
+    },
+    "5_rule_honesty": {
+      "pass": true,
+      "counts": {
+        "OC008": 1812,
+        "OC001": 614,
+        "OC011": 27,
+        "OC004": 372,
+        "OC006": 448,
+        "OC003": 4,
+        "OC002": 41
+      },
+      "supply_block": null,
+      "note": "OC003=4: REAL include cycles between curl headers (measured, not fabricated). OC005 is empty by construction: every file with in-degree > 0 has its exports marked used by the whole-file include binds. OC011=27: credential-shaped text in curl's test data and docs -- the line-based scan over source as written. No manifest tier exists for C: the supply block is absent and the meta says so."
+    },
+    "6_wall_budget": {
+      "pass": true,
+      "best_s": 2.92,
+      "budget_s": 60.0
+    }
+  },
+  "all_pass": true
+}

@@ -1,0 +1,54 @@
+{
+ "schema": "omnicheck.osv_snapshot/v0",
+ "snapshot_date": "2026-11-21",
+ "records": [
+  {
+   "id": "RUSTSEC-2099-0001",
+   "affected": [
+    {
+     "package": {
+      "name": "libc",
+      "ecosystem": "crates.io"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "0.2.99"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUSTSEC-2099-0002",
+   "affected": [
+    {
+     "package": {
+      "name": "serde",
+      "ecosystem": "crates.io"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "1.0.0"
+        },
+        {
+         "fixed": "1.0.205"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

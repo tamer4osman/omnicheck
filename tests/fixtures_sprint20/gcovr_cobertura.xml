@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The SPRINT-20 OC007 fixture: a gcovr-shaped Cobertura XML (the
+     format gcovr --xml emits natively). The existing Cobertura reader
+     is language-blind: <class filename=...> records carry the C file
+     paths and <line number= hits=> records the executed lines. Paths
+     are repo-relative to the analysis root, the corpus convention. -->
+<coverage branch-rate="0.0" branches-covered="0" branches-valid="6"
+          complexity="0" line-rate="0.75" lines-covered="9" lines-valid="12"
+          timestamp="1764000000" version="gcovr 7.2">
+  <sources>
+    <source>.</source>
+  </sources>
+  <packages>
+    <package name="tests.fixtures.c" line-rate="0.75">
+      <classes>
+        <class name="rollup" filename="tests/fixtures/c/rollup.c" line-rate="0.7"
+               branch-rate="0.0" complexity="0.0">
+          <methods/>
+          <lines>
+            <line number="8" hits="3" branch="False"/>
+            <line number="9" hits="3" branch="False"/>
+            <line number="10" hits="1" branch="False"/>
+            <line number="15" hits="2" branch="False"/>
+            <line number="16" hits="2" branch="False"/>
+            <line number="23" hits="1" branch="False"/>
+            <line number="30" hits="2" branch="False"/>
+          </lines>
+        </class>
+        <class name="one" filename="tests/fixtures/c/rollup.c" line-rate="1.0"
+               branch-rate="0.0" complexity="0.0">
+          <methods/>
+          <lines>
+            <line number="37" hits="4" branch="False"/>
+            <line number="38" hits="4" branch="False"/>
+          </lines>
+        </class>
+        <class name="decls" filename="tests/fixtures/c/decls.c" line-rate="0.6"
+               branch-rate="0.0" complexity="0.0">
+          <methods/>
+          <lines>
+            <line number="9" hits="2" branch="False"/>
+            <line number="10" hits="2" branch="False"/>
+            <line number="11" hits="0" branch="False"/>
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>

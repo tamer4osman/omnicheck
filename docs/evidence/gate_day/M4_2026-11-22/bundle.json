@@ -1,0 +1,33 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "M4",
+  "gate_date": "2027-09-30",
+  "steps": {
+    "matrix": {
+      "pass": true,
+      "details": {
+        "default": {
+          "pass": true,
+          "tests": "100% tests passed out of 32",
+          "seconds": 64.9
+        },
+        "clang-release": {
+          "pass": true,
+          "tests": "100% tests passed out of 32",
+          "seconds": 59.4
+        },
+        "sanitize": {
+          "pass": true,
+          "tests": "100% tests passed out of 32",
+          "seconds": 377.0
+        },
+        "clang-sanitize": {
+          "pass": true,
+          "tests": "100% tests passed out of 32",
+          "seconds": 528.7
+        }
+      },
+      "recorded": "2026-11-22T01:27:37"
+    }
+  }
+}

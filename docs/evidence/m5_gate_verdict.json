@@ -1,0 +1,77 @@
+{
+ "all_pass": true,
+ "criteria": {
+  "c1_determinism_audit": {
+   "audit": {
+    "all_identical": true,
+    "audit": "M5 GA determinism audit (full corpus, cross-build)",
+    "budget_check": {
+     "m2_target_60s": true,
+     "note": "single-core (taskset -c 0), Release cells only",
+     "sprint_gate_90s": true,
+     "worst_release_wall_seconds": 14.6,
+     "worst_sanitize_wall_seconds": 162.76
+    },
+    "corpus": {
+     "digest": "a4ec9ac931be3e26e8006f8d37dd539b74095bf9c5052ba91e99763661337ecc",
+     "files": 10000
+    },
+    "distinct_digests": 1,
+    "runs": [
+     {
+      "binary": "build/default/oc",
+      "exit": 1,
+      "report_bytes": 19108796,
+      "report_sha256": "1a8e467a00642cf016c7651ffa808fc384ab914d13859bf56af43e498cbb273f",
+      "run": 1,
+      "wall_seconds": 14.6
+     },
+     {
+      "binary": "build/default/oc",
+      "exit": 1,
+      "report_bytes": 19108796,
+      "report_sha256": "1a8e467a00642cf016c7651ffa808fc384ab914d13859bf56af43e498cbb273f",
+      "run": 2,
+      "wall_seconds": 14.45
+     },
+     {
+      "binary": "build/sanitize/oc",
+      "exit": 1,
+      "report_bytes": 19108796,
+      "report_sha256": "1a8e467a00642cf016c7651ffa808fc384ab914d13859bf56af43e498cbb273f",
+      "run": 1,
+      "wall_seconds": 162.76
+     }
+    ],
+    "schema": "omnicheck.evidence/v0"
+   },
+   "pass": true
+  },
+  "c2_fuzz_suite": {
+   "layers": {},
+   "pass": true,
+   "summary": "/home/z/my-project/work/tests/test_fuzz.c: 718 checks, 0 failures"
+  },
+  "c3_docs_completeness": {
+   "pass": true
+  },
+  "c4_npm_shim": {
+   "detail": "shim exit 1, report 3838 bytes, identical=True",
+   "pass": true
+  },
+  "c4_packaging_tarball": {
+   "artifact": "/home/z/my-project/work/dist/omnicheck-0.3.0-linux-x86_64.tar.gz",
+   "pass": true
+  }
+ },
+ "gate": "M5 GA (formal date 2027-12-31; rehearsal executed early)",
+ "kpis": {
+  "analysis_count": {
+   "pass": true,
+   "per_pack": 11
+  },
+  "docs_completeness_pct": 100.0
+ },
+ "oc_binary": "/home/z/my-project/work/build/default/oc",
+ "rehearsal_date": "2026-11-23"
+}

@@ -1,0 +1,4 @@
+[project]
+name = "seeded-supply-fixture"
+version = "0.1.0"
+dependencies = ["django==3.2.0", "safe-pkg==1.0.0"]

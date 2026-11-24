@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+# The manifest tier fixture (the resolver corpus decoy + supply pin):
+#   mycorp  '1.2.3'  -- the bare version form IS a pin (bundler's own
+#                       exact-requirement semantics)
+#   rake    '~> 13.0' -- a comparator range is NOT a pin (unpinned warn)
+#   inrepo  path:     -- an in-repo link, not OC009 material (the Cargo
+#                        path-dep precedent)
+# The commented gem below is a comment, never a dependency:
+#   gem 'ghost', '9.9.9'
+gem 'mycorp', '1.2.3'
+gem 'rake', '~> 13.0'
+gem 'inrepo', path: '../inrepo'
+gem 'nopin'

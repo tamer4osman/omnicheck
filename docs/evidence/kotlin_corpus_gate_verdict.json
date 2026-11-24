@@ -1,0 +1,81 @@
+{
+ "contract": "docs/LANGUAGES.md (Kotlin section)",
+ "corpus_digest": "ab00070cd53d1719fa0596231d311d72aeabd5e1dd7dcdd02e508d4cab9a1afb",
+ "criteria": {
+  "1_corpus_integrity": {
+   "digest_ok": true,
+   "kt_files": 1861,
+   "kts_files": 129,
+   "pass": true,
+   "tarball_sha256_ok": true
+  },
+  "2_parse_honesty": {
+   "analyzed": 2015,
+   "error_nodes": 1922,
+   "packs_kotlin_and_c": true,
+   "parse_errors": 119,
+   "pass": true
+  },
+  "3_determinism": {
+   "pass": true,
+   "runs": 5
+  },
+  "4_resolver_honesty": {
+   "claimed": 1,
+   "claimed_main_shape": 1,
+   "edges": 114635,
+   "oc006": 571,
+   "pass": true,
+   "targets_outside": 0,
+   "zero_in_degree": 572
+  },
+  "5_rule_honesty": {
+   "counts": {
+    "OC001": 115,
+    "OC002": 36,
+    "OC003": 18,
+    "OC004": 35,
+    "OC006": 571,
+    "OC008": 628,
+    "OC011": 32
+   },
+   "kotlin_pack_rows": 0,
+   "pass": true,
+   "supply": {
+    "manifests_scanned": 124,
+    "osv_snapshot_date": null
+   }
+  },
+  "6_header_routing": {
+   "pass": true,
+   "routing": {
+    "default_c": 23,
+    "default_cpp": 0,
+    "sniffed_c": 0,
+    "sniffed_cpp": 0
+   }
+  },
+  "7_wall_budget": {
+   "best_wall_seconds": 10.69,
+   "budget": 60.0,
+   "pass": true
+  }
+ },
+ "date_executed": "2026-11-23",
+ "gate": "Kotlin reference corpus (SPRINT-22): ktorio/ktor 3.0.1 tag tarball, 1861 .kt + 129 .kts files (+23 .h routed to the C pack)",
+ "grammar_pin": "fwcd/tree-sitter-kotlin 0.3.8",
+ "parse_error_classes": {
+  "c_interop_header_c_pack_boundary": 19,
+  "function_type_with_receiver": 42,
+  "gradle_kts_the_T": 1,
+  "kotlin_19_plus_syntax": 21,
+  "missing_token_only": 5,
+  "residual": 25,
+  "suspend_fun_type": 6
+ },
+ "pass": true,
+ "schema": "omnicheck.evidence/v0",
+ "tarball": "ktor_3.0.1.tar.gz",
+ "tarball_sha256": "aa0d7b80261cb14f48f7384ad2bd5ff7f3e0da5104fcf1201a4beb12823acc20",
+ "tarball_url": "https://github.com/ktorio/ktor/archive/refs/tags/3.0.1.tar.gz"
+}

@@ -1,0 +1,59 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "PHP reference corpus (SPRINT-19): Debian php-phpseclib3 3.0.19-1+deb12u6, 334 files",
+  "date_executed": "2026-11-22",
+  "deb": "php-phpseclib3_3.0.19-1+deb12u6_all.deb",
+  "deb_sha256": "0bb8c9a03ac30f90230d71cce6d5dd26fa0049cdc59f907a94ece2fe415417d6",
+  "deb_url": "http://deb.debian.org/debian/pool/main/p/php-phpseclib3/php-phpseclib3_3.0.19-1+deb12u6_all.deb",
+  "corpus_digest": "e6bba4549ea2a1b8bdd61d8eafedb4670a568249dd74e1b319b0e13c113894ed",
+  "contract": "docs/LANGUAGES.md (PHP section)",
+  "grammar_pin": "tree-sitter/tree-sitter-php v0.24.2",
+  "criteria": {
+    "1_corpus_integrity": {
+      "pass": true,
+      "deb_sha256": true,
+      "digest": "e6bba4549ea2a1b8bdd61d8eafedb4670a568249dd74e1b319b0e13c113894ed",
+      "php_files": 334
+    },
+    "2_parse_clean": {
+      "pass": true,
+      "analyzed": 334,
+      "parse_errors": 0,
+      "error_nodes": 0
+    },
+    "3_determinism": {
+      "pass": true,
+      "runs": 5,
+      "distinct_sha256": 1
+    },
+    "4_resolver_honesty": {
+      "pass": true,
+      "edges": 0,
+      "targets": 0,
+      "zero_in_degree": 334,
+      "tests_convention": 0,
+      "entries": 0,
+      "oc006_expected": 334,
+      "oc006_measured": 334
+    },
+    "5_rule_honesty": {
+      "pass": true,
+      "counts": {
+        "OC006": 334,
+        "OC001": 114,
+        "OC004": 71,
+        "OC008": 878,
+        "OC011": 48,
+        "OC002": 2
+      },
+      "supply": {},
+      "note": "OC006=334: phpseclib3 loads every class through the Composer autoloader at runtime (no static require/include of an analyzed file) -- the metaprogramming boundary of docs/LANGUAGES.md PHP section 8; the over-report direction is the accepted one. OC005 is empty by construction (no file is imported, so the OC005 precondition bounds the verdict set). OC011=48: PEM examples and token-shaped docblock text -- the scan is line-based over source as written (the honest first-match discipline)."
+    },
+    "6_wall_budget": {
+      "pass": true,
+      "best_s": 0.81,
+      "budget_s": 60.0
+    }
+  },
+  "all_pass": true
+}

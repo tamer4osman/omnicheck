@@ -1,0 +1,106 @@
+{
+  "schema": "omnicheck.evidence/v0",
+  "gate": "M4",
+  "gate_date": "2027-09-30",
+  "steps": {
+    "tree-clean": {
+      "pass": true,
+      "details": {
+        "branch": "main",
+        "dirty_entries": [],
+        "exempted_own_gate_dir": "docs/evidence/gate_day/M4_2026-11-19"
+      },
+      "recorded": "2026-11-19T20:21:31"
+    },
+    "matrix": {
+      "pass": true,
+      "details": {
+        "wiped": true,
+        "default": {
+          "pass": true,
+          "tests": "100% tests passed out of 20",
+          "seconds": 23.9
+        },
+        "sanitize": {
+          "pass": true,
+          "tests": "100% tests passed out of 20",
+          "seconds": 124.2
+        },
+        "clang-release": {
+          "pass": true,
+          "tests": "100% tests passed out of 20",
+          "seconds": 22.0
+        },
+        "clang-sanitize": {
+          "pass": true,
+          "tests": "100% tests passed out of 20",
+          "seconds": 155.0
+        }
+      },
+      "recorded": "2026-11-19T20:26:57"
+    },
+    "harnesses": {
+      "pass": true,
+      "details": {
+        "m4": {
+          "pass": true,
+          "verdict": "verdict written: docs/evidence/gate_day/M4_2026-11-19/m4_gate_verdict.json"
+        }
+      },
+      "recorded": "2026-11-19T20:27:00"
+    },
+    "audit": {
+      "pass": true,
+      "details": {
+        "pass": true,
+        "distinct_digests": 1,
+        "budget_check": {
+          "m2_target_60s": true,
+          "note": "single-core (taskset -c 0), Release cells only",
+          "sprint_gate_90s": true,
+          "worst_release_wall_seconds": 12.43,
+          "worst_sanitize_wall_seconds": 155.85
+        }
+      },
+      "recorded": "2026-11-19T20:32:52"
+    },
+    "docs": {
+      "pass": true,
+      "details": {
+        "tail": "verdict written: docs/evidence/docs_completeness.json"
+      },
+      "recorded": "2026-11-19T20:32:56"
+    },
+    "package": {
+      "pass": true,
+      "details": {
+        "package_sh": {
+          "pass": true,
+          "tail": "879fa86e92d54f0780713765298e3de89b44ea2a64e8db597933f1faa5e6bbdd  /tmp/tmp.pZHJjpHTXm/omnicheck-0.3.0-linux-x86_64/bin/oc"
+        },
+        "shim_oc_bin": {
+          "pass": true,
+          "exit": 1,
+          "stderr_tail": ""
+        },
+        "shim_native": {
+          "pass": true,
+          "stdout": "omnicheck 0.3.0"
+        },
+        "npm_pack": {
+          "pass": true
+        },
+        "npm_install": {
+          "pass": true,
+          "stub_exists": true
+        },
+        "npm_install_smoke": {
+          "pass": true,
+          "exit_passthrough": true,
+          "report_bytes_equal_to_repo_build": true
+        }
+      },
+      "recorded": "2026-11-19T20:32:57"
+    }
+  }
+}

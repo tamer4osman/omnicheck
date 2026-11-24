@@ -1,0 +1,14 @@
+TN:
+SF:src/lib.rs
+FN:3,call
+FNDA:2,call
+DA:3,2
+DA:4,2
+DA:5,0
+BRDA:4,0,0,1
+LF:3
+LH:2
+end_of_record
+SF:other/util.rs
+DA:1,1
+end_of_record

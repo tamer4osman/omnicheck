@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPRINT-11 JaCoCo XML fixture: method-level counters for corpus A's
+     TextUtil.java (the report path is package-relative; the standard
+     path rule bridges the source-root prefix). describe (def line 15)
+     is UNCOVERED -> crap 625 > 30 -> the one OC007 finding; names
+     (line 75, complexity 1) is COVERED and adds none. -->
+<report name="omnicheck-fixture">
+  <package name="com/example/util">
+    <sourcefile name="TextUtil.java">
+      <method name="describe" desc="()Ljava/lang/String;" line="15">
+        <counter type="INSTRUCTION" missed="400" covered="0"/>
+        <counter type="LINE" missed="24" covered="0"/>
+      </method>
+      <method name="names" desc="()Ljava/util/Set;" line="75">
+        <counter type="INSTRUCTION" missed="0" covered="9"/>
+        <counter type="LINE" missed="0" covered="3"/>
+      </method>
+      <counter type="LINE" missed="24" covered="3"/>
+    </sourcefile>
+  </package>
+</report>

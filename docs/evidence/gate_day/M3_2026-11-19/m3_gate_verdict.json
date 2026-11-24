@@ -1,0 +1,113 @@
+{
+  "gate": "M3 Beta (plan Table 9; formal gate date 2027-05-31)",
+  "executed": "2026-11-19",
+  "oc": "build/default/oc",
+  "criteria": [
+    {
+      "criterion": "reference-repo-measured",
+      "pass": true,
+      "evidence": {
+        "files_py": 25,
+        "loc": 16731,
+        "scope": "/home/z/my-project/omnicheck/work/black-pin/black-c0e143e75443afd3be50c3b63ed2ee2fd108f509/src/black"
+      }
+    },
+    {
+      "criterion": "packs-manifest (>=2 packs, pack/v0 fields)",
+      "pass": true,
+      "evidence": {
+        "packs": [
+          "python",
+          "typescript",
+          "ts-js",
+          "tsx"
+        ],
+        "count": 4,
+        "loader_fields_complete": true,
+        "manifest_schema_pack_v0": true
+      }
+    },
+    {
+      "criterion": "python-repository-end-to-end",
+      "pass": true,
+      "evidence": {
+        "reference": {
+          "repo": "black-c0e143e75443afd3be50c3b63ed2ee2fd108f509",
+          "files_py": 25,
+          "loc": 16731
+        },
+        "files_analyzed": 25,
+        "loc": 25,
+        "parse_error_files": 0,
+        "finding_count": 263,
+        "rules_firing": [
+          "OC001",
+          "OC002",
+          "OC003",
+          "OC004",
+          "OC005",
+          "OC006",
+          "OC008",
+          "OC011"
+        ],
+        "imports_edges": 70,
+        "py_target_edges": 70,
+        "wall_s_round1": 0.197,
+        "byte_identical_rerun": true
+      }
+    },
+    {
+      "criterion": "lsp-diagnostics-in-editor-session",
+      "pass": true,
+      "evidence": {
+        "exit_codes": [
+          0,
+          0
+        ],
+        "initialize_capabilities_ok": true,
+        "demo_diagnostics": [
+          "OC002",
+          "OC006"
+        ],
+        "document_symbols_ok": true,
+        "byte_identical_session_rerun": true,
+        "note": "scripted client stands in for the editor; protocol is LSP 3.17 stdio"
+      }
+    },
+    {
+      "criterion": "mcp-tools-listable-and-callable",
+      "pass": true,
+      "evidence": {
+        "exit_codes": [
+          0,
+          0
+        ],
+        "tools": [
+          "omnicheck_scan",
+          "omnicheck_findings",
+          "omnicheck_rules"
+        ],
+        "scan_report_findings": 3,
+        "findings_query_count": 1,
+        "rules_listed": 11,
+        "byte_identical_session_rerun": true,
+        "note": "scripted client stands in for the coding agent; protocol is MCP stdio"
+      }
+    },
+    {
+      "criterion": "omnidecide-ranking-active-in-cli",
+      "pass": true,
+      "evidence": {
+        "provider": "/home/z/my-project/omnicheck/tools/mock_omnidecide.py",
+        "model": "mock-omnidecide/0",
+        "ranked": true,
+        "ranked_count": 2,
+        "finding_count": 2,
+        "rank_only_guardrail_intact": true,
+        "note": "mock provider (rank order deliberately reversed); production omnidecide-c speaks the same v0 protocol (private upstream)"
+      }
+    }
+  ],
+  "notes": [],
+  "verdict": "PASS"
+}

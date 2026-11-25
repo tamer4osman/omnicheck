@@ -96,12 +96,13 @@ fetch() {
             || { rm -f "$ntar"; echo "vendor: FAILED -- cannot fetch $repo @ $ref (git clone, codeload and npm all unavailable)"; exit 1; }
         # Portable sha256 verification: supports both sha256sum and shasum
         if command -v sha256sum >/dev/null 2>&1; then
-            echo "$npm_sha  $ntar" | sha256sum -c --status \
+            # Use -c with output redirection for portability (--status not universal)
+            echo "$npm_sha  $ntar" | sha256sum -c >/dev/null 2>&1 \
                 || { rm -f "$ntar"; echo "vendor: FAILED -- npm tarball sha256 mismatch for $npm_pkg"; exit 1; }
         elif command -v shasum >/dev/null 2>&1; then
             # shasum -c expects "HASH  filename" format in a file
             printf '%s  %s\n' "$npm_sha" "$ntar" > "$ntar.manifest" \
-                && shasum -a 256 -c "$ntar.manifest" --status \
+                && shasum -a 256 -c "$ntar.manifest" >/dev/null 2>&1 \
                 || { rm -f "$ntar" "$ntar.manifest"; echo "vendor: FAILED -- npm tarball sha256 mismatch for $npm_pkg"; exit 1; }
             rm -f "$ntar.manifest"
         else
@@ -184,9 +185,10 @@ fetch tree-sitter/tree-sitter-scala          "$SCALA_REF" tree-sitter-scala "$SC
 # the working tree is verified against the committed sha256 manifest so
 # accidental edits to the vendored foreign sources are caught here.
 if [ -f omnidecide/VENDOR.sha256 ] && [ -f omnidecide/PROVENANCE.md ]; then
-    # Portable SHA-256 verification: supports both sha256sum and shasum
+    # Portable SHA-256 verification: supports sha256sum, shasum, and openssl
     if command -v sha256sum >/dev/null 2>&1; then
-        (cd omnidecide && sha256sum -c VENDOR.sha256 --quiet) \
+        # Use output redirection for portability (--quiet not universal)
+        (cd omnidecide && sha256sum -c VENDOR.sha256 >/dev/null 2>&1) \
             && echo "vendor: omnidecide integrity OK ($(wc -l < omnidecide/VENDOR.sha256) files)" \
             || { echo "vendor: FAILED -- third_party/omnidecide does not match VENDOR.sha256"; \
                  echo "vendor: restore the committed tree (git checkout -- third_party/omnidecide) or re-vendor per PROVENANCE.md"; \
@@ -195,13 +197,21 @@ if [ -f omnidecide/VENDOR.sha256 ] && [ -f omnidecide/PROVENANCE.md ]; then
         # shasum -c accepts the same "hash  filename" format as sha256sum
         # (two spaces between hash and filename). VENDOR.sha256 is already
         # in this format, so pass it directly.
-        (cd omnidecide && shasum -a 256 -c VENDOR.sha256 --status) \
+        (cd omnidecide && shasum -a 256 -c VENDOR.sha256 >/dev/null 2>&1) \
+            && echo "vendor: omnidecide integrity OK ($(wc -l < omnidecide/VENDOR.sha256) files)" \
+            || { echo "vendor: FAILED -- third_party/omnidecide does not match VENDOR.sha256"; \
+                 echo "vendor: restore the committed tree (git checkout -- third_party/omnidecide) or re-vendor per PROVENANCE.md"; \
+                 exit 1; }
+    elif command -v openssl >/dev/null 2>&1; then
+        # openssl dgst -sha256 fallback: verify each line individually
+        (cd omnidecide && awk '{system("openssl dgst -sha256 " $2 " | grep -q " $1)}' VENDOR.sha256) \
             && echo "vendor: omnidecide integrity OK ($(wc -l < omnidecide/VENDOR.sha256) files)" \
             || { echo "vendor: FAILED -- third_party/omnidecide does not match VENDOR.sha256"; \
                  echo "vendor: restore the committed tree (git checkout -- third_party/omnidecide) or re-vendor per PROVENANCE.md"; \
                  exit 1; }
     else
-        echo "vendor: WARNING -- no sha256/shasum tool available for omnidecide verification"
+        echo "vendor: FAILED -- no sha256/shasum/openssl tool available for omnidecide verification"
+        exit 1
     fi
 fi
 echo "vendor: done"

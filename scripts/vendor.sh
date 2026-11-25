@@ -96,9 +96,11 @@ fetch() {
             || { rm -f "$ntar"; echo "vendor: FAILED -- cannot fetch $repo @ $ref (git clone, codeload and npm all unavailable)"; exit 1; }
         # Portable sha256 verification: supports both sha256sum and shasum
         if command -v sha256sum >/dev/null 2>&1; then
-            # Use -c with output redirection for portability (--status not universal)
-            echo "$npm_sha  $ntar" | sha256sum -c >/dev/null 2>&1 \
-                || { rm -f "$ntar"; echo "vendor: FAILED -- npm tarball sha256 mismatch for $npm_pkg"; exit 1; }
+            # Portable sha256 verification: format "HASH  filename" (two spaces)
+            printf '%s  %s\n' "$npm_sha" "$ntar" > "$ntar.manifest" \
+                && sha256sum -c "$ntar.manifest" >/dev/null 2>&1 \
+                || { rm -f "$ntar" "$ntar.manifest"; echo "vendor: FAILED -- npm tarball sha256 mismatch for $npm_pkg"; exit 1; }
+            rm -f "$ntar.manifest"
         elif command -v shasum >/dev/null 2>&1; then
             # shasum -c expects "HASH  filename" format in a file
             printf '%s  %s\n' "$npm_sha" "$ntar" > "$ntar.manifest" \

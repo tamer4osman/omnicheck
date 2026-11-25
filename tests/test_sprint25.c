@@ -340,10 +340,10 @@ static void unit_n2_corrupt_manifest_skip(void) {
 /* --- unit: N-4 client side, the response buffer grows -------------------- */
 
 static void push_finding(oc_finding_vec *v, oc_arena *a, int i) {
-    char msg[160], fp[64];
-    snprintf(msg, sizeof(msg), "Function 'fn%04d' spans %d lines and needs a triage verdict", i,
-             61 + i % 40);
-    snprintf(fp, sizeof(fp), "fp-s25-%06d", i);
+    char msg_buf[160], fp_buf[64];
+    snprintf(msg_buf, sizeof(msg_buf),
+             "Function 'fn%04d' spans %d lines and needs a triage verdict", i, 61 + i % 40);
+    snprintf(fp_buf, sizeof(fp_buf), "fp-s25-%06d", i);
     oc_finding_spec spec;
     memset(&spec, 0, sizeof(spec));
     spec.rule_id = "OC001";
@@ -354,8 +354,8 @@ static void push_finding(oc_finding_vec *v, oc_arena *a, int i) {
     spec.col = 1;
     spec.end_line = spec.line + 70;
     spec.symbol = NULL;
-    spec.message = msg;
-    spec.fp_text = fp;
+    spec.message = oc_arena_strdup(a, msg_buf);
+    spec.fp_text = oc_arena_strdup(a, fp_buf);
     CHECK(oc_findings_push(v, a, &spec));
 }
 

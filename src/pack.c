@@ -304,8 +304,9 @@ int oc_packs_write_json(const oc_pack_set *ps, oc_jsonw *w) {
  * the `c` and `cpp` packs is routed through the sniff + root-default
  * treatment; every other shape stays the plain extension match. */
 const oc_pack *oc_packs_route_source(const oc_pack_set *ps, const char *path, const char *src,
-                                     size_t len, const char *const *discovered, size_t n_discovered,
-                                     oc_arena *a, oc_route_reason *out_reason) {
+                                     size_t len, const char *const *discovered,
+                                     size_t n_discovered, oc_arena *a,
+                                     oc_route_reason *out_reason) {
     (void)a;
     if (out_reason)
         *out_reason = OC_ROUTE_EXT;

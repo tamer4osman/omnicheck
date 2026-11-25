@@ -281,7 +281,8 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
      * NULL where the file was skipped). Freed after the pass loop. */
     impl->sources = (char **)calloc(impl->files.n ? impl->files.n : 1, sizeof(char *));
     impl->source_lens = (size_t *)calloc(impl->files.n ? impl->files.n : 1, sizeof(size_t));
-    impl->routed = (const oc_pack **)calloc(impl->files.n ? impl->files.n : 1, sizeof(oc_pack *));
+    impl->routed =
+        (const oc_pack **)calloc(impl->files.n ? impl->files.n : 1, sizeof(oc_pack *));
     if (!impl->sources || !impl->source_lens || !impl->routed) {
         oc_status_set(st, OC_ERR_ALLOC, "out of memory tracking file sources");
         rc = OC_ERR_ALLOC;
@@ -308,8 +309,8 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
          * the extension match. */
         oc_route_reason reason = OC_ROUTE_EXT;
         pack = oc_packs_route_source(&impl->packs, impl->files.items[i], data, len,
-                                     (const char *const *)impl->files.items, impl->files.n, arena,
-                                     &reason);
+                                     (const char *const *)impl->files.items, impl->files.n,
+                                     arena, &reason);
         if (!pack) {
             free(data);
             skipped++;
@@ -433,9 +434,10 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
         /* SPRINT-21: the pass loop sees the ROUTED pack (the parse
          * loop's decision), never a fresh extension match -- the .h
          * routing must be one decision per file for the whole scan. */
-        const oc_pack *pack = (fi != (size_t)-1 && impl->routed)
-                                  ? impl->routed[fi]
-                                  : oc_packs_match_path(&impl->packs, res->graph.nodes[i].path);
+        const oc_pack *pack =
+            (fi != (size_t)-1 && impl->routed) ? impl->routed[fi]
+                                               : oc_packs_match_path(&impl->packs,
+                                                                     res->graph.nodes[i].path);
         if (!pack)
             continue;
         oc_doc *doc = oc_graph_doc(&res->graph, (oc_node_id)i);
@@ -484,8 +486,8 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
         res->osv_snapshot_date = impl->osv.snapshot_date;
     }
     if (oc_supply_load_manifests_ex(&impl->manifests, &impl->skips,
-                                    (const char *const *)impl->files.items, impl->files.n, arena,
-                                    st) != OC_OK) {
+                                    (const char *const *)impl->files.items,
+                                    impl->files.n, arena, st) != OC_OK) {
         rc = st->code;
         goto cleanup;
     }
@@ -494,8 +496,10 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
      * silent) to the report meta. Arena-owned parallel arrays. */
     res->manifests_skipped = impl->skips.n;
     if (impl->skips.n > 0) {
-        const char **sf = (const char **)oc_arena_alloc(arena, impl->skips.n * sizeof(*sf));
-        const char **sr = (const char **)oc_arena_alloc(arena, impl->skips.n * sizeof(*sr));
+        const char **sf = (const char **)oc_arena_alloc(arena,
+                                                        impl->skips.n * sizeof(*sf));
+        const char **sr = (const char **)oc_arena_alloc(arena,
+                                                        impl->skips.n * sizeof(*sr));
         if (!sf || !sr) {
             oc_status_set(st, OC_ERR_ALLOC, "out of memory recording manifest skips");
             rc = OC_ERR_ALLOC;

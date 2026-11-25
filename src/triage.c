@@ -42,7 +42,7 @@
  * heap buffer until EOF or deadline; only a provider exceeding the cap
  * fails open, with a named reason. */
 #define OC_TRIAGE_MAX_RESPONSE (64u * 1024u * 1024u)
-#define OC_TRIAGE_MAX_BUDGET_S 600
+#define OC_TRIAGE_MAX_BUDGET_S    600
 
 static long long triage_now_ms(void) {
     struct timespec ts;

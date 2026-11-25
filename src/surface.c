@@ -622,8 +622,8 @@ oc_surface *oc_surface_build(oc_arena *a, oc_graph *g, const oc_bind_vec *binds,
              * (docs/LANGUAGES.md Kotlin section 5/6, Scala section 5/6). */
             const char **targets = NULL;
             size_t n_targets = 0;
-            if (oc_resolve_kotlin_import(cx, b->from_path, b->specifier, a, &targets, &n_targets) <
-                0)
+            if (oc_resolve_kotlin_import(cx, b->from_path, b->specifier, a, &targets,
+                                         &n_targets) < 0)
                 continue;
             if (n_targets == 0)
                 continue;
@@ -652,8 +652,8 @@ oc_surface *oc_surface_build(oc_arena *a, oc_graph *g, const oc_bind_vec *binds,
              * (docs/LANGUAGES.md Swift section 5/6). */
             const char **targets = NULL;
             size_t n_targets = 0;
-            if (oc_resolve_swift_import(cx, b->from_path, b->specifier, a, &targets, &n_targets) <
-                0)
+            if (oc_resolve_swift_import(cx, b->from_path, b->specifier, a, &targets,
+                                        &n_targets) < 0)
                 continue;
             if (n_targets == 0)
                 continue;

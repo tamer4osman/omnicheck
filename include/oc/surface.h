@@ -85,17 +85,17 @@ typedef struct oc_file_hint {
     char **namespaces;        /* SPRINT-14: declared dotted namespaces (C#);
                                * NULL when the file declares none */
     size_t n_namespaces;
-    char **symbols; /* SPRINT-22: top-level declaration names (Kotlin,
-                     * the C# namespace-hint channel); the resolver
-                     * v1-kotlin keys the declared-fact import matching
-                     * on it. NULL when none */
+    char **symbols;           /* SPRINT-22: top-level declaration names (Kotlin,
+                               * the C# namespace-hint channel); the resolver
+                               * v1-kotlin keys the declared-fact import matching
+                               * on it. NULL when none */
     size_t n_symbols;
-    char **swift_targets;      /* SPRINT-23: Package.swift declared target names
-                                * (the Swift module model: the import specifier
-                                * names a compilation TARGET, a fact the file
-                                * itself never carries -- the manifest declares
-                                * it). Recorded ONLY on the Package.swift file's
-                                * own hint. NULL when none */
+    char **swift_targets;     /* SPRINT-23: Package.swift declared target names
+                               * (the Swift module model: the import specifier
+                               * names a compilation TARGET, a fact the file
+                               * itself never carries -- the manifest declares
+                               * it). Recorded ONLY on the Package.swift file's
+                               * own hint. NULL when none */
     char **swift_target_paths; /* the target's declared `path:` argument as
                                 * written, or NULL (the SPM documented default
                                 * `Sources/<name>` applies -- the resolver owns

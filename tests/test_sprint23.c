@@ -25,8 +25,8 @@
 #include "oc/coverage.h"
 #include "oc/graph.h"
 #include "oc/imports.h"
-#include "oc/pack.h"
 #include "oc/parser.h"
+#include "oc/pack.h"
 #include "oc/supply.h"
 #include "oc/surface.h"
 #include "testkit.h"
@@ -129,51 +129,52 @@ static size_t json_count_rule(const char *json, const char *rule) {
 /* --- unit: symbols, spans, the init/deinit and protocol contracts ------- */
 
 static void unit_sw_symbols(void) {
-    static const char src[] = "/* free function: symbol, span = the whole declaration */\n"
-                              "func compute(n: Int) -> Int {\n"
-                              "    return n\n"
-                              "}\n"
-                              "\n"
-                              "/* method: the name is the declaration's name-field identifier */\n"
-                              "class Widget {\n"
-                              "    func scale(v: Int) -> Int { return v }\n"
-                              "}\n"
-                              "\n"
-                              "/* extension method: the receiver is the extension declaration,\n"
-                              " * not part of the function */\n"
-                              "extension Int {\n"
-                              "    func doubled() -> Int { return self * 2 }\n"
-                              "}\n"
-                              "\n"
-                              "/* static/class methods: the modifiers carry the keyword */\n"
-                              "class Factory {\n"
-                              "    static func make() -> Int { return 1 }\n"
-                              "    class func kind() -> String { return \"f\" }\n"
-                              "}\n"
-                              "\n"
-                              "/* init/deinit with a body ARE symbols (the C# constructor\n"
-                              " * precedent; the honest synthesized spellings) */\n"
-                              "class Owned {\n"
-                              "    init(id: Int) { }\n"
-                              "    deinit { }\n"
-                              "}\n"
-                              "\n"
-                              "/* protocol REQUIREMENTS: body-less, NOT symbols; the DEFAULT\n"
-                              " * body IS a symbol (the C# interface-default precedent) */\n"
-                              "protocol Spec {\n"
-                              "    func run() -> Int\n"
-                              "    func withBody() -> Int { return 1 }\n"
-                              "}\n"
-                              "\n"
-                              "/* lambda: anonymous construct, NOT symbols */\n"
-                              "func lambdaUser(v: Int) -> Int {\n"
-                              "    let fn = { (x: Int) -> Int in x * 2 }\n"
-                              "    return fn(v)\n"
-                              "}\n"
-                              "\n"
-                              "/* properties are NOT symbols (surface only) */\n"
-                              "let greeting = \"hi\"\n"
-                              "var counter = 0\n";
+    static const char src[] =
+        "/* free function: symbol, span = the whole declaration */\n"
+        "func compute(n: Int) -> Int {\n"
+        "    return n\n"
+        "}\n"
+        "\n"
+        "/* method: the name is the declaration's name-field identifier */\n"
+        "class Widget {\n"
+        "    func scale(v: Int) -> Int { return v }\n"
+        "}\n"
+        "\n"
+        "/* extension method: the receiver is the extension declaration,\n"
+        " * not part of the function */\n"
+        "extension Int {\n"
+        "    func doubled() -> Int { return self * 2 }\n"
+        "}\n"
+        "\n"
+        "/* static/class methods: the modifiers carry the keyword */\n"
+        "class Factory {\n"
+        "    static func make() -> Int { return 1 }\n"
+        "    class func kind() -> String { return \"f\" }\n"
+        "}\n"
+        "\n"
+        "/* init/deinit with a body ARE symbols (the C# constructor\n"
+        " * precedent; the honest synthesized spellings) */\n"
+        "class Owned {\n"
+        "    init(id: Int) { }\n"
+        "    deinit { }\n"
+        "}\n"
+        "\n"
+        "/* protocol REQUIREMENTS: body-less, NOT symbols; the DEFAULT\n"
+        " * body IS a symbol (the C# interface-default precedent) */\n"
+        "protocol Spec {\n"
+        "    func run() -> Int\n"
+        "    func withBody() -> Int { return 1 }\n"
+        "}\n"
+        "\n"
+        "/* lambda: anonymous construct, NOT symbols */\n"
+        "func lambdaUser(v: Int) -> Int {\n"
+        "    let fn = { (x: Int) -> Int in x * 2 }\n"
+        "    return fn(v)\n"
+        "}\n"
+        "\n"
+        "/* properties are NOT symbols (surface only) */\n"
+        "let greeting = \"hi\"\n"
+        "var counter = 0\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -193,8 +194,8 @@ static void unit_sw_symbols(void) {
         CHECK(count_symbols_named(&g, "doubled") == 1); /* the extension name */
         CHECK(count_symbols_named(&g, "make") == 1);
         CHECK(count_symbols_named(&g, "kind") == 1);
-        CHECK(count_symbols_named(&g, "init") == 1);     /* the synthesized spelling */
-        CHECK(count_symbols_named(&g, "deinit") == 1);   /* the synthesized spelling */
+        CHECK(count_symbols_named(&g, "init") == 1);  /* the synthesized spelling */
+        CHECK(count_symbols_named(&g, "deinit") == 1); /* the synthesized spelling */
         CHECK(count_symbols_named(&g, "withBody") == 1); /* the protocol default body */
         CHECK(count_symbols_named(&g, "lambdaUser") == 1);
         /* the protocol REQUIREMENT `run` is body-less: NOT a symbol */
@@ -215,30 +216,31 @@ static void unit_sw_symbols(void) {
 /* --- unit: accessors (the C# precedent, the parent-climb owner) --------- */
 
 static void unit_sw_accessors(void) {
-    static const char src[] = "class Tracked {\n"
-                              "    private var cached = 0\n"
-                              "    var plain = 0\n"
-                              "    var doubled: Int {\n"
-                              "        return cached * 2\n"
-                              "    }\n"
-                              "    var tracked: Int {\n"
-                              "        get {\n"
-                              "            return cached\n"
-                              "        }\n"
-                              "        set(v) {\n"
-                              "            cached = v\n"
-                              "        }\n"
-                              "    }\n"
-                              "    var observed: Int = 0 {\n"
-                              "        willSet {\n"
-                              "            if newValue > cached {\n"
-                              "                cached = newValue\n"
-                              "            }\n"
-                              "        }\n"
-                              "        didSet {\n"
-                              "        }\n"
-                              "    }\n"
-                              "}\n";
+    static const char src[] =
+        "class Tracked {\n"
+        "    private var cached = 0\n"
+        "    var plain = 0\n"
+        "    var doubled: Int {\n"
+        "        return cached * 2\n"
+        "    }\n"
+        "    var tracked: Int {\n"
+        "        get {\n"
+        "            return cached\n"
+        "        }\n"
+        "        set(v) {\n"
+        "            cached = v\n"
+        "        }\n"
+        "    }\n"
+        "    var observed: Int = 0 {\n"
+        "        willSet {\n"
+        "            if newValue > cached {\n"
+        "                cached = newValue\n"
+        "            }\n"
+        "        }\n"
+        "        didSet {\n"
+        "        }\n"
+        "    }\n"
+        "}\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -276,11 +278,12 @@ static void unit_sw_accessors(void) {
 /* --- unit: parameters (the field-bearing node, positional type) --------- */
 
 static void unit_sw_params(void) {
-    static const char src[] = "func plain(a: Int, b: String) {}\n"
-                              "func labeled(external local: Int, rest: Int = 2) {}\n"
-                              "func inoutp(v: inout Int) {}\n"
-                              "func variadic(items: Int..., tail: String) {}\n"
-                              "func generic<T: Comparable>(_ a: T, _ b: T) -> T { return a }\n";
+    static const char src[] =
+        "func plain(a: Int, b: String) {}\n"
+        "func labeled(external local: Int, rest: Int = 2) {}\n"
+        "func inoutp(v: inout Int) {}\n"
+        "func variadic(items: Int..., tail: String) {}\n"
+        "func generic<T: Comparable>(_ a: T, _ b: T) -> T { return a }\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -298,7 +301,8 @@ static void unit_sw_params(void) {
         CHECK(g.n_nodes > 0);
         /* the B3 signatures: name/type as written, the external label
          * OUT of the name, the variadic collapsed to the marker */
-        int checked_plain = 0, checked_labeled = 0, checked_variadic = 0, checked_generic = 0;
+        int checked_plain = 0, checked_labeled = 0, checked_variadic = 0,
+            checked_generic = 0;
         for (size_t i = 0; i < g.n_nodes; i++) {
             const oc_node *n = &g.nodes[i];
             if (n->kind != OC_NODE_FUNCTION || !n->params)
@@ -341,46 +345,47 @@ static void unit_sw_decisions(void) {
      * guard + ternary + 2 switch_entry (every arm counts) + for +
      * while + repeat-while + 1 catch + nil-coalescing + && + || = 13.
      * The file rollup = 14 (under the OC004 threshold). */
-    static const char src[] = "func rollup(n: Int, items: [Int]) -> Int {\n"
-                              "    if n > 0 {\n"
-                              "        return 1\n"
-                              "    } else if n < 0 {\n"
-                              "        return -1\n"
-                              "    }\n"
-                              "    guard !items.isEmpty else { return 0 }\n"
-                              "    let e: Int? = nil\n"
-                              "    var t = e ?? n\n"
-                              "    t = t > 10 ? t : -t\n"
-                              "    switch t {\n"
-                              "    case 1:\n"
-                              "        t += 10\n"
-                              "    default:\n"
-                              "        t += 2\n"
-                              "    }\n"
-                              "    for v in items {\n"
-                              "        t += v\n"
-                              "    }\n"
-                              "    var i = 0\n"
-                              "    while i < 2 {\n"
-                              "        i += 1\n"
-                              "    }\n"
-                              "    repeat {\n"
-                              "        t += 1\n"
-                              "    } while t < -100\n"
-                              "    do {\n"
-                              "        t = try boom(t)\n"
-                              "    } catch {\n"
-                              "        t = -1\n"
-                              "    }\n"
-                              "    let ok = t > 0 && items.count > 1\n"
-                              "    let alt = ok || t > 500\n"
-                              "    _ = alt\n"
-                              "    return t\n"
-                              "}\n"
-                              "\n"
-                              "func boom(_ x: Int) throws -> Int {\n"
-                              "    return x\n"
-                              "}\n";
+    static const char src[] =
+        "func rollup(n: Int, items: [Int]) -> Int {\n"
+        "    if n > 0 {\n"
+        "        return 1\n"
+        "    } else if n < 0 {\n"
+        "        return -1\n"
+        "    }\n"
+        "    guard !items.isEmpty else { return 0 }\n"
+        "    let e: Int? = nil\n"
+        "    var t = e ?? n\n"
+        "    t = t > 10 ? t : -t\n"
+        "    switch t {\n"
+        "    case 1:\n"
+        "        t += 10\n"
+        "    default:\n"
+        "        t += 2\n"
+        "    }\n"
+        "    for v in items {\n"
+        "        t += v\n"
+        "    }\n"
+        "    var i = 0\n"
+        "    while i < 2 {\n"
+        "        i += 1\n"
+        "    }\n"
+        "    repeat {\n"
+        "        t += 1\n"
+        "    } while t < -100\n"
+        "    do {\n"
+        "        t = try boom(t)\n"
+        "    } catch {\n"
+        "        t = -1\n"
+        "    }\n"
+        "    let ok = t > 0 && items.count > 1\n"
+        "    let alt = ok || t > 500\n"
+        "    _ = alt\n"
+        "    return t\n"
+        "}\n"
+        "\n"
+        "func boom(_ x: Int) throws -> Int {\n"
+        "    return x\n"
+        "}\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -410,12 +415,13 @@ static void unit_sw_decisions(void) {
 /* --- unit: import shapes (whole-module / submodule / kind-scoped) -------- */
 
 static void unit_sw_imports(void) {
-    static const char src[] = "import Foundation\n"
-                              "import Mod.Submodule\n"
-                              "import struct Widgets.Widget\n"
-                              "import func Mod.Helpers.make\n"
-                              "@testable import StoreKit\n"
-                              "import typealias Core.Logger\n";
+    static const char src[] =
+        "import Foundation\n"
+        "import Mod.Submodule\n"
+        "import struct Widgets.Widget\n"
+        "import func Mod.Helpers.make\n"
+        "@testable import StoreKit\n"
+        "import typealias Core.Logger\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -478,18 +484,19 @@ static void unit_sw_imports(void) {
 /* --- unit: surface (top-level names, private/fileprivate excluded) ------ */
 
 static void unit_sw_surface(void) {
-    static const char src[] = "public class Api {\n"
-                              "    public func method() -> Int { return 1 }\n"
-                              "}\n"
-                              "func freeFn() -> Int { return 2 }\n"
-                              "private func secret() -> Int { return 3 }\n"
-                              "fileprivate func inner() -> Int { return 4 }\n"
-                              "struct Free { static let kind = \"free\" }\n"
-                              "enum Mode { case on, off }\n"
-                              "extension Int { func tripled() -> Int { return self * 3 } }\n"
-                              "protocol Spec { func run() -> Int }\n"
-                              "typealias Handler = (Int) -> Int\n"
-                              "let globalLet = 1\n";
+    static const char src[] =
+        "public class Api {\n"
+        "    public func method() -> Int { return 1 }\n"
+        "}\n"
+        "func freeFn() -> Int { return 2 }\n"
+        "private func secret() -> Int { return 3 }\n"
+        "fileprivate func inner() -> Int { return 4 }\n"
+        "struct Free { static let kind = \"free\" }\n"
+        "enum Mode { case on, off }\n"
+        "extension Int { func tripled() -> Int { return self * 3 } }\n"
+        "protocol Spec { func run() -> Int }\n"
+        "typealias Handler = (Int) -> Int\n"
+        "let globalLet = 1\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -545,8 +552,9 @@ static void unit_sw_entry_fact(void) {
         /* the executable top-level statements ARE the entry fact (the
          * C# 9 top-level-statements precedent); a top-level `let` is a
          * DECLARATION and never fires it */
-        static const char main_src[] = "let boot = 1\n"
-                                       "print(\"run\")\n";
+        static const char main_src[] =
+            "let boot = 1\n"
+            "print(\"run\")\n";
         oc_graph g;
         oc_graph_init(&g, &a);
         oc_parse_out out;
@@ -576,12 +584,13 @@ static void unit_sw_entry_fact(void) {
          * exercised at corpus scale by the pinned swift-argument-parser
          * corpus, whose root manifest carries a real `#if` and whose
          * parse boundary is the corpus gate's classified 28/142 pin.) */
-        static const char manifest_src[] = "// swift-tools-version:5.9\n"
-                                           "import PackageDescription\n"
-                                           "let package = Package(\n"
-                                           "    name: \"X\",\n"
-                                           "    targets: [.target(name: \"X\")]\n"
-                                           ")\n";
+        static const char manifest_src[] =
+            "// swift-tools-version:5.9\n"
+            "import PackageDescription\n"
+            "let package = Package(\n"
+            "    name: \"X\",\n"
+            "    targets: [.target(name: \"X\")]\n"
+            ")\n";
         oc_graph g2;
         oc_graph_init(&g2, &a);
         oc_parse_out out2;
@@ -625,44 +634,57 @@ static void unit_sw_resolver(void) {
      * path (Sources/<name>), the cycle, the unresolved decoys. 15
      * files, 9 contracted edges. */
     static const sw_res_file FILES[] = {
-        {"Package.swift", "// swift-tools-version:5.9\n"
-                          "import PackageDescription\n"
-                          "let package = Package(\n"
-                          "    name: \"Resolver\",\n"
-                          "    targets: [\n"
-                          "        .target(name: \"Store\", path: \"Store\"),\n"
-                          "        .target(name: \"Lib\", path: \"Lib\"),\n"
-                          "        .target(name: \"Wide\", path: \"Wide\"),\n"
-                          "        .target(name: \"Alpha\", path: \"Alpha\"),\n"
-                          "        .target(name: \"Beta\", path: \"Beta\"),\n"
-                          "        .target(name: \"Std\")\n"
-                          "    ]\n"
-                          ")\n"},
+        {"Package.swift",
+         "// swift-tools-version:5.9\n"
+         "import PackageDescription\n"
+         "let package = Package(\n"
+         "    name: \"Resolver\",\n"
+         "    targets: [\n"
+         "        .target(name: \"Store\", path: \"Store\"),\n"
+         "        .target(name: \"Lib\", path: \"Lib\"),\n"
+         "        .target(name: \"Wide\", path: \"Wide\"),\n"
+         "        .target(name: \"Alpha\", path: \"Alpha\"),\n"
+         "        .target(name: \"Beta\", path: \"Beta\"),\n"
+         "        .target(name: \"Std\")\n"
+         "    ]\n"
+         ")\n"},
         {"Store/Engine.swift",
          "class Engine {\n    func start() -> Int {\n        return 1\n    }\n}\n\n"
          "func alpha() -> Int {\n    return 2\n}\n"},
-        {"Store/Extra.swift", "func beta() -> Int {\n    return 3\n}\n"},
-        {"Lib/Gamma.swift", "func gamma() -> Int {\n    return 4\n}\n"},
-        {"Wide/Core.swift", "func walpha() -> Int {\n    return 5\n}\n"},
-        {"Wide/Deep.swift", "func wbeta() -> Int {\n    return 6\n}\n"},
-        {"Alpha/One.swift", "import Beta\n\n"
-                            "class One {\n    let pair = 1\n}\n"},
-        {"Beta/Two.swift", "import Alpha\n\n"
-                           "class Two {\n    let mate = 2\n}\n"},
-        {"Sources/Std/Std.swift", "func standalone() -> Int {\n    return 9\n}\n"},
-        {"wide.swift", "import Wide\n\n"
-                       "func wideUser() -> Int {\n    return walpha() + wbeta()\n}\n"},
-        {"gamma.swift", "import func Lib.gamma\n\n"
-                        "func gammaUser() -> Int {\n    return gamma()\n}\n"},
-        {"std.swift", "import Std\n\n"
-                      "func stdUser() -> Int {\n    return standalone()\n}\n"},
-        {"decoy.swift", "import UIKit\nimport Foundation\nimport Mod.Missing\n\n"
-                        "func decoy() -> Int {\n    return 0\n}\n"},
+        {"Store/Extra.swift",
+         "func beta() -> Int {\n    return 3\n}\n"},
+        {"Lib/Gamma.swift",
+         "func gamma() -> Int {\n    return 4\n}\n"},
+        {"Wide/Core.swift",
+         "func walpha() -> Int {\n    return 5\n}\n"},
+        {"Wide/Deep.swift",
+         "func wbeta() -> Int {\n    return 6\n}\n"},
+        {"Alpha/One.swift",
+         "import Beta\n\n"
+         "class One {\n    let pair = 1\n}\n"},
+        {"Beta/Two.swift",
+         "import Alpha\n\n"
+         "class Two {\n    let mate = 2\n}\n"},
+        {"Sources/Std/Std.swift",
+         "func standalone() -> Int {\n    return 9\n}\n"},
+        {"wide.swift",
+         "import Wide\n\n"
+         "func wideUser() -> Int {\n    return walpha() + wbeta()\n}\n"},
+        {"gamma.swift",
+         "import func Lib.gamma\n\n"
+         "func gammaUser() -> Int {\n    return gamma()\n}\n"},
+        {"std.swift",
+         "import Std\n\n"
+         "func stdUser() -> Int {\n    return standalone()\n}\n"},
+        {"decoy.swift",
+         "import UIKit\nimport Foundation\nimport Mod.Missing\n\n"
+         "func decoy() -> Int {\n    return 0\n}\n"},
         {"testable.swift",
          "@testable import Store\n\n"
          "func testUser() -> Int {\n    return Engine().start() + alpha() + beta()\n}\n"},
-        {"sub.swift", "import Lib.Sub\n\n"
-                      "func subUser() -> Int {\n    return gamma()\n}\n"},
+        {"sub.swift",
+         "import Lib.Sub\n\n"
+         "func subUser() -> Int {\n    return gamma()\n}\n"},
     };
     const size_t N_FILES = sizeof(FILES) / sizeof(FILES[0]);
     CHECK(N_FILES == 15);
@@ -704,7 +726,8 @@ static void unit_sw_resolver(void) {
     /* the manifest's declared targets reached the hints */
     int manifest_targets = 0;
     for (size_t i = 0; i < hints.n; i++)
-        if (STR_EQ(hints.items[i].path, "Package.swift") && hints.items[i].n_swift_targets == 6)
+        if (STR_EQ(hints.items[i].path, "Package.swift") &&
+            hints.items[i].n_swift_targets == 6)
             manifest_targets = 1;
     CHECK(manifest_targets);
 
@@ -755,15 +778,15 @@ static void unit_sw_resolver(void) {
         if (g.edges[i].from == dc)
             decoy_edges++;
     }
-    CHECK(wide_to_wc == 1); /* the whole-module wholesale fan-out */
+    CHECK(wide_to_wc == 1);   /* the whole-module wholesale fan-out */
     CHECK(wide_to_wd == 1);
-    CHECK(gamma_to_gf == 1);    /* the kind-scoped member claim */
-    CHECK(std_to_sf == 1);      /* the DEFAULT path (Sources/Std) */
+    CHECK(gamma_to_gf == 1);  /* the kind-scoped member claim */
+    CHECK(std_to_sf == 1);    /* the DEFAULT path (Sources/Std) */
     CHECK(testable_to_se == 1); /* @testable: the attribute changes nothing */
     CHECK(testable_to_sx == 1);
-    CHECK(sub_to_gf == 1);   /* the submodule spelling: the FIRST segment */
-    CHECK(cycle_edges == 2); /* OC003 == 1 on this corpus */
-    CHECK(decoy_edges == 0); /* UIKit/Foundation/Mod.Missing stay unresolved */
+    CHECK(sub_to_gf == 1);    /* the submodule spelling: the FIRST segment */
+    CHECK(cycle_edges == 2);  /* OC003 == 1 on this corpus */
+    CHECK(decoy_edges == 0);  /* UIKit/Foundation/Mod.Missing stay unresolved */
 
     /* the honest degradation: the SAME records without hints resolve
      * NOTHING (no declared facts, no mapping, none guessed) */

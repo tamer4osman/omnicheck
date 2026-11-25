@@ -31,7 +31,7 @@ def put(rel, data: bytes):
 
 
 # ----------------------------------------------------------------- js ---
-put("js/nul_fuzz.js", b"function ok() { return 1; }\n\x00\x00function broken() { return \x002; }\n")
+put("js/nul.js", b"function ok() { return 1; }\n\x00\x00function broken() { return \x002; }\n")
 put("js/bom.js", b"\xef\xbb\xbf" + "export function bom() { return '\u00e9\u4e2d'; }\n".encode("utf-8"))
 put("js/only_comments.js", b"// just a comment\n/* and a block\n   comment */\n")
 put("js/no_newline.js", b"function last() { return 42; }")
@@ -86,6 +86,6 @@ put("json/osv_records_not_array.json",
 put("json/nested_bomb.json", b"[" * 5000 + b"]" * 5000)
 put("json/dup_keys.json",
     b'{"schema": "omnicheck.osv_snapshot/v0", "schema": "omnicheck.osv_snapshot/v0"}')
-put("json/nul_fuzz.json", b'{"schema": "omnicheck.osv_snap\x00shot/v0"}')
+put("json/nul.json", b'{"schema": "omnicheck.osv_snap\x00shot/v0"}')
 
 print("corpus complete")

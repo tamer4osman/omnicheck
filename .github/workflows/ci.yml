@@ -57,11 +57,13 @@ jobs:
           fetch-depth: 0
       - name: Install clang-format-19
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget gnupg
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          echo "deb http://apt.llvm.org/$(. /etc/os-release && echo $UBUNTU_CODENAME)/llvm-toolchain-$(. /etc/os-release && echo $UBUNTU_CODENAME)-19 apt main" | sudo tee /etc/apt/sources.list.d/apt.llvm.org.list
+          # Add LLVM apt repository for clang-format-19
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          echo "deb http://apt.llvm.org/noble llvm-toolchain-noble-19 main" | sudo tee /etc/apt/sources.list.d/apt.llvm.org.list
           sudo apt-get update
           sudo apt-get install -y clang-format-19
       - name: Check formatting
-        run: PATH="/usr/lib/llvm-19/bin:$PATH" ./scripts/check-format.sh
+        run: |
+          export PATH="/usr/lib/llvm-19/bin:$PATH"
+          clang-format --version
+          ./scripts/check-format.sh

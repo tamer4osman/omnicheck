@@ -417,7 +417,7 @@ static void test_adversarial_corpus(void) {
     free(out);
 
     /* Each adversarial file alone must also complete honestly. */
-    static const char *FILES[] = {"js/nul.js",
+    static const char *FILES[] = {"js/nul_fuzz.js",
                                   "js/bom.js",
                                   "js/only_comments.js",
                                   "js/no_newline.js",
@@ -482,7 +482,7 @@ static void test_json_loader_fuzz(void) {
                                   "json/osv_records_not_array.json",
                                   "json/nested_bomb.json",
                                   "json/dup_keys.json",
-                                  "json/nul.json"};
+                                  "json/nul_fuzz.json"};
     for (size_t i = 0; i < sizeof(FILES) / sizeof(FILES[0]); i++) {
         char path[600];
         snprintf(path, sizeof(path), "%s/tests/fixtures_fuzz/%s", OC_REPO_ROOT, FILES[i]);
@@ -527,7 +527,7 @@ static void test_json_loader_fuzz(void) {
         free(o);
     }
     static const char *OSV[] = {"osv_truncated.json", "osv_wrong_schema.json",
-                                "osv_records_not_array.json", "dup_keys.json", "nul.json"};
+                                "osv_records_not_array.json", "dup_keys.json", "nul_fuzz.json"};
     for (size_t i = 0; i < sizeof(OSV) / sizeof(OSV[0]); i++) {
         snprintf(cmd, sizeof(cmd),
                  "%s check tests/fixtures/supply --packs-dir %s "

@@ -1,5 +1,6 @@
 #include "oc/mutate.h"
 
+#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -436,9 +437,19 @@ static oc_mut_status run_test(const char *cmd, long timeout_s) {
     if (pid == 0) {
         setpgid(0, 0);
         /* the suite's own output is not part of the mutation report
-         * contract: silence it so the JSON report stays byte-clean */
-        freopen("/dev/null", "w", stdout);
-        freopen("/dev/null", "w", stderr);
+         * contract: silence it so the JSON report stays byte-clean.
+         * If freopen fails, fall back to closing the fd and opening
+         * /dev/null explicitly; if that also fails, report setup error. */
+        if (!freopen("/dev/null", "w", stdout)) {
+            close(STDOUT_FILENO);
+            if (open("/dev/null", O_WRONLY) != STDOUT_FILENO)
+                _exit(126); /* redirection setup failed */
+        }
+        if (!freopen("/dev/null", "w", stderr)) {
+            close(STDERR_FILENO);
+            if (open("/dev/null", O_WRONLY) != STDERR_FILENO)
+                _exit(126); /* redirection setup failed */
+        }
         execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
         _exit(127);
     }

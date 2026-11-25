@@ -204,20 +204,30 @@ if(OC_PYTHON_EXECUTABLE AND NOT EXISTS "${CMAKE_SOURCE_DIR}/tests/fixtures/scala
 endif()
 
 # ---------------------------------------------------------------------------
-# FUZZ CORPUS: the NUL-byte fixtures under tests/fixtures_fuzz/ (js/nul.js,
-# json/nul.json) are GENERATED SOURCES (scripts/gen_fuzz_corpus.py).
+# FUZZ CORPUS: the NUL-byte fixtures under tests/fixtures_fuzz/ (js/nul_fuzz.js,
+# json/nul_fuzz.json) are GENERATED SOURCES (scripts/gen_fuzz_corpus.py).
 # test_fuzz reads them directly, and git on Windows cannot track NUL-byte
 # files, so they are ignored in .gitignore and regenerated on demand:
 # when the sentinel fixture is missing at build time, the generator runs
 # before the test target is built. When the fixtures are present (git
 # checkouts, re-runs) nothing happens -- byte-identical sources in, the
 # determinism contract is untouched.
+#
+# If Python is unavailable at configure time, test_fuzz is explicitly excluded
+# because its required fixtures cannot be generated. This prevents a fresh
+# checkout from enabling test_fuzz with missing fixtures.
 # ---------------------------------------------------------------------------
-if(OC_PYTHON_EXECUTABLE AND (NOT EXISTS "${CMAKE_SOURCE_DIR}/tests/fixtures_fuzz/js/nul.js" OR NOT EXISTS "${CMAKE_SOURCE_DIR}/tests/fixtures_fuzz/json/nul.json"))
-    add_custom_target(oc_fuzz_corpus
-        COMMAND ${CMAKE_COMMAND} -E echo "Generating fuzz corpus fixtures (gen_fuzz_corpus.py)"
-        COMMAND ${OC_PYTHON_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/gen_fuzz_corpus.py"
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/scripts"
-        VERBATIM)
-    add_dependencies(test_fuzz oc_fuzz_corpus)
+if(OC_PYTHON_EXECUTABLE)
+    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/tests/fixtures_fuzz/js/nul_fuzz.js" OR NOT EXISTS "${CMAKE_SOURCE_DIR}/tests/fixtures_fuzz/json/nul_fuzz.json")
+        add_custom_target(oc_fuzz_corpus
+            COMMAND ${CMAKE_COMMAND} -E echo "Generating fuzz corpus fixtures (gen_fuzz_corpus.py)"
+            COMMAND ${OC_PYTHON_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/gen_fuzz_corpus.py"
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/scripts"
+            VERBATIM)
+        add_dependencies(test_fuzz oc_fuzz_corpus)
+    endif()
+else()
+    # No Python available: exclude test_fuzz since its fixtures cannot be generated
+    set_tests_properties(test_fuzz PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    message(WARNING "test_fuzz excluded: Python not found, cannot generate NUL-byte fuzz fixtures")
 endif()

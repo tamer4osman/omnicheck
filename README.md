@@ -10,6 +10,10 @@
 ![tests](https://img.shields.io/badge/ctest-38%2Fcell%20%C2%B7%204%20cells-success)
 ![determinism](https://img.shields.io/badge/reports-byte%2Dstable-9cf)
 
+![author](https://img.shields.io/badge/author-Tamer%20Osman-blue)
+
+**Author:** [Tamer Osman](https://github.com/tamer4osman)
+
 Language support is **registered, not trained**: declarative language packs bind
 file types to tree-sitter grammars and select which analysis passes run.
 Analysis is graph traversal; output is a byte-stable JSON report with stable
@@ -39,6 +43,7 @@ every verdict, the adviser only reorders attention.
 16. [Repository layout](#repository-layout)
 17. [Documentation map](#documentation-map)
 18. [License](#license)
+19. [Author](#author)
 
 ---
 
@@ -864,3 +869,7 @@ Apache-2.0 for the first-party code; see `LICENSE` (canonical text) and
 their own licenses: MIT (tree-sitter runtime and grammars) and Apache-2.0
 (OmniDecide-C kernel); see `THIRD_PARTY_NOTICES.md` for pinned versions and
 `third_party/omnidecide/PROVENANCE.md` for the kernel's integrity manifest.
+
+## Author
+
+[**Tamer Osman**](https://github.com/tamer4osman) — Project creator and maintainer.

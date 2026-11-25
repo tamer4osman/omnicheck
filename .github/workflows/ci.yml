@@ -7,6 +7,7 @@ on:
 
 jobs:
   build-test:
+    name: Build and test (${{ matrix.cc }})
     strategy:
       fail-fast: false
       matrix:
@@ -19,6 +20,8 @@ jobs:
       CC: ${{ matrix.cc }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Vendor tree-sitter sources
         run: ./scripts/vendor.sh
       - name: Configure (warnings as errors)
@@ -29,9 +32,12 @@ jobs:
         run: ctest --preset default
 
   sanitizers:
+    name: Sanitizers (ASan+UBSan+LSan)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - run: ./scripts/vendor.sh
       - name: Configure ASan+UBSan (warnings as errors)
         run: cmake --preset sanitize -DOC_WERROR=ON
@@ -43,10 +49,19 @@ jobs:
           ASAN_OPTIONS: detect_leaks=1
 
   format:
+    name: Format check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install clang-format-19 (pinned to the version the tree is formatted with)
-        run: sudo apt-get update && sudo apt-get install -y clang-format-19
+        with:
+          fetch-depth: 0
+      - name: Install clang-format-19
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          echo "deb http://apt.llvm.org/$(. /etc/os-release && echo $UBUNTU_CODENAME)/llvm-toolchain-$(. /etc/os-release && echo $UBUNTU_CODENAME)-19 apt main" | sudo tee /etc/apt/sources.list.d/apt.llvm.org.list
+          sudo apt-get update
+          sudo apt-get install -y clang-format-19
       - name: Check formatting
         run: PATH="/usr/lib/llvm-19/bin:$PATH" ./scripts/check-format.sh

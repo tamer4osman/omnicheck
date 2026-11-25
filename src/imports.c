@@ -1706,19 +1706,19 @@ long oc_resolve_kotlin_import(oc_resolve_ctx *cx, const char *from_path, const c
 
     const char **tgs = NULL;
     size_t n_tg = 0, cap_tg = 0;
-#define KT_TG_PUSH(p)                                                                            \
-    do {                                                                                          \
-        if (n_tg == cap_tg) {                                                                     \
-            size_t ncap = cap_tg ? cap_tg * 2 : 16;                                               \
-            const char **ng = (const char **)oc_arena_alloc(a, ncap * sizeof(const char *));      \
-            if (!ng)                                                                              \
-                return -1;                                                                        \
-            for (size_t ti = 0; ti < n_tg; ti++)                                                  \
-                ng[ti] = tgs[ti];                                                                 \
-            tgs = ng;                                                                             \
-            cap_tg = ncap;                                                                        \
-        }                                                                                         \
-        tgs[n_tg++] = (p);                                                                        \
+#define KT_TG_PUSH(p)                                                                              \
+    do {                                                                                           \
+        if (n_tg == cap_tg) {                                                                      \
+            size_t ncap = cap_tg ? cap_tg * 2 : 16;                                                \
+            const char **ng = (const char **)oc_arena_alloc(a, ncap * sizeof(const char *));       \
+            if (!ng)                                                                               \
+                return -1;                                                                         \
+            for (size_t ti = 0; ti < n_tg; ti++)                                                   \
+                ng[ti] = tgs[ti];                                                                  \
+            tgs = ng;                                                                              \
+            cap_tg = ncap;                                                                         \
+        }                                                                                          \
+        tgs[n_tg++] = (p);                                                                         \
     } while (0)
 
     size_t sl = strlen(spec);
@@ -1827,8 +1827,7 @@ static int swift_path_under(const char *path, const char *dir) {
  * assigns each analyzed Swift hint its declared module and keeps the
  * ones that carry at least one top-level declaration name. Sorted by
  * (module, path). */
-static void swift_pkg_range(const kt_ent *items, size_t n, const char *pkg, size_t *lo,
-                            size_t *hi);
+static void swift_pkg_range(const kt_ent *items, size_t n, const char *pkg, size_t *lo, size_t *hi);
 static void swift_index_build(oc_resolve_ctx *cx, oc_arena *a) {
     if (cx->swift.built)
         return;
@@ -2126,8 +2125,8 @@ long oc_imports_resolve_ex_hints(oc_graph *g, const oc_import_vec *in, oc_arena 
              * degradation. */
             const char **targets = NULL;
             size_t n_targets = 0;
-            long rc = oc_resolve_kotlin_import(cx, r->from_path, r->specifier, a, &targets,
-                                               &n_targets);
+            long rc =
+                oc_resolve_kotlin_import(cx, r->from_path, r->specifier, a, &targets, &n_targets);
             if (rc < 0)
                 return -1;
             for (size_t t = 0; t < n_targets; t++) {
@@ -2156,8 +2155,8 @@ long oc_imports_resolve_ex_hints(oc_graph *g, const oc_import_vec *in, oc_arena 
              * unresolved -- the honest degradation. */
             const char **targets = NULL;
             size_t n_targets = 0;
-            long rc = oc_resolve_swift_import(cx, r->from_path, r->specifier, a, &targets,
-                                              &n_targets);
+            long rc =
+                oc_resolve_swift_import(cx, r->from_path, r->specifier, a, &targets, &n_targets);
             if (rc < 0)
                 return -1;
             for (size_t t = 0; t < n_targets; t++) {

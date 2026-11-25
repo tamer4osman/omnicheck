@@ -5,6 +5,37 @@
 set -eu
 cd "$(dirname "$0")/.."
 
+# Portable sha256: GNU coreutils' sha256sum is not present on macOS, which
+# ships shasum instead (openssl is the last-resort fallback).
+sha256_of() {
+    if command -v sha256sum > /dev/null 2>&1; then
+        sha256sum "$1" | awk '{print $1}'
+    elif command -v shasum > /dev/null 2>&1; then
+        shasum -a 256 "$1" | awk '{print $1}'
+    elif command -v openssl > /dev/null 2>&1; then
+        openssl dgst -sha256 "$1" | awk '{print $NF}'
+    else
+        return 1
+    fi
+}
+
+# Verify a sha256sum-style manifest ("<hash>  <path>" per line); portable
+# replacement for "sha256sum -c" so the check runs on macOS too.
+verify_manifest() {
+    manifest="$1"
+    failed=0
+    while read -r want path _; do
+        [ -n "$want" ] || continue
+        case "$want" in \#*) continue ;; esac
+        got=$(sha256_of "$path") || return 1
+        if [ "$got" != "$want" ]; then
+            echo "vendor: sha256 mismatch: $path"
+            failed=1
+        fi
+    done < "$manifest"
+    return $failed
+}
+
 TS_REF="${TS_REF:-v0.27.2}"
 JS_REF="${JS_REF:-v0.25.0}"
 PY_REF="${PY_REF:-v0.25.0}"
@@ -94,7 +125,9 @@ fetch() {
         ntar="$dest.npm.tgz"
         curl -sSL -o "$ntar" "https://registry.npmjs.org/$npm_pkg/-/$npm_pkg-${npm_ver:-${ref#v}}.tgz" \
             || { rm -f "$ntar"; echo "vendor: FAILED -- cannot fetch $repo @ $ref (git clone, codeload and npm all unavailable)"; exit 1; }
-        echo "$npm_sha  $ntar" | sha256sum -c --status \
+        got=$(sha256_of "$ntar") \
+            || { rm -f "$ntar"; echo "vendor: FAILED -- no sha256 tool available"; exit 1; }
+        [ "$got" = "$npm_sha" ] \
             || { rm -f "$ntar"; echo "vendor: FAILED -- npm tarball sha256 mismatch for $npm_pkg"; exit 1; }
         mkdir -p "$dest"
         tar xzf "$ntar" -C "$dest" --strip-components 1
@@ -171,7 +204,7 @@ fetch tree-sitter/tree-sitter-scala          "$SCALA_REF" tree-sitter-scala "$SC
 # the working tree is verified against the committed sha256 manifest so
 # accidental edits to the vendored foreign sources are caught here.
 if [ -f omnidecide/VENDOR.sha256 ] && [ -f omnidecide/PROVENANCE.md ]; then
-    (cd omnidecide && sha256sum -c VENDOR.sha256 --quiet) \
+    (cd omnidecide && verify_manifest VENDOR.sha256) \
         && echo "vendor: omnidecide integrity OK ($(wc -l < omnidecide/VENDOR.sha256) files)" \
         || { echo "vendor: FAILED -- third_party/omnidecide does not match VENDOR.sha256"; \
              echo "vendor: restore the committed tree (git checkout -- third_party/omnidecide) or re-vendor per PROVENANCE.md"; \

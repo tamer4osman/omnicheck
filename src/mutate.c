@@ -437,8 +437,10 @@ static oc_mut_status run_test(const char *cmd, long timeout_s) {
         setpgid(0, 0);
         /* the suite's own output is not part of the mutation report
          * contract: silence it so the JSON report stays byte-clean */
-        freopen("/dev/null", "w", stdout);
-        freopen("/dev/null", "w", stderr);
+        if (freopen("/dev/null", "w", stdout) == NULL)
+            _exit(127);
+        if (freopen("/dev/null", "w", stderr) == NULL)
+            _exit(127);
         execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
         _exit(127);
     }

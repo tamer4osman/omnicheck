@@ -94,8 +94,21 @@ fetch() {
         ntar="$dest.npm.tgz"
         curl -sSL -o "$ntar" "https://registry.npmjs.org/$npm_pkg/-/$npm_pkg-${npm_ver:-${ref#v}}.tgz" \
             || { rm -f "$ntar"; echo "vendor: FAILED -- cannot fetch $repo @ $ref (git clone, codeload and npm all unavailable)"; exit 1; }
-        echo "$npm_sha  $ntar" | sha256sum -c --status \
-            || { rm -f "$ntar"; echo "vendor: FAILED -- npm tarball sha256 mismatch for $npm_pkg"; exit 1; }
+        # Portable sha256 verification: supports both sha256sum and shasum
+        if command -v sha256sum >/dev/null 2>&1; then
+            echo "$npm_sha  $ntar" | sha256sum -c --status \
+                || { rm -f "$ntar"; echo "vendor: FAILED -- npm tarball sha256 mismatch for $npm_pkg"; exit 1; }
+        elif command -v shasum >/dev/null 2>&1; then
+            # shasum -c expects "HASH  filename" format in a file
+            printf '%s  %s\n' "$npm_sha" "$ntar" > "$ntar.manifest" \
+                && shasum -a 256 -c "$ntar.manifest" --status \
+                || { rm -f "$ntar" "$ntar.manifest"; echo "vendor: FAILED -- npm tarball sha256 mismatch for $npm_pkg"; exit 1; }
+            rm -f "$ntar.manifest"
+        else
+            rm -f "$ntar"
+            echo "vendor: FAILED -- no sha256/shasum tool available for verification"
+            exit 1
+        fi
         mkdir -p "$dest"
         tar xzf "$ntar" -C "$dest" --strip-components 1
         rm -f "$ntar"
@@ -171,10 +184,23 @@ fetch tree-sitter/tree-sitter-scala          "$SCALA_REF" tree-sitter-scala "$SC
 # the working tree is verified against the committed sha256 manifest so
 # accidental edits to the vendored foreign sources are caught here.
 if [ -f omnidecide/VENDOR.sha256 ] && [ -f omnidecide/PROVENANCE.md ]; then
-    (cd omnidecide && sha256sum -c VENDOR.sha256 --quiet) \
-        && echo "vendor: omnidecide integrity OK ($(wc -l < omnidecide/VENDOR.sha256) files)" \
-        || { echo "vendor: FAILED -- third_party/omnidecide does not match VENDOR.sha256"; \
-             echo "vendor: restore the committed tree (git checkout -- third_party/omnidecide) or re-vendor per PROVENANCE.md"; \
-             exit 1; }
+    # Portable SHA-256 verification: supports both sha256sum and shasum
+    if command -v sha256sum >/dev/null 2>&1; then
+        (cd omnidecide && sha256sum -c VENDOR.sha256 --quiet) \
+            && echo "vendor: omnidecide integrity OK ($(wc -l < omnidecide/VENDOR.sha256) files)" \
+            || { echo "vendor: FAILED -- third_party/omnidecide does not match VENDOR.sha256"; \
+                 echo "vendor: restore the committed tree (git checkout -- third_party/omnidecide) or re-vendor per PROVENANCE.md"; \
+                 exit 1; }
+    elif command -v shasum >/dev/null 2>&1; then
+        # shasum output format differs: "SHA256 filename  hash"
+        # Convert to sha256sum format: "hash  filename" for verification
+        (cd omnidecide && awk '{print $3 "  " $2}' VENDOR.sha256 | shasum -a 256 -c --status) \
+            && echo "vendor: omnidecide integrity OK ($(wc -l < omnidecide/VENDOR.sha256) files)" \
+            || { echo "vendor: FAILED -- third_party/omnidecide does not match VENDOR.sha256"; \
+                 echo "vendor: restore the committed tree (git checkout -- third_party/omnidecide) or re-vendor per PROVENANCE.md"; \
+                 exit 1; }
+    else
+        echo "vendor: WARNING -- no sha256/shasum tool available for omnidecide verification"
+    fi
 fi
 echo "vendor: done"

@@ -342,10 +342,13 @@ static void unit_n2_corrupt_manifest_skip(void) {
 /* --- unit: N-4 client side, the response buffer grows -------------------- */
 
 static void push_finding(oc_finding_vec *v, oc_arena *a, int i) {
-    char msg[160], fp[64];
-    snprintf(msg, sizeof(msg), "Function 'fn%04d' spans %d lines and needs a triage verdict", i,
-             61 + i % 40);
-    snprintf(fp, sizeof(fp), "fp-s25-%06d", i);
+    /* Allocate message and fp_text from arena; spec strings must be
+     * arena-owned for oc_findings_push to retain them after local scope.
+     */
+    char *msg = oc_arena_sprintf(a,
+        "Function 'fn%04d' spans %d lines and needs a triage verdict",
+        i, 61 + i % 40);
+    char *fp = oc_arena_sprintf(a, "fp-s25-%06d", i);
     oc_finding_spec spec;
     memset(&spec, 0, sizeof(spec));
     spec.rule_id = "OC001";

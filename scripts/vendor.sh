@@ -192,9 +192,10 @@ if [ -f omnidecide/VENDOR.sha256 ] && [ -f omnidecide/PROVENANCE.md ]; then
                  echo "vendor: restore the committed tree (git checkout -- third_party/omnidecide) or re-vendor per PROVENANCE.md"; \
                  exit 1; }
     elif command -v shasum >/dev/null 2>&1; then
-        # shasum output format differs: "SHA256 filename  hash"
-        # Convert to sha256sum format: "hash  filename" for verification
-        (cd omnidecide && awk '{print $3 "  " $2}' VENDOR.sha256 | shasum -a 256 -c --status) \
+        # shasum -c accepts the same "hash  filename" format as sha256sum
+        # (two spaces between hash and filename). VENDOR.sha256 is already
+        # in this format, so pass it directly.
+        (cd omnidecide && shasum -a 256 -c VENDOR.sha256 --status) \
             && echo "vendor: omnidecide integrity OK ($(wc -l < omnidecide/VENDOR.sha256) files)" \
             || { echo "vendor: FAILED -- third_party/omnidecide does not match VENDOR.sha256"; \
                  echo "vendor: restore the committed tree (git checkout -- third_party/omnidecide) or re-vendor per PROVENANCE.md"; \

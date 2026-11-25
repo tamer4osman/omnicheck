@@ -204,7 +204,8 @@ if [ -f omnidecide/VENDOR.sha256 ] && [ -f omnidecide/PROVENANCE.md ]; then
                  exit 1; }
     elif command -v openssl >/dev/null 2>&1; then
         # openssl dgst -sha256 fallback: verify each line individually
-        (cd omnidecide && awk '{system("openssl dgst -sha256 " $2 " | grep -q " $1)}' VENDOR.sha256) \
+        # Use awk exit status to fail on any mismatch
+        (cd omnidecide && awk '{if (system("openssl dgst -sha256 " $2 " | grep -q " $1) != 0) exit 1}' VENDOR.sha256) \
             && echo "vendor: omnidecide integrity OK ($(wc -l < omnidecide/VENDOR.sha256) files)" \
             || { echo "vendor: FAILED -- third_party/omnidecide does not match VENDOR.sha256"; \
                  echo "vendor: restore the committed tree (git checkout -- third_party/omnidecide) or re-vendor per PROVENANCE.md"; \

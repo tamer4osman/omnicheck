@@ -212,22 +212,22 @@ endif()
 # before the test target is built. When the fixtures are present (git
 # checkouts, re-runs) nothing happens -- byte-identical sources in, the
 # determinism contract is untouched.
-#
-# If Python is unavailable at configure time, test_fuzz is explicitly excluded
-# because its required fixtures cannot be generated. This prevents a fresh
-# checkout from enabling test_fuzz with missing fixtures.
 # ---------------------------------------------------------------------------
 if(OC_PYTHON_EXECUTABLE)
-    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/tests/fixtures_fuzz/js/nul_fuzz.js" OR NOT EXISTS "${CMAKE_SOURCE_DIR}/tests/fixtures_fuzz/json/nul_fuzz.json")
-        add_custom_target(oc_fuzz_corpus
-            COMMAND ${CMAKE_COMMAND} -E echo "Generating fuzz corpus fixtures (gen_fuzz_corpus.py)"
-            COMMAND ${OC_PYTHON_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/gen_fuzz_corpus.py"
-            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/scripts"
-            VERBATIM)
-        add_dependencies(test_fuzz oc_fuzz_corpus)
-    endif()
+    # Always define the fuzz corpus target with outputs for proper dependency
+    # tracking. The fixtures are regenerated only when missing.
+    add_custom_target(oc_fuzz_corpus
+        COMMAND ${CMAKE_COMMAND} -E echo "Generating fuzz corpus fixtures (gen_fuzz_corpus.py)"
+        COMMAND ${OC_PYTHON_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/gen_fuzz_corpus.py"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/scripts"
+        BYPRODUCTS "tests/fixtures_fuzz/js/nul_fuzz.js"
+                "tests/fixtures_fuzz/json/nul_fuzz.json"
+        VERBATIM)
+    add_dependencies(test_fuzz oc_fuzz_corpus)
 else()
-    # No Python available: exclude test_fuzz since its fixtures cannot be generated
-    set_tests_properties(test_fuzz PROPERTIES EXCLUDE_FROM_ALL TRUE)
-    message(WARNING "test_fuzz excluded: Python not found, cannot generate NUL-byte fuzz fixtures")
+    # No Python available: disable test_fuzz since its fixtures cannot be generated
+    # DISABLED TRUE excludes from test execution; EXCLUDE_FROM_ALL excludes from build
+    set_tests_properties(test_fuzz PROPERTIES DISABLED TRUE)
+    set_target_properties(test_fuzz PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    message(WARNING "test_fuzz disabled: Python not found, cannot generate NUL-byte fuzz fixtures")
 endif()

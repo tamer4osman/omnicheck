@@ -315,7 +315,7 @@
   "rows": {
    "include": {
     "files": 27,
-    "lines": 2263
+    "lines": 2301
    },
    "packs": {
     "files": 15,
@@ -327,28 +327,28 @@
    },
    "scripts": {
     "files": 46,
-    "lines": 15515
+    "lines": 15555
    },
    "src_impl": {
-    "files": 31,
-    "lines": 22089
+    "files": 42,
+    "lines": 23548
    },
    "templates": {
     "files": 3,
     "lines": 194
    },
    "tests": {
-    "files": 36,
-    "lines": 16183
+    "files": 52,
+    "lines": 16963
    },
    "tools": {
     "files": 4,
-    "lines": 1074
+    "lines": 1076
    }
   },
   "total": {
-   "files": 173,
-   "lines": 58661
+   "files": 200,
+   "lines": 60980
   }
  },
  "schema": "omnicheck.evidence/v0"

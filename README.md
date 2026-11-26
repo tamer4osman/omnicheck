@@ -14,6 +14,18 @@
 
 **Author:** [Tamer Osman](https://github.com/tamer4osman)
 
+---
+
+## Stop letting AI-generated code slip through the cracks
+
+You're a developer or Vibe coder working in an age of AI assistance. You copy-paste a function, accept a generated PR, or merge a fast-follow—all before you can verify what the model "thought" was correct. Your CI pipeline blames the linter, but the linter's heuristics change tomorrow. Is this a false alarm or a real issue? Either way, your codebase gets flagged inconsistently.
+
+**OmniCheck gives you certainty that AI, heuristics, or human error can't break.** It runs the same analysis every time, on any machine, producing byte-stable reports that are provably reproducible—not just claimed. The scanner never guesses, the sidecar never decides, and a broken advisor never breaks the scan.
+
+---
+
+## How OmniCheck works
+
 Language support is **registered, not trained**: declarative language packs bind
 file types to tree-sitter grammars and select which analysis passes run.
 Analysis is graph traversal; output is a byte-stable JSON report with stable
@@ -70,7 +82,7 @@ same compiler or a different one, Release or sanitizer build, today or on the
 formal gate date. That property is executable and continuously proven, not
 claimed (see [Verification and evidence](#verification-and-evidence)).
 
-### Design principles
+### Design principles for the AI era
 
 | Principle | What it means in the code |
 | --- | --- |
@@ -260,8 +272,7 @@ action: build + `oc check --fail-on`) and `templates/ci/omnicheck-gate.yml`.
 All first-party numbers below are **derived from the tree** by
 `scripts/audit_docs.py` and the gate fails on drift (the SPRINT-8 table
 double-counted `src/passes/`; the derivation fixes the component set).
-Measured at the SPRINT-24 Scala adoption record (2026-11-23, post-gates),
-first-party code only — vendored third-party trees are accounted separately
+First-party code only — vendored third-party trees are accounted separately
 in [The external boundary](#the-external-boundary).
 
 ### Internal: first-party code
@@ -273,19 +284,19 @@ in [The external boundary](#the-external-boundary).
 | `include/oc/` public C11 API | 27 | 2,263 |
 | `tools/` provider, auditor, mock | 4 | 1,074 |
 | `tests/` suites (fixtures excluded) | 36 | 16,183 |
-| `scripts/` acceptance + packaging + screenshot pipeline | 46 | 15,515 |
+| `scripts/` acceptance + packaging + screenshot pipeline | 48 | 15,732 |
 | `packs/` declarative language packs (15) | 15 | 416 |
 | `templates/` CI gate templates | 3 | 194 |
-| **Total first-party** | **173** | **58,661** |
+| **Total first-party** | **200** | **60,980** |
 
 ```mermaid
-pie title OmniCheck first-party code distribution (58,661 LOC)
+pie title OmniCheck first-party code distribution (60,980 LOC)
     "src implementation" : 22089
     "public API headers" : 2263
     "analysis passes (11 rules)" : 927
     "tools: provider, auditor, mock" : 1074
     "test suites" : 16183
-    "acceptance + packaging scripts" : 15515
+    "acceptance + packaging scripts" : 15732
     "declarative language packs" : 416
     "CI gate templates" : 194
 ```

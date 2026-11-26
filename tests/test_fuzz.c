@@ -17,6 +17,7 @@
  *     coverage and OSV loaders. Malformed input must produce honest
  *     errors, never crashes, never silent skips.
  */
+#define _DARWIN_C_SOURCE /* make mkdtemp visible on macOS clang */
 #include "oc/finding.h"
 #include "oc/json.h"
 #include "oc/report.h"

@@ -1,3 +1,4 @@
+#define _DARWIN_C_SOURCE /* make mkdtemp visible on macOS clang */
 #include "oc/pack.h"
 #include "testkit.h"
 

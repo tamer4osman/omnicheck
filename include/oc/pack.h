@@ -78,17 +78,16 @@ int oc_packs_write_json(const oc_pack_set *ps, oc_jsonw *w);
  * content available): the treatment then degrades to the root default,
  * never to a guess. */
 typedef enum oc_route_reason {
-    OC_ROUTE_EXT = 0,         /* plain extension match */
-    OC_ROUTE_H_SNIFF_CPP,     /* .h: cpp-positive content sniff */
-    OC_ROUTE_H_SNIFF_C,       /* .h: cpp errored, C parse clean */
-    OC_ROUTE_H_DEFAULT_CPP,   /* .h: root default (cpp source in the tree) */
-    OC_ROUTE_H_DEFAULT_C      /* .h: root default (C-only project) */
+    OC_ROUTE_EXT = 0,       /* plain extension match */
+    OC_ROUTE_H_SNIFF_CPP,   /* .h: cpp-positive content sniff */
+    OC_ROUTE_H_SNIFF_C,     /* .h: cpp errored, C parse clean */
+    OC_ROUTE_H_DEFAULT_CPP, /* .h: root default (cpp source in the tree) */
+    OC_ROUTE_H_DEFAULT_C    /* .h: root default (C-only project) */
 } oc_route_reason;
 
 const oc_pack *oc_packs_route_source(const oc_pack_set *ps, const char *path, const char *src,
-                                     size_t len, const char *const *discovered,
-                                     size_t n_discovered, oc_arena *a,
-                                     oc_route_reason *out_reason);
+                                     size_t len, const char *const *discovered, size_t n_discovered,
+                                     oc_arena *a, oc_route_reason *out_reason);
 
 #ifdef __cplusplus
 }

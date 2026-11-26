@@ -18,13 +18,26 @@
 
 ## Stop letting AI-generated code slip through the cracks
 
-You're a developer or Vibe coder working in an age of AI assistance. You copy-paste a function, accept a generated PR, or merge a fast-follow—all before you can verify what the model "thought" was correct. Your CI pipeline blames the linter, but the linter's heuristics change tomorrow. Is this a false alarm or a real issue? Either way, your codebase gets flagged inconsistently.
+You're a developer who's already seen your codebase change under you. An AI wrote a feature, a teammate rushed a PR, or you copy-pasted a snippet—and suddenly your CI is red. The old linter complained, but when you ran it next week, it said different things. That's the problem: **linter whack-a-mole**. Your team loses time fighting tools that change their minds instead of protecting your code.
 
-**OmniCheck gives you certainty that AI, heuristics, or human error can't break.** It runs the same analysis every time, on any machine, producing byte-stable reports that are provably reproducible—not just claimed. The scanner never guesses, the sidecar never decides, and a broken advisor never breaks the scan.
+**OmniCheck is different.** It builds the same report every single time, on every machine. Run it today, run it on your team's CI server, run it six months from now—same bytes, same findings. No AI guesses in the verdict path. No heuristics that "interpret context." Just the facts, raised from code.
 
-Support spans **15 languages** across **14 tree-sitter grammars**: JavaScript, TypeScript, TSX, Python, Go, Java, C#, Rust, Ruby, PHP, C, C++, Kotlin, Swift, and Scala. Every pack enables the full **OC001–OC011 rule set** automatically.
+**What it checks across 15 languages:**  
+You code in JavaScript, TypeScript, or Python? We parse them the same way—by turning your code into a map of nodes and leaves, not by training neural nets. We walk that map to find 11 clear facts:
 
-**How it works**: Language packs are *declarative descriptors*, not trained models. They bind file types to tree-sitter grammars and activate analysis passes. A parser builds an AST, an import resolver traces dependencies, and 11 deterministic rules check for violations—**no AI, no heuristics, no entropy**. Finding fingerprints ensure reports survive code motion; the optional OmniDecide sidecar ranks findings for convenience but never changes the verdict.
+- **OC001**: Functions that grew too long (>60 lines, default)  
+- **OC002**: `TODO`, `FIXME`, `HACK` markers left in comments  
+- **OC003**: Import cycles that hurt build times or testability  
+- **OC004**: Functions with high cyclomatic complexity (decision points)  
+- **OC005**: Exported functions or values nobody ever calls  
+- **OC006**: Source files that aren't imported by anything else  
+- **OC007**: Code that's both hard to change and poorly tested (high CRAP score)  
+- **OC008**: Blocks of code that appear verbatim in two or more places  
+- **OC009**: Dependencies known to have security vulnerabilities (OSV database)  
+- **OC010**: Files declaring no license information  
+- **OC011**: Hard-coded credentials (AWS keys, PEM keys, GitHub tokens, etc.)
+
+Each finding is paired with a stable fingerprint—like a unique ID that stays the same even if you move the code around. The optional triage layer can *show you the biggest issues first*, but it can't flip the verdict or invent problems. If the helper breaks, you still get the raw facts.
 
 ---
 

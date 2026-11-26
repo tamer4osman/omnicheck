@@ -22,6 +22,10 @@ You're a developer or Vibe coder working in an age of AI assistance. You copy-pa
 
 **OmniCheck gives you certainty that AI, heuristics, or human error can't break.** It runs the same analysis every time, on any machine, producing byte-stable reports that are provably reproducible—not just claimed. The scanner never guesses, the sidecar never decides, and a broken advisor never breaks the scan.
 
+Support spans **15 languages** across **14 tree-sitter grammars**: JavaScript, TypeScript, TSX, Python, Go, Java, C#, Rust, Ruby, PHP, C, C++, Kotlin, Swift, and Scala. Every pack enables the full **OC001–OC011 rule set** automatically.
+
+**How it works**: Language packs are *declarative descriptors*, not trained models. They bind file types to tree-sitter grammars and activate analysis passes. A parser builds an AST, an import resolver traces dependencies, and 11 deterministic rules check for violations—**no AI, no heuristics, no entropy**. Finding fingerprints ensure reports survive code motion; the optional OmniDecide sidecar ranks findings for convenience but never changes the verdict.
+
 ---
 
 ## How OmniCheck works

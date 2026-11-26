@@ -1,5 +1,9 @@
 # OmniCheck
 
+<!-- Meta tags for SEO -->
+<meta name="description" content="OmniCheck - Deterministic multi-language static analysis engine in C11. Byte-stable reports, 15 languages, 11 rules. No AI guesswork, reproducible builds.">
+<meta name="keywords" content="static analysis, linter, deterministic, byte-stable, multi-language, C11, tree-sitter, open source, CI/CD, security, code quality">
+
 **A deterministic, multi-language static-analysis engine in C11.**
 
 ![version](https://img.shields.io/badge/version-0.3.0-blue)
@@ -16,13 +20,19 @@
 
 ---
 
+## What is OmniCheck? A Deterministic Static Analysis Tool
+
+OmniCheck is a **C11 static analysis engine** that produces **byte-stable**, **reproducible** reports. Unlike traditional linters that rely on heuristics or machine learning, OmniCheck uses **tree-sitter parsing** and **graph traversal** to raise deterministic facts from your code. It works across **15 languages** (JavaScript, TypeScript, Python, Go, Java, C#, Rust, Ruby, PHP, C, C++, Kotlin, Swift, Scala, TSX) and checks for **11 types of code issues** with consistent results—every time you run it.
+
+---
+
 ## Stop letting AI-generated code slip through the cracks
 
 You're a developer who's already seen your codebase change under you. An AI wrote a feature, a teammate rushed a PR, or you copy-pasted a snippet—and suddenly your CI is red. The old linter complained, but when you ran it next week, it said different things. That's the problem: **linter whack-a-mole**. Your team loses time fighting tools that change their minds instead of protecting your code.
 
-**OmniCheck is different.** It builds the same report every single time, on every machine. Run it today, run it on your team's CI server, run it six months from now—same bytes, same findings. No AI guesses in the verdict path. No heuristics that "interpret context." Just the facts, raised from code.
+**OmniCheck is a deterministic static analysis tool.** It builds the same report every single time, on every machine. Run it today, run it on your team's CI server, run it six months from now—same bytes, same findings. No AI guesses in the verdict path. No heuristics that "interpret context." Just the facts, raised from code.
 
-**What it checks across 15 languages:**  
+**Multi-language static analysis across 15 languages:**  
 You code in JavaScript, TypeScript, or Python? We parse them the same way—by turning your code into a map of nodes and leaves, not by training neural nets. We walk that map to find 11 clear facts:
 
 - **OC001**: Functions that grew too long (>60 lines, default)  
@@ -76,28 +86,15 @@ every verdict, the adviser only reorders attention.
 
 ---
 
-## Why OmniCheck
+## Why OmniCheck: Deterministic Static Analysis, No Guesswork
 
-Classic linters mix three concerns in one blob: *what is true* (structural
-facts), *how bad is it* (severity) and *what to look at first* (attention).
-OmniCheck separates them hard:
+Classic linters mix three concerns in one blob: *what is true* (structural facts), *how bad is it* (severity) and *what to look at first* (attention). OmniCheck **separates them hard**:
 
-- **Truth is structural.** Every rule (OC001–OC011) is intent-blind and
-  deterministic — it fires on a structurally true statement ("this function
-  spans 74 lines", "this pinned dependency is in the OSV snapshot") or it does
-  not fire. There are no heuristics, no entropy guesses, no regex free-styling,
-  and no AI in the judgment path.
-- **Severity is fixed by the registry.** Rules never up- or downgrade
-  themselves based on "context".
-- **Attention is delegated, opt-in, and revocable.** The OmniDecide sidecar may
-  *rank* findings for the reader, but it can never delete, invent, re-severitify
-  or redefine one. If the sidecar is missing, broken, slow or lying, the scan
-  fails open and continues unranked.
+- **Truth is structural.** Every rule (OC001–OC011) is **intent-blind** and **deterministic** — it fires on a structurally true statement ("this function spans 74 lines", "this pinned dependency is in the OSV snapshot") or it does not fire. There are no heuristics, no entropy guesses, no regex free-styling, and **no AI in the judgment path**.
+- **Severity is fixed by the registry.** Rules never up- or downgrade themselves based on "context".
+- **Attention is delegated, opt-in, and revocable.** The OmniDecide sidecar may *rank* findings for the reader, but it can never delete, invent, re-severitify or redefine one. If the sidecar is missing, broken, slow or lying, the scan **fails open** and continues unranked.
 
-The payoff is reproducibility: the same inputs always produce the same bytes —
-same compiler or a different one, Release or sanitizer build, today or on the
-formal gate date. That property is executable and continuously proven, not
-claimed (see [Verification and evidence](#verification-and-evidence)).
+The payoff is **reproducibility**: the same inputs always produce the same bytes — same compiler or a different one, Release or sanitizer build, today or on the formal gate date. That property is executable and continuously proven, not claimed (see [Verification and evidence](#verification-and-evidence)).
 
 ### Design principles for the AI era
 

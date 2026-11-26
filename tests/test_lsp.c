@@ -28,7 +28,7 @@ static void unit_framing(void) {
     if (!f)
         return;
     const char *body1 = "{\"jsonrpc\":\"2.0\",\"id\":1}";
-    fprintf(f, "Content-Length: %zu\r\n\r\n%s", strlen(body1), body1);
+    fprintf(f, "Content-Length: %zu\n\n%s", strlen(body1), body1);
     fprintf(f, "Content-Length: %zu\n\n%s", strlen(body1), body1);
     rewind(f);
 
@@ -108,7 +108,7 @@ static void frames_free(frame_vec *v) {
 /* Serializes one client message into `buf`. */
 static size_t frame_into(char *buf, size_t cap, const char *json) {
     size_t len = strlen(json);
-    return (size_t)snprintf(buf, cap, "Content-Length: %zu\r\n\r\n%s", len, json);
+    return (size_t)snprintf(buf, cap, "Content-Length: %zu\n\n%s", len, json);
 }
 
 static void session_test(void) {

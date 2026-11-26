@@ -105,7 +105,7 @@ oc_code oc_lsp_read_message(FILE *in, char **out_body, size_t *out_len, oc_arena
 }
 
 oc_code oc_lsp_write_message(FILE *out, const char *body, size_t len) {
-    if (fprintf(out, "Content-Length: %zu\r\n\r\n", len) < 0)
+    if (fprintf(out, "Content-Length: %zu\n\n", len) < 0)
         return OC_ERR_IO;
     if (fwrite(body, 1, len, out) != len)
         return OC_ERR_IO;

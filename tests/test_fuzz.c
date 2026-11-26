@@ -418,24 +418,15 @@ static void test_adversarial_corpus(void) {
     free(out);
 
     /* Each adversarial file alone must also complete honestly. */
-    static const char *FILES[] = {"js/nul_fuzz.js",
-                                  "js/bom.js",
-                                  "js/only_comments.js",
-                                  "js/no_newline.js",
-                                  "js/empty.js",
-                                  "js/unicode_ident.js",
-                                  "js/deep_nest.js",
-                                  "js/brace_bomb.js",
-                                  "js/huge_line.js",
-                                  "js/many_functions.js",
-                                  "js/mutated_report.js",
-                                  "py/invalid_utf8.py",
-                                  "py/crlf.py",
-                                  "py/mixed_endings.py",
-                                  "py/unterminated.py",
-                                  "py/empty.py",
-                                  "py/long_ident.py",
-                                  "py/many_functions.py",
+    static const char *FILES[] = {"js/nul_fuzz.js",       "js/bom.js",
+                                  "js/only_comments.js",  "js/no_newline.js",
+                                  "js/empty.js",          "js/unicode_ident.js",
+                                  "js/deep_nest.js",      "js/brace_bomb.js",
+                                  "js/huge_line.js",      "js/many_functions.js",
+                                  "js/mutated_report.js", "py/invalid_utf8.py",
+                                  "py/crlf.py",           "py/mixed_endings.py",
+                                  "py/unterminated.py",   "py/empty.py",
+                                  "py/long_ident.py",     "py/many_functions.py",
                                   "py/cr_only.py"};
     size_t honest_exit2 = 0;
     for (size_t i = 0; i < sizeof(FILES) / sizeof(FILES[0]); i++) {

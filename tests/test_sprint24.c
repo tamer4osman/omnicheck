@@ -19,8 +19,8 @@
 #include "oc/coverage.h"
 #include "oc/graph.h"
 #include "oc/imports.h"
-#include "oc/parser.h"
 #include "oc/pack.h"
+#include "oc/parser.h"
 #include "oc/supply.h"
 #include "oc/surface.h"
 #include "testkit.h"
@@ -123,59 +123,58 @@ static size_t json_count_rule(const char *json, const char *rule) {
 /* --- unit: symbols, spans, the shape contracts -------------------------- */
 
 static void unit_scala_symbols(void) {
-    static const char src[] =
-        "/* free function: symbol, span = the whole declaration */\n"
-        "def compute(n: Int): Int = {\n"
-        "  n\n"
-        "}\n"
-        "\n"
-        "/* method: the name is the declaration's name-field identifier */\n"
-        "class Widget(val id: Int) {\n"
-        "  def scale(v: Int): Int = v * id\n"
-        "}\n"
-        "\n"
-        "/* extension method: the body belongs to its def, the extension\n"
-        " * container itself is never a symbol */\n"
-        "extension (s: String) {\n"
-        "  def shout: String = s.toUpperCase\n"
-        "}\n"
-        "\n"
-        "/* generic def: type parameters are a separate field; the wrapper\n"
-        " * adds no extent */\n"
-        "def max[T <: Comparable[T]](a: T, b: T): T = a\n"
-        "\n"
-        "/* object member: a symbol like any method */\n"
-        "object Registry {\n"
-        "  def lookup(key: String): Int = {\n"
-        "    key.length\n"
-        "  }\n"
-        "}\n"
-        "\n"
-        "/* body-less trait members: NOT symbols (the C prototype\n"
-        " * discipline; the default method IS one) */\n"
-        "trait Repo {\n"
-        "  def fetch(): Int\n"
-        "  def default(): Int = {\n"
-        "    1\n"
-        "  }\n"
-        "}\n"
-        "abstract class Base {\n"
-        "  def run(): Int\n"
-        "}\n"
-        "\n"
-        "/* lambda: anonymous construct, NOT a symbol (decisions count\n"
-        " * inward) */\n"
-        "def lambdaUser(v: Int): Int = {\n"
-        "  val fn = (x: Int) => x * 2\n"
-        "  fn(v)\n"
-        "}\n"
-        "\n"
-        "/* properties are NOT symbols (surface only) */\n"
-        "val greeting = \"hi\"\n"
-        "var counter = 0\n"
-        "\n"
-        "/* type alias: surface only, never a symbol */\n"
-        "type Handler = Int => Unit\n";
+    static const char src[] = "/* free function: symbol, span = the whole declaration */\n"
+                              "def compute(n: Int): Int = {\n"
+                              "  n\n"
+                              "}\n"
+                              "\n"
+                              "/* method: the name is the declaration's name-field identifier */\n"
+                              "class Widget(val id: Int) {\n"
+                              "  def scale(v: Int): Int = v * id\n"
+                              "}\n"
+                              "\n"
+                              "/* extension method: the body belongs to its def, the extension\n"
+                              " * container itself is never a symbol */\n"
+                              "extension (s: String) {\n"
+                              "  def shout: String = s.toUpperCase\n"
+                              "}\n"
+                              "\n"
+                              "/* generic def: type parameters are a separate field; the wrapper\n"
+                              " * adds no extent */\n"
+                              "def max[T <: Comparable[T]](a: T, b: T): T = a\n"
+                              "\n"
+                              "/* object member: a symbol like any method */\n"
+                              "object Registry {\n"
+                              "  def lookup(key: String): Int = {\n"
+                              "    key.length\n"
+                              "  }\n"
+                              "}\n"
+                              "\n"
+                              "/* body-less trait members: NOT symbols (the C prototype\n"
+                              " * discipline; the default method IS one) */\n"
+                              "trait Repo {\n"
+                              "  def fetch(): Int\n"
+                              "  def default(): Int = {\n"
+                              "    1\n"
+                              "  }\n"
+                              "}\n"
+                              "abstract class Base {\n"
+                              "  def run(): Int\n"
+                              "}\n"
+                              "\n"
+                              "/* lambda: anonymous construct, NOT a symbol (decisions count\n"
+                              " * inward) */\n"
+                              "def lambdaUser(v: Int): Int = {\n"
+                              "  val fn = (x: Int) => x * 2\n"
+                              "  fn(v)\n"
+                              "}\n"
+                              "\n"
+                              "/* properties are NOT symbols (surface only) */\n"
+                              "val greeting = \"hi\"\n"
+                              "var counter = 0\n"
+                              "\n"
+                              "/* type alias: surface only, never a symbol */\n"
+                              "type Handler = Int => Unit\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -201,9 +200,9 @@ static void unit_scala_symbols(void) {
     CHECK(count_symbols_named(&g, "lookup") == 1);
     CHECK(count_symbols_named(&g, "default") == 1);
     CHECK(count_symbols_named(&g, "lambdaUser") == 1);
-    CHECK(count_symbols_named(&g, "fetch") == 0);   /* bodyless trait member */
-    CHECK(count_symbols_named(&g, "run") == 0);     /* bodyless abstract member */
-    CHECK(count_symbols_named(&g, "fn") == 0);      /* lambda */
+    CHECK(count_symbols_named(&g, "fetch") == 0); /* bodyless trait member */
+    CHECK(count_symbols_named(&g, "run") == 0);   /* bodyless abstract member */
+    CHECK(count_symbols_named(&g, "fn") == 0);    /* lambda */
     const oc_node *sc = symbol_named(&g, "scale");
     CHECK(sc != NULL);
     if (sc) {
@@ -219,12 +218,11 @@ static void unit_scala_symbols(void) {
 /* --- unit: parameters (the name/type/default fields, the vararg) -------- */
 
 static void unit_scala_params(void) {
-    static const char src[] =
-        "def plain(a: Int, b: String): Unit = ()\n"
-        "def defaults(a: Int, b: Int = 2, name: String = \"x\"): Unit = ()\n"
-        "def vararg(items: String*): Unit = ()\n"
-        "def generic[T](a: T, b: T): T = a\n"
-        "def implicitp(implicit ev: Int): Unit = ()\n";
+    static const char src[] = "def plain(a: Int, b: String): Unit = ()\n"
+                              "def defaults(a: Int, b: Int = 2, name: String = \"x\"): Unit = ()\n"
+                              "def vararg(items: String*): Unit = ()\n"
+                              "def generic[T](a: T, b: T): T = a\n"
+                              "def implicitp(implicit ev: Int): Unit = ()\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -279,40 +277,39 @@ int main(void);
 /* --- unit: decisions (the hand-counted inventory) ------------------------ */
 
 static void unit_scala_decisions(void) {
-    static const char src[] =
-        "object Roller {\n"
-        "  def rollup(n: Int, items: List[Int]): Int = {\n"
-        "    if (n > 0) {\n"
-        "      return 1\n"
-        "    } else if (n < 0) {\n"
-        "      return -1\n"
-        "    }\n"
-        "    n match {\n"
-        "      case 1 | 2 => return 20\n"
-        "      case k if k > 3 => return 30\n"
-        "      case _ => {}\n"
-        "    }\n"
-        "    for (v <- items) {\n"
-        "      n + v\n"
-        "    }\n"
-        "    var i = n\n"
-        "    while (i > 100) {\n"
-        "      i -= 1\n"
-        "    }\n"
-        "    do {\n"
-        "      i += 1\n"
-        "    } while (i < 3)\n"
-        "    try {\n"
-        "      i = i / n\n"
-        "    } catch {\n"
-        "      case ex: ArithmeticException => i = -1\n"
-        "      case _ => i = 0\n"
-        "    }\n"
-        "    val ok = n > 0 && items.nonEmpty || i == 0\n"
-        "    if (ok) i else 0\n"
-        "  }\n"
-        "  def one: Int = 1\n"
-        "}\n";
+    static const char src[] = "object Roller {\n"
+                              "  def rollup(n: Int, items: List[Int]): Int = {\n"
+                              "    if (n > 0) {\n"
+                              "      return 1\n"
+                              "    } else if (n < 0) {\n"
+                              "      return -1\n"
+                              "    }\n"
+                              "    n match {\n"
+                              "      case 1 | 2 => return 20\n"
+                              "      case k if k > 3 => return 30\n"
+                              "      case _ => {}\n"
+                              "    }\n"
+                              "    for (v <- items) {\n"
+                              "      n + v\n"
+                              "    }\n"
+                              "    var i = n\n"
+                              "    while (i > 100) {\n"
+                              "      i -= 1\n"
+                              "    }\n"
+                              "    do {\n"
+                              "      i += 1\n"
+                              "    } while (i < 3)\n"
+                              "    try {\n"
+                              "      i = i / n\n"
+                              "    } catch {\n"
+                              "      case ex: ArithmeticException => i = -1\n"
+                              "      case _ => i = 0\n"
+                              "    }\n"
+                              "    val ok = n > 0 && items.nonEmpty || i == 0\n"
+                              "    if (ok) i else 0\n"
+                              "  }\n"
+                              "  def one: Int = 1\n"
+                              "}\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -337,14 +334,13 @@ static void unit_scala_decisions(void) {
     CHECK(o != NULL && o->complexity == 1);
 
     /* the non-boolean infix operators are NOT decisions: comp 1 */
-    static const char src2[] =
-        "object M {\n"
-        "  def arith(a: Int, b: Int): Int = {\n"
-        "    val x = a + b * 2 - 1\n"
-        "    val y = if (x > 0) x else -x\n"
-        "    y\n"
-        "  }\n"
-        "}\n";
+    static const char src2[] = "object M {\n"
+                               "  def arith(a: Int, b: Int): Int = {\n"
+                               "    val x = a + b * 2 - 1\n"
+                               "    val y = if (x > 0) x else -x\n"
+                               "    y\n"
+                               "  }\n"
+                               "}\n";
     oc_graph g2;
     oc_graph_init(&g2, &a);
     oc_parser *p2 = oc_parser_new(&a, &st);
@@ -360,14 +356,13 @@ static void unit_scala_decisions(void) {
     CHECK(ar != NULL && ar->complexity == 2);
 
     /* Scala 3 indented match arms still parse as case_clause */
-    static const char src3[] =
-        "object S3 {\n"
-        "  def pick(x: Any): Int =\n"
-        "    x match\n"
-        "      case i: Int => i\n"
-        "      case s: String => s.length\n"
-        "      case _ => 0\n"
-        "}\n";
+    static const char src3[] = "object S3 {\n"
+                               "  def pick(x: Any): Int =\n"
+                               "    x match\n"
+                               "      case i: Int => i\n"
+                               "      case s: String => s.length\n"
+                               "      case _ => 0\n"
+                               "}\n";
     oc_graph g3;
     oc_graph_init(&g3, &a);
     oc_parser *p3 = oc_parser_new(&a, &st);
@@ -394,15 +389,15 @@ static void unit_scala_imports(void) {
     static const char src[] =
         "package app.use\n"
         "\n"
-        "import com.example.lib.core\n"            /* plain 3 segments: NULL bind */
-        "import com.example.kit.Helper as H2\n"     /* Scala 3 tail rename: ORIGINAL bound */
-        "import com.example.lib.types.*\n"          /* Scala 3 wildcard */
-        "import com.example.lib.types2._\n"         /* Scala 2 wildcard, same node */
+        "import com.example.lib.core\n"                 /* plain 3 segments: NULL bind */
+        "import com.example.kit.Helper as H2\n"         /* Scala 3 tail rename: ORIGINAL bound */
+        "import com.example.lib.types.*\n"              /* Scala 3 wildcard */
+        "import com.example.lib.types2._\n"             /* Scala 2 wildcard, same node */
         "import com.example.lib.types.{TypeA, TypeB}\n" /* selector pair */
         "import com.example.lib.types.{TypeC => TC}\n"  /* Scala 2 selector rename */
-        "import com.example.lib.Store.total\n"      /* member: NULL bind */
-        "import single.Solo\n"                      /* one segment: bound */
-        "import pkg.Type\n"                         /* two segments: bound */
+        "import com.example.lib.Store.total\n"          /* member: NULL bind */
+        "import single.Solo\n"                          /* one segment: bound */
+        "import pkg.Type\n"                             /* two segments: bound */
         "\n"
         "def use(): Int = core(1)\n";
 
@@ -462,36 +457,35 @@ static void unit_scala_imports(void) {
 /* --- unit: module surface (the top-level and the private filter) -------- */
 
 static void unit_scala_surface(void) {
-    static const char src[] =
-        "package app.shapes\n"
-        "\n"
-        "def topFn(n: Int): Int = n\n"
-        "\n"
-        "private def hidden(): Int = 1\n"
-        "\n"
-        "protected def shielded(): Int = 2\n"
-        "\n"
-        "class Top {\n"
-        "  def member(n: Int): Int = n\n"
-        "  object Nested {\n"
-        "    val inner = 3\n"
-        "  }\n"
-        "  class Part(val name: String)\n"
-        "}\n"
-        "\n"
-        "object Singleton\n"
-        "\n"
-        "trait Capable\n"
-        "\n"
-        "enum Color {\n"
-        "  case Red, Green\n"
-        "}\n"
-        "\n"
-        "type Alias = Int\n"
-        "\n"
-        "val topVal = 7\n"
-        "var topVar = 8\n"
-        "val (a, b) = (1, 2)\n";
+    static const char src[] = "package app.shapes\n"
+                              "\n"
+                              "def topFn(n: Int): Int = n\n"
+                              "\n"
+                              "private def hidden(): Int = 1\n"
+                              "\n"
+                              "protected def shielded(): Int = 2\n"
+                              "\n"
+                              "class Top {\n"
+                              "  def member(n: Int): Int = n\n"
+                              "  object Nested {\n"
+                              "    val inner = 3\n"
+                              "  }\n"
+                              "  class Part(val name: String)\n"
+                              "}\n"
+                              "\n"
+                              "object Singleton\n"
+                              "\n"
+                              "trait Capable\n"
+                              "\n"
+                              "enum Color {\n"
+                              "  case Red, Green\n"
+                              "}\n"
+                              "\n"
+                              "type Alias = Int\n"
+                              "\n"
+                              "val topVal = 7\n"
+                              "var topVar = 8\n"
+                              "val (a, b) = (1, 2)\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -558,24 +552,20 @@ static void unit_scala_main_fact(void) {
     oc_parser *p = oc_parser_new(&a, &st);
     CHECK(p != NULL);
 
-    static const char claimed[] =
-        "object App {\n"
-        "  def main(args: Array[String]): Unit = {\n"
-        "    ()\n"
-        "  }\n"
-        "  def helper(): Unit = ()\n"
-        "}\n";
-    static const char annotation[] =
-        "@main def entry(): Unit = println(\"hi\")\n";
+    static const char claimed[] = "object App {\n"
+                                  "  def main(args: Array[String]): Unit = {\n"
+                                  "    ()\n"
+                                  "  }\n"
+                                  "  def helper(): Unit = ()\n"
+                                  "}\n";
+    static const char annotation[] = "@main def entry(): Unit = println(\"hi\")\n";
     /* a def named main OUTSIDE an object: no claim (the shape needs
      * the object wrapper) */
-    static const char bare[] =
-        "def main(args: Array[String]): Unit = ()\n";
+    static const char bare[] = "def main(args: Array[String]): Unit = ()\n";
     /* a member named othermain: no claim */
-    static const char other[] =
-        "object Other {\n"
-        "  def main2(args: Array[String]): Unit = ()\n"
-        "}\n";
+    static const char other[] = "object Other {\n"
+                                "  def main2(args: Array[String]): Unit = ()\n"
+                                "}\n";
 
     const char *const cases[] = {claimed, annotation, bare, other};
     const int expected[] = {1, 1, 0, 0};
@@ -621,47 +611,37 @@ static void unit_scala_resolver(void) {
      * edges (the set semantics dedupe the alias and the selector
      * records onto the same file pair). */
     static const sc_res_file FILES[] = {
-        {"core.scala",
-         "package com.example.lib\n\n"
-         "class Service {\n  def run(): Int = 1\n}\n\n"
-         "def core(n: Int): Int = n + 1\n"},
-        {"extra.scala",
-         "package com.example.lib\n\n"
-         "def beta(n: Int): Int = n * 3\n"},
-        {"typesr.scala",
-         "package com.example.lib.types\n\n"
-         "class TypeA {\n  def id: Int = 1\n}\n\n"
-         "class TypeB {\n  def id: Int = 2\n}\n"},
-        {"libuser.scala",
-         "package app.use\n\n"
-         "import com.example.lib.core\n"
-         "import com.example.lib.types.*\n"
-         "import com.example.lib.types.{TypeA, TypeB}\n"
-         "import com.example.lib.Service as Svc\n"
-         "import com.example.lib.Store.total\n\n"
-         "def useAll(): Int = {\n"
-         "  core(1) + new TypeA().id + new TypeB().id + new Svc().run() +\n"
-         "    total(1, 2)\n"
-         "}\n"},
-        {"store.scala",
-         "package com.example.lib\n\n"
-         "object Store {\n  def total(a: Int, b: Int): Int = a + b\n}\n"},
-        {"member.scala",
-         "package com.example.lib.Store\n\n"
-         "def total(a: Int, b: Int): Int = a * b\n"},
-        {"cyc_one.scala",
-         "package com.example.cyc\n\nimport com.example.cyc.Two\n\n"
-         "class One {\n  val mate = new Two()\n}\n"},
-        {"cyc_two.scala",
-         "package com.example.cyc\n\nimport com.example.cyc.One\n\n"
-         "class Two {\n  val mate = new One()\n}\n"},
-        {"decoy.scala",
-         "package com.example.other\n\n"
-         "import java.util.ArrayList\nimport com.example.missing.Ghost\n\n"
-         "class TypeA {\n  def id: Int = 99\n}\n\n"
-         "def decoy(): Int = 0\n"},
-        {"nopkg.scala",
-         "def bare(n: Int): Int = n\n"},
+        {"core.scala", "package com.example.lib\n\n"
+                       "class Service {\n  def run(): Int = 1\n}\n\n"
+                       "def core(n: Int): Int = n + 1\n"},
+        {"extra.scala", "package com.example.lib\n\n"
+                        "def beta(n: Int): Int = n * 3\n"},
+        {"typesr.scala", "package com.example.lib.types\n\n"
+                         "class TypeA {\n  def id: Int = 1\n}\n\n"
+                         "class TypeB {\n  def id: Int = 2\n}\n"},
+        {"libuser.scala", "package app.use\n\n"
+                          "import com.example.lib.core\n"
+                          "import com.example.lib.types.*\n"
+                          "import com.example.lib.types.{TypeA, TypeB}\n"
+                          "import com.example.lib.Service as Svc\n"
+                          "import com.example.lib.Store.total\n\n"
+                          "def useAll(): Int = {\n"
+                          "  core(1) + new TypeA().id + new TypeB().id + new Svc().run() +\n"
+                          "    total(1, 2)\n"
+                          "}\n"},
+        {"store.scala", "package com.example.lib\n\n"
+                        "object Store {\n  def total(a: Int, b: Int): Int = a + b\n}\n"},
+        {"member.scala", "package com.example.lib.Store\n\n"
+                         "def total(a: Int, b: Int): Int = a * b\n"},
+        {"cyc_one.scala", "package com.example.cyc\n\nimport com.example.cyc.Two\n\n"
+                          "class One {\n  val mate = new Two()\n}\n"},
+        {"cyc_two.scala", "package com.example.cyc\n\nimport com.example.cyc.One\n\n"
+                          "class Two {\n  val mate = new One()\n}\n"},
+        {"decoy.scala", "package com.example.other\n\n"
+                        "import java.util.ArrayList\nimport com.example.missing.Ghost\n\n"
+                        "class TypeA {\n  def id: Int = 99\n}\n\n"
+                        "def decoy(): Int = 0\n"},
+        {"nopkg.scala", "def bare(n: Int): Int = n\n"},
     };
     const size_t N_FILES = sizeof(FILES) / sizeof(FILES[0]);
     CHECK(N_FILES == 10);
@@ -715,12 +695,11 @@ static void unit_scala_resolver(void) {
     oc_node_id cyc_one = oc_graph_find_file(&g, "cyc_one.scala");
     oc_node_id cyc_two = oc_graph_find_file(&g, "cyc_two.scala");
     oc_node_id decoy = oc_graph_find_file(&g, "decoy.scala");
-    CHECK(core != OC_NODE_INVALID && extra != OC_NODE_INVALID &&
-          typesr != OC_NODE_INVALID && store != OC_NODE_INVALID &&
-          member != OC_NODE_INVALID && decoy != OC_NODE_INVALID);
+    CHECK(core != OC_NODE_INVALID && extra != OC_NODE_INVALID && typesr != OC_NODE_INVALID &&
+          store != OC_NODE_INVALID && member != OC_NODE_INVALID && decoy != OC_NODE_INVALID);
 
-    size_t user_to_core = 0, user_to_typesr = 0, user_to_store = 0,
-           user_to_member = 0, user_to_extra = 0, decoy_edges = 0, cycle_edges = 0;
+    size_t user_to_core = 0, user_to_typesr = 0, user_to_store = 0, user_to_member = 0,
+           user_to_extra = 0, decoy_edges = 0, cycle_edges = 0;
     for (size_t i = 0; i < g.n_edges; i++) {
         if (g.edges[i].kind != OC_EDGE_IMPORTS)
             continue;
@@ -740,13 +719,13 @@ static void unit_scala_resolver(void) {
             (g.edges[i].from == cyc_two && g.edges[i].to == cyc_one))
             cycle_edges++;
     }
-    CHECK(user_to_core == 1);    /* the single + the alias (set semantics) */
-    CHECK(user_to_typesr == 1);  /* wildcard + selectors (set semantics) */
-    CHECK(user_to_store == 1);   /* the member shape's object reading */
-    CHECK(user_to_member == 1);  /* the member shape's package reading */
-    CHECK(user_to_extra == 0);   /* nothing claims beta */
-    CHECK(decoy_edges == 0);     /* java.util + com.example.missing stay out */
-    CHECK(cycle_edges == 2);     /* OC003 == 1 on this corpus */
+    CHECK(user_to_core == 1);   /* the single + the alias (set semantics) */
+    CHECK(user_to_typesr == 1); /* wildcard + selectors (set semantics) */
+    CHECK(user_to_store == 1);  /* the member shape's object reading */
+    CHECK(user_to_member == 1); /* the member shape's package reading */
+    CHECK(user_to_extra == 0);  /* nothing claims beta */
+    CHECK(decoy_edges == 0);    /* java.util + com.example.missing stay out */
+    CHECK(cycle_edges == 2);    /* OC003 == 1 on this corpus */
 
     /* the honest degradation: the SAME records without hints resolve
      * NOTHING (no declared facts, no mapping, none guessed) */
@@ -810,7 +789,8 @@ static void corpus_scala_a(void) {
     CHECK(json_count_rule(buf, "OC001") == 1); /* longfn.scala: 63 lines > 60 */
     CHECK(json_count_rule(buf, "OC002") == 2); /* the two TODO markers */
     CHECK(json_count_rule(buf, "OC004") == 1); /* sum26 comp 38 > 15 */
-    CHECK(json_count_rule(buf, "OC006") == 9); /* 13 files: decls (entry), main_app (entry), widget+tools (imports) claimed */
+    CHECK(json_count_rule(buf, "OC006") ==
+          9); /* 13 files: decls (entry), main_app (entry), widget+tools (imports) claimed */
     CHECK(json_count_rule(buf, "OC008") == 2); /* the dup pair */
     CHECK(json_count_rule(buf, "OC011") == 1); /* the credential val */
     CHECK(json_count_rule(buf, "OC003") == 0);
@@ -830,9 +810,9 @@ static void corpus_scala_graph(void) {
     /* the comp pins (hand-counted, the generator asserts the same
      * numbers textually) */
     CHECK(strstr(buf, "\"name\":\"rollup\"") != NULL);
-    CHECK(strstr(buf, "\"complexity\":14") != NULL); /* rollup */
-    CHECK(strstr(buf, "\"complexity\":38") != NULL); /* sum26 */
-    CHECK(strstr(buf, "\"name\":\"shout\"") != NULL);  /* the extension method */
+    CHECK(strstr(buf, "\"complexity\":14") != NULL);  /* rollup */
+    CHECK(strstr(buf, "\"complexity\":38") != NULL);  /* sum26 */
+    CHECK(strstr(buf, "\"name\":\"shout\"") != NULL); /* the extension method */
     CHECK(strstr(buf, "\"name\":\"longRunner\"") != NULL);
     CHECK(strstr(buf, "\"def_end\":") != NULL); /* longRunner carries its span */
     /* the import edges: main_app -> widget (single) + tools (wildcard) */

@@ -91,15 +91,14 @@ static const char Q_EXPORTS_JS[] = "(export_statement) @es";
  *   2. call_expression Object.assign(<target>, {...}, ...).
  * Computed keys, spreads, nested member chains and opaque reassignment
  * shapes are skipped: never guessed (see the C-side classifiers). */
-static const char Q_EXPORTS_JS_CJS[] =
-    "(assignment_expression"
-    "  left: (member_expression) @cjsleft"
-    "  right: (_) @cjsrhs) @cjasg"
-    " (call_expression"
-    "   function: (member_expression"
-    "     object: (identifier) @oai"
-    "     property: (property_identifier) @oap)"
-    "   arguments: (arguments) @oaargs) @oacall";
+static const char Q_EXPORTS_JS_CJS[] = "(assignment_expression"
+                                       "  left: (member_expression) @cjsleft"
+                                       "  right: (_) @cjsrhs) @cjasg"
+                                       " (call_expression"
+                                       "   function: (member_expression"
+                                       "     object: (identifier) @oai"
+                                       "     property: (property_identifier) @oap)"
+                                       "   arguments: (arguments) @oaargs) @oacall";
 static const char Q_EXPORTS_PY[] = "(class_definition name: (identifier) @cname) @cdef"
                                    " (assignment left: (identifier) @alname) @asg";
 
@@ -741,9 +740,10 @@ static const char Q_CPP_FUNCTIONS[] = "(function_definition"
  * identifiers), out-of-class definitions (qualified identifiers) and
  * destructors out, so a class with a method `main` claims nothing --
  * the honest reading of the C++ entry model, OC006 severity INFO. */
-static const char Q_CPP_MAIN[] = "(function_definition"
-                                 "  declarator: (function_declarator declarator: (identifier) @jname)"
-                                 "  body: (compound_statement) @jdecl)";
+static const char Q_CPP_MAIN[] =
+    "(function_definition"
+    "  declarator: (function_declarator declarator: (identifier) @jname)"
+    "  body: (compound_statement) @jdecl)";
 
 /* C++ import channel (SPRINT-21): the SAME directive kind as C -- C++
  * uses the preprocessor's include model unchanged (verified by the
@@ -789,15 +789,10 @@ static const char Q_CPP_EXPORTS[] = "(function_definition) @fdef"
  * catch_clause (each handler is a branch into the handler -- the PHP
  * catch discipline; try/finally-like shapes are not decisions).
  * Preprocessor conditionals are not decisions (the C boundary). */
-static const char *const CX_KINDS_CPP[] = {"if_statement",
-                                           "while_statement",
-                                           "do_statement",
-                                           "for_statement",
-                                           "for_range_loop",
-                                           "case_statement",
-                                           "conditional_expression",
-                                           "catch_clause",
-                                           NULL};
+static const char *const CX_KINDS_CPP[] = {
+    "if_statement",           "while_statement", "do_statement",
+    "for_statement",          "for_range_loop",  "case_statement",
+    "conditional_expression", "catch_clause",    NULL};
 /* C++ ops: && / || (the keyword spellings need iso646.h, which the
  * analysis never preprocesses -- the C boundary). */
 static const char *const CX_OPS_CPP[] = {"&&", "||", NULL};
@@ -906,16 +901,10 @@ static const char Q_KT_ACCESSORS[] = "(getter (function_body) @fbody) @fexpr"
  * type -- cannot express them; as kinds each named node counts exactly
  * once per occurrence, the identical semantics, verified by the
  * hand-counted test). Preprocessor-free language: no more kinds. */
-static const char *const CX_KINDS_KT[] = {"if_expression",
-                                          "when_entry",
-                                          "for_statement",
-                                          "while_statement",
-                                          "do_while_statement",
-                                          "catch_block",
-                                          "elvis_expression",
-                                          "conjunction_expression",
-                                          "disjunction_expression",
-                                          NULL};
+static const char *const CX_KINDS_KT[] = {
+    "if_expression",          "when_entry",  "for_statement",    "while_statement",
+    "do_while_statement",     "catch_block", "elvis_expression", "conjunction_expression",
+    "disjunction_expression", NULL};
 
 /* Kotlin symbol parameter lists: function_value_parameters carries the
  * named `parameter` nodes (lambda_parameters are the anonymous-function
@@ -974,17 +963,16 @@ static const char Q_SW_FUNCTIONS[] =
  * os/arch/targetEnvironment/sourceLocation/module) keeps the version
  * check out: a condition is not code. A conditionally-compiled
  * STATEMENT still claims (it IS executable top-level code). */
-static const char Q_SW_TOP[] =
-    "(source_file (call_expression) @stmt)"
-    " (source_file (assignment) @stmt)"
-    " (source_file (for_statement) @stmt)"
-    " (source_file (while_statement) @stmt)"
-    " (source_file (repeat_while_statement) @stmt)"
-    " (source_file (if_statement) @stmt)"
-    " (source_file (guard_statement) @stmt)"
-    " (source_file (do_statement) @stmt)"
-    " (source_file (switch_statement) @stmt)"
-    " (source_file (control_transfer_statement) @stmt)";
+static const char Q_SW_TOP[] = "(source_file (call_expression) @stmt)"
+                               " (source_file (assignment) @stmt)"
+                               " (source_file (for_statement) @stmt)"
+                               " (source_file (while_statement) @stmt)"
+                               " (source_file (repeat_while_statement) @stmt)"
+                               " (source_file (if_statement) @stmt)"
+                               " (source_file (guard_statement) @stmt)"
+                               " (source_file (do_statement) @stmt)"
+                               " (source_file (switch_statement) @stmt)"
+                               " (source_file (control_transfer_statement) @stmt)";
 
 /* Swift import channel (SPRINT-23): every import_declaration of the
  * file. The dotted module path lives in ONE `identifier` node whose
@@ -1050,12 +1038,11 @@ static const char Q_SW_COMMENTS[] = "(comment) @comment (multiline_comment) @com
  * rule. The C side synthesizes `Prop.get` / `Prop.set` /
  * `Prop.willSet` / `Prop.didSet` from the owner property's name.
  * docs/LANGUAGES.md Swift section 2. */
-static const char Q_SW_ACCESSORS[] =
-    "(computed_getter (statements) @fbody) @fexpr"
-    " (computed_setter (statements) @fbody) @fexpr"
-    " (computed_property (statements) @fbody) @fexpr"
-    " (willset_clause (statements) @fbody) @fexpr"
-    " (didset_clause (statements) @fbody) @fexpr";
+static const char Q_SW_ACCESSORS[] = "(computed_getter (statements) @fbody) @fexpr"
+                                     " (computed_setter (statements) @fbody) @fexpr"
+                                     " (computed_property (statements) @fbody) @fexpr"
+                                     " (willset_clause (statements) @fbody) @fexpr"
+                                     " (didset_clause (statements) @fbody) @fexpr";
 
 /* Swift decision kinds (SPRINT-23, verified against the pinned grammar
  * AND a live parse, docs/LANGUAGES.md Swift section 4): if_statement
@@ -1220,13 +1207,9 @@ static const char Q_SC_MAIN[] =
  * itself is not a kind (its arms are); Scala 3 indented match arms
  * still parse as case_clause nodes (the same kind); enum cases
  * (simple_enum_case) are NOT decisions. */
-static const char *const CX_KINDS_SC[] = {"if_expression",
-                                          "case_clause",
-                                          "for_expression",
-                                          "while_expression",
-                                          "do_while_expression",
-                                          "infix_expression",
-                                          NULL};
+static const char *const CX_KINDS_SC[] = {
+    "if_expression",    "case_clause", "for_expression", "while_expression", "do_while_expression",
+    "infix_expression", NULL};
 
 /* Scala symbol parameter lists: the `parameters` wrapper node (the
  * find_param_list preorder is safe: a function-type parameter's type is
@@ -1281,8 +1264,7 @@ static const struct {
     {"cpp", OC_LANG_CPP, tree_sitter_cpp, Q_CPP_FUNCTIONS, Q_CPP_IMPORTS, Q_CPP_EXPORTS,
      CX_KINDS_CPP, CX_OPS_CPP, NULL, NULL, Q_CPP_MAIN, NULL, NULL, NULL, NULL},
     {"kotlin", OC_LANG_KOTLIN, tree_sitter_kotlin, Q_KT_FUNCTIONS, Q_KT_IMPORTS, Q_KT_EXPORTS,
-     CX_KINDS_KT, NULL, Q_KT_PACKAGE, Q_KT_COMMENTS, Q_KT_MAIN, NULL, NULL, Q_KT_ACCESSORS,
-     NULL},
+     CX_KINDS_KT, NULL, Q_KT_PACKAGE, Q_KT_COMMENTS, Q_KT_MAIN, NULL, NULL, Q_KT_ACCESSORS, NULL},
     {"swift", OC_LANG_SWIFT, tree_sitter_swift, Q_SW_FUNCTIONS, Q_SW_IMPORTS, Q_SW_EXPORTS,
      CX_KINDS_SW, NULL, NULL, Q_SW_COMMENTS, NULL, Q_SW_TOP, NULL, Q_SW_ACCESSORS, NULL},
     {"scala", OC_LANG_SCALA, tree_sitter_scala, Q_SC_FUNCTIONS, Q_SC_IMPORTS, Q_SC_EXPORTS,
@@ -1915,8 +1897,7 @@ static void extract_params_kotlin(param_vec *v, TSNode list, oc_arena *a, const 
             if (ts_node_is_named(ch)) {
                 if (!nm && strcmp(t, "simple_identifier") == 0) {
                     nm = node_text(a, ch, src);
-                } else if (!ty && (strcmp(t, "user_type") == 0 ||
-                                   strcmp(t, "nullable_type") == 0 ||
+                } else if (!ty && (strcmp(t, "user_type") == 0 || strcmp(t, "nullable_type") == 0 ||
                                    strcmp(t, "not_nullable_type") == 0 ||
                                    strcmp(t, "parenthesized_type") == 0 ||
                                    strcmp(t, "function_type") == 0)) {
@@ -2339,9 +2320,8 @@ oc_parser *oc_parser_ts_new(oc_arena *arena, oc_status *st) {
         if (LANG_DESCRIPTORS[i].family == OC_LANG_JS) {
             /* BUGFIX N-3: the CommonJS export channel compiles for the
              * whole JS family (javascript / typescript / tsx). */
-            e->q_exports_cjs = ts_query_new(e->lang, Q_EXPORTS_JS_CJS,
-                                            (uint32_t)strlen(Q_EXPORTS_JS_CJS), &err_off,
-                                            &err_type);
+            e->q_exports_cjs = ts_query_new(
+                e->lang, Q_EXPORTS_JS_CJS, (uint32_t)strlen(Q_EXPORTS_JS_CJS), &err_off, &err_type);
             if (!e->q_exports_cjs) {
                 oc_status_set(st, OC_ERR_INTERNAL,
                               "CommonJS exports query failed to compile for '%s' "
@@ -2627,9 +2607,9 @@ static char *string_payload(oc_arena *a, TSNode n, const char *src) {
  * NOTHING for shapes whose names cannot be known without guessing. */
 
 typedef enum {
-    CJS_TARGET_NONE = 0,  /* not a CommonJS export target */
-    CJS_TARGET_WHOLE,     /* module.exports = rhs / exports = rhs */
-    CJS_TARGET_MEMBER     /* module.exports.name = rhs / exports.name = rhs */
+    CJS_TARGET_NONE = 0, /* not a CommonJS export target */
+    CJS_TARGET_WHOLE,    /* module.exports = rhs / exports = rhs */
+    CJS_TARGET_MEMBER    /* module.exports.name = rhs / exports.name = rhs */
 } cjs_target_kind;
 
 /* Classifies a CJS assignment LEFT member_expression (by its exact
@@ -2637,8 +2617,7 @@ typedef enum {
  * CJS_TARGET_WHOLE means the RHS shape decides, CJS_TARGET_NONE rejects
  * everything else (nested member chains like module.exports.a.b, foreign
  * objects like foo.exports, unwritable text). */
-static cjs_target_kind cjs_classify_left(TSNode left, const char *src, char **name,
-                                         oc_arena *a) {
+static cjs_target_kind cjs_classify_left(TSNode left, const char *src, char **name, oc_arena *a) {
     *name = NULL;
     char *t = node_text(a, left, src);
     if (!t)
@@ -2749,8 +2728,8 @@ static int cjs_push_object_keys(oc_arena *a, TSNode obj, const char *src, const 
  * Object.assign call at all (nothing recorded; the caller decides),
  * 0 = allocation failure (*oom set). */
 static int cjs_push_object_assign(oc_arena *a, TSNode call, const char *src, const char *path,
-                                  size_t line, oc_export_vec *exports, char ***seen,
-                                  size_t *n_seen, size_t *cap_seen, int verify_target, int *oom) {
+                                  size_t line, oc_export_vec *exports, char ***seen, size_t *n_seen,
+                                  size_t *cap_seen, int verify_target, int *oom) {
     TSNode fn = ts_node_child_by_field_name(call, "function", 8);
     if (ts_node_is_null(fn) || strcmp(ts_node_type(fn), "member_expression") != 0)
         return -1; /* not Object.assign after all */
@@ -2776,15 +2755,14 @@ static int cjs_push_object_assign(oc_arena *a, TSNode call, const char *src, con
             if (!verify_target)
                 continue; /* RHS form: the target is the assignment's LEFT */
             char *tt = node_text(a, c, src);
-            if (!tt ||
-                (strcmp(tt, "module.exports") != 0 && strcmp(tt, "exports") != 0))
+            if (!tt || (strcmp(tt, "module.exports") != 0 && strcmp(tt, "exports") != 0))
                 return 1; /* some other Object.assign: nothing recorded */
             continue;
         }
         if (strcmp(ts_node_type(c), "object") == 0) {
             int np = 0, opq = 0;
-            if (!cjs_push_object_keys(a, c, src, path, line, exports, seen, n_seen, cap_seen,
-                                      oom, &np, &opq))
+            if (!cjs_push_object_keys(a, c, src, path, line, exports, seen, n_seen, cap_seen, oom,
+                                      &np, &opq))
                 return 0;
             if (np == 0 && opq) {
                 /* the merge carries unknowable names: record the
@@ -3062,8 +3040,8 @@ static int swift_import_shape(oc_arena *a, TSNode ist, const char *src, char **s
         if (strcmp(t, "import") == 0)
             continue;
         if (strcmp(t, "class") == 0 || strcmp(t, "func") == 0 || strcmp(t, "struct") == 0 ||
-            strcmp(t, "enum") == 0 || strcmp(t, "protocol") == 0 ||
-            strcmp(t, "typealias") == 0 || strcmp(t, "var") == 0 || strcmp(t, "let") == 0)
+            strcmp(t, "enum") == 0 || strcmp(t, "protocol") == 0 || strcmp(t, "typealias") == 0 ||
+            strcmp(t, "var") == 0 || strcmp(t, "let") == 0)
             kind_tok = t; /* the LAST kind token stands (never two) */
     }
     if (ts_node_is_null(pathnode))
@@ -3166,8 +3144,8 @@ static int scala_is_private(TSNode n, const char *src) {
  * On failure the records stay out entirely -- nothing recorded, never
  * guessed. */
 static int scala_import_expand(oc_arena *a, TSNode ist, const char *src, const char *from_path,
-                               oc_import_vec *imports, oc_bind_vec *binds,
-                               oc_lang_family family, int *oom) {
+                               oc_import_vec *imports, oc_bind_vec *binds, oc_lang_family family,
+                               int *oom) {
     if (*oom)
         return 0;
     /* 1. join the dotted path segments -- only the NAMED children
@@ -3419,9 +3397,17 @@ static char *swift_string_text(oc_arena *a, TSNode val, const char *src) {
 static int swift_is_directive_condition(oc_arena *a, TSNode stmt, const char *src) {
     if (strcmp(ts_node_type(stmt), "call_expression") != 0)
         return 0;
-    static const char *const DIR_BUILTINS[] = {
-        "canImport", "compiler", "swift", "os", "arch", "targetEnvironment",
-        "sourceLocation", "module", "_compiler_version", "_hasFeature", NULL};
+    static const char *const DIR_BUILTINS[] = {"canImport",
+                                               "compiler",
+                                               "swift",
+                                               "os",
+                                               "arch",
+                                               "targetEnvironment",
+                                               "sourceLocation",
+                                               "module",
+                                               "_compiler_version",
+                                               "_hasFeature",
+                                               NULL};
     uint32_t nc = ts_node_child_count(stmt);
     for (uint32_t i = 0; i < nc; i++) {
         TSNode c = ts_node_child(stmt, i);
@@ -3471,18 +3457,18 @@ static void swift_manifest_walk(TSNode n, oc_arena *a, const char *src, oc_hint_
             if (!ts_node_is_named(c))
                 continue;
             const char *t = ts_node_type(c);
-            if (ts_node_is_null(callee) && (strcmp(t, "simple_identifier") == 0 ||
-                                            strcmp(t, "prefix_expression") == 0))
+            if (ts_node_is_null(callee) &&
+                (strcmp(t, "simple_identifier") == 0 || strcmp(t, "prefix_expression") == 0))
                 callee = c;
             else if (strcmp(t, "call_suffix") == 0)
                 suffix = c;
         }
         if (!ts_node_is_null(callee) && !ts_node_is_null(suffix)) {
             char *ct = node_text(a, callee, src);
-            if (ct && (strcmp(ct, "target") == 0 || strcmp(ct, ".target") == 0 ||
-                       strcmp(ct, "executableTarget") == 0 ||
-                       strcmp(ct, ".executableTarget") == 0 ||
-                       strcmp(ct, "testTarget") == 0 || strcmp(ct, ".testTarget") == 0)) {
+            if (ct &&
+                (strcmp(ct, "target") == 0 || strcmp(ct, ".target") == 0 ||
+                 strcmp(ct, "executableTarget") == 0 || strcmp(ct, ".executableTarget") == 0 ||
+                 strcmp(ct, "testTarget") == 0 || strcmp(ct, ".testTarget") == 0)) {
                 TSNode args = null_tsnode();
                 uint32_t sc = ts_node_child_count(suffix);
                 for (uint32_t i = 0; i < sc && ts_node_is_null(args); i++) {
@@ -3609,8 +3595,7 @@ static int c_is_toplevel(TSNode n) {
             return 1;
         if (strcmp(t, "preproc_if") == 0 || strcmp(t, "preproc_ifdef") == 0 ||
             strcmp(t, "preproc_elif") == 0 || strcmp(t, "preproc_else") == 0 ||
-            strcmp(t, "linkage_specification") == 0 ||
-            strcmp(t, "template_declaration") == 0) {
+            strcmp(t, "linkage_specification") == 0 || strcmp(t, "template_declaration") == 0) {
             p = ts_node_parent(p);
             continue;
         }
@@ -3626,9 +3611,8 @@ static int c_is_toplevel(TSNode n) {
              * body are wrappers; a function body is a compound_statement
              * and never reaches here */
             TSNode gp = ts_node_parent(p);
-            if (!ts_node_is_null(gp) &&
-                (strcmp(ts_node_type(gp), "linkage_specification") == 0 ||
-                 strcmp(ts_node_type(gp), "namespace_definition") == 0)) {
+            if (!ts_node_is_null(gp) && (strcmp(ts_node_type(gp), "linkage_specification") == 0 ||
+                                         strcmp(ts_node_type(gp), "namespace_definition") == 0)) {
                 p = gp;
                 continue;
             }
@@ -4640,9 +4624,9 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
             continue;
         char *name = NULL;
         if (synth_name) {
-            name = oc_arena_sprintf(p->arena, "%s",
-                                    strcmp(ts_node_type(fexpr), "init_declaration") == 0 ? "init"
-                                                                                         : "deinit");
+            name = oc_arena_sprintf(
+                p->arena, "%s",
+                strcmp(ts_node_type(fexpr), "init_declaration") == 0 ? "init" : "deinit");
         } else {
             name = node_text(p->arena, fname, in->source);
         }
@@ -5430,9 +5414,9 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
                         int handled = 0;
                         if (strcmp(ts_node_type(cjsrhs), "object") == 0) {
                             int np = 0, opq = 0;
-                            if (!cjs_push_object_keys(p->arena, cjsrhs, in->source, in->path,
-                                                      line, out->exports, &seen, &n_seen,
-                                                      &cap_seen, &seen_oom, &np, &opq)) {
+                            if (!cjs_push_object_keys(p->arena, cjsrhs, in->source, in->path, line,
+                                                      out->exports, &seen, &n_seen, &cap_seen,
+                                                      &seen_oom, &np, &opq)) {
                                 export_fail = 1;
                                 break;
                             }
@@ -5442,9 +5426,9 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
                              * wholesale change */
                             handled = (np > 0 || !opq);
                         } else if (strcmp(ts_node_type(cjsrhs), "call_expression") == 0) {
-                            int rr = cjs_push_object_assign(p->arena, cjsrhs, in->source,
-                                                            in->path, line, out->exports, &seen,
-                                                            &n_seen, &cap_seen, 0, &seen_oom);
+                            int rr = cjs_push_object_assign(p->arena, cjsrhs, in->source, in->path,
+                                                            line, out->exports, &seen, &n_seen,
+                                                            &cap_seen, 0, &seen_oom);
                             if (rr == 0) {
                                 export_fail = 1;
                                 break;
@@ -5460,8 +5444,8 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
                                 seen_oom = 1;
                                 break;
                             }
-                            if (!oc_surface_export_push(out->exports, p->arena, in->path,
-                                                        "default", line, 0)) {
+                            if (!oc_surface_export_push(out->exports, p->arena, in->path, "default",
+                                                        line, 0)) {
                                 export_fail = 1;
                                 break;
                             }
@@ -5482,8 +5466,7 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
                 ts_query_cursor_delete(ccur);
                 free(seen);
                 if (export_fail || seen_oom) {
-                    oc_status_set(st, OC_ERR_ALLOC,
-                                  "out of memory recording CommonJS exports");
+                    oc_status_set(st, OC_ERR_ALLOC, "out of memory recording CommonJS exports");
                     return OC_ERR_ALLOC;
                 }
             }
@@ -5690,11 +5673,11 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
                     kind = "tdef";
                 } else if (!ts_node_is_null(sspec) || !ts_node_is_null(uspec) ||
                            !ts_node_is_null(espec) || !ts_node_is_null(cspec)) {
-                    cand = !ts_node_is_null(sspec)
-                               ? sspec
-                               : (!ts_node_is_null(uspec)
-                                      ? uspec
-                                      : (!ts_node_is_null(espec) ? espec : cspec));
+                    cand =
+                        !ts_node_is_null(sspec)
+                            ? sspec
+                            : (!ts_node_is_null(uspec) ? uspec
+                                                       : (!ts_node_is_null(espec) ? espec : cspec));
                     kind = "spec";
                 } else if (!ts_node_is_null(adef)) {
                     cand = adef;
@@ -6107,8 +6090,7 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
                 else
                     continue;
                 TSNode par = ts_node_parent(cand);
-                if (ts_node_is_null(par) ||
-                    strcmp(ts_node_type(par), "compilation_unit") != 0)
+                if (ts_node_is_null(par) || strcmp(ts_node_type(par), "compilation_unit") != 0)
                     continue; /* class members / nested declarations */
                 if (scala_is_private(cand, in->source))
                     continue; /* package-private: not module surface v1 */
@@ -6325,15 +6307,10 @@ const TSLanguage *oc_ts_language_for(const char *grammar) {
  * clean) -- keyword identifiers do NOT work: tree-sitter's error
  * recovery parses `int class = 3;` clean under cpp. */
 static int sniff_has_distinctive(TSNode root) {
-    static const char *const kinds[] = {"namespace_definition",
-                                        "class_specifier",
-                                        "template_declaration",
-                                        "alias_declaration",
-                                        "using_declaration",
-                                        "concept_definition",
-                                        "catch_clause",
-                                        "for_range_loop",
-                                        NULL};
+    static const char *const kinds[] = {
+        "namespace_definition", "class_specifier",   "template_declaration",
+        "alias_declaration",    "using_declaration", "concept_definition",
+        "catch_clause",         "for_range_loop",    NULL};
     /* bounded iterative DFS over an arena stack (the count_complexity
      * err_frame pattern); arena exhaustion falls back to 0 -- the root
      * default then decides, never a fabricated positive */

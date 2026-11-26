@@ -20,8 +20,8 @@
 #include "oc/coverage.h"
 #include "oc/graph.h"
 #include "oc/imports.h"
-#include "oc/parser.h"
 #include "oc/pack.h"
+#include "oc/parser.h"
 #include "oc/supply.h"
 #include "oc/surface.h"
 #include "testkit.h"
@@ -245,18 +245,17 @@ static void unit_kt_symbols(void) {
 /* --- unit: property accessors (the C# precedent) ------------------------ */
 
 static void unit_kt_accessors(void) {
-    static const char src[] =
-        "class Holder {\n"
-        "    val cached: Int\n"
-        "        get() {\n"
-        "            return 1\n"
-        "        }\n"
-        "    var tracked: Int = 0\n"
-        "        set(value) {\n"
-        "            field = if (value > 0) value else 0\n"
-        "        }\n"
-        "    val plain: Int = 3\n"
-        "}\n";
+    static const char src[] = "class Holder {\n"
+                              "    val cached: Int\n"
+                              "        get() {\n"
+                              "            return 1\n"
+                              "        }\n"
+                              "    var tracked: Int = 0\n"
+                              "        set(value) {\n"
+                              "            field = if (value > 0) value else 0\n"
+                              "        }\n"
+                              "    val plain: Int = 3\n"
+                              "}\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -301,12 +300,11 @@ static void unit_kt_accessors(void) {
 /* --- unit: parameters (the B3 signature shapes) ------------------------- */
 
 static void unit_kt_params(void) {
-    static const char src[] =
-        "fun plain(a: Int, b: String) {}\n"
-        "fun defaults(a: Int, b: Int = 2) {}\n"
-        "fun typed(items: List<String>, cb: (Int) -> Unit) {}\n"
-        "fun vararg(vararg items: String, tail: Int = 0) {}\n"
-        "fun abstractish(): Int\n";
+    static const char src[] = "fun plain(a: Int, b: String) {}\n"
+                              "fun defaults(a: Int, b: Int = 2) {}\n"
+                              "fun typed(items: List<String>, cb: (Int) -> Unit) {}\n"
+                              "fun vararg(vararg items: String, tail: Int = 0) {}\n"
+                              "fun abstractish(): Int\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -378,49 +376,47 @@ static void unit_kt_decisions(void) {
      * precedent) + for + for-in + while + do-while + one catch + elvis +
      * && + || = 12. The `in`-range when CONDITION is not a decision of
      * its own (only the ENTRY counts). */
-    static const char rollup[] =
-        "fun rollup(n: Int, items: List<Int>): Int {\n"
-        "    if (n > 0) {\n"
-        "        return 1\n"
-        "    } else if (n < 0) {\n"
-        "        return -1\n"
-        "    }\n"
-        "    when (n) {\n"
-        "        in 3..9 -> return 30\n"
-        "        else -> {}\n"
-        "    }\n"
-        "    for (v in items) {\n"
-        "        n += v\n"
-        "    }\n"
-        "    var i = 0\n"
-        "    for (k in 0 until 2) {\n"
-        "        i++\n"
-        "    }\n"
-        "    while (n > 100) {\n"
-        "        n--\n"
-        "    }\n"
-        "    do {\n"
-        "        n++\n"
-        "    } while (n < -100)\n"
-        "    var t = 0\n"
-        "    try {\n"
-        "        t = t + n\n"
-        "    } catch (ex: IllegalStateException) {\n"
-        "        t = -1\n"
-        "    }\n"
-        "    val e = n ?: -1\n"
-        "    val ok = n > 0 && e != 0\n"
-        "    return t + i + e + if (ok) 1 else 0 || n\n"
-        "}\n";
+    static const char rollup[] = "fun rollup(n: Int, items: List<Int>): Int {\n"
+                                 "    if (n > 0) {\n"
+                                 "        return 1\n"
+                                 "    } else if (n < 0) {\n"
+                                 "        return -1\n"
+                                 "    }\n"
+                                 "    when (n) {\n"
+                                 "        in 3..9 -> return 30\n"
+                                 "        else -> {}\n"
+                                 "    }\n"
+                                 "    for (v in items) {\n"
+                                 "        n += v\n"
+                                 "    }\n"
+                                 "    var i = 0\n"
+                                 "    for (k in 0 until 2) {\n"
+                                 "        i++\n"
+                                 "    }\n"
+                                 "    while (n > 100) {\n"
+                                 "        n--\n"
+                                 "    }\n"
+                                 "    do {\n"
+                                 "        n++\n"
+                                 "    } while (n < -100)\n"
+                                 "    var t = 0\n"
+                                 "    try {\n"
+                                 "        t = t + n\n"
+                                 "    } catch (ex: IllegalStateException) {\n"
+                                 "        t = -1\n"
+                                 "    }\n"
+                                 "    val e = n ?: -1\n"
+                                 "    val ok = n > 0 && e != 0\n"
+                                 "    return t + i + e + if (ok) 1 else 0 || n\n"
+                                 "}\n";
     /* comp(small) = 1 + 2: the two when arms */
-    static const char small[] =
-        "fun pick2(n: Int): Int {\n"
-        "    when (n) {\n"
-        "        1 -> return 10\n"
-        "        else -> return 0\n"
-        "    }\n"
-        "    return 1\n"
-        "}\n";
+    static const char small[] = "fun pick2(n: Int): Int {\n"
+                                "    when (n) {\n"
+                                "        1 -> return 10\n"
+                                "        else -> return 0\n"
+                                "    }\n"
+                                "    return 1\n"
+                                "}\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -455,18 +451,17 @@ static void unit_kt_decisions(void) {
 /* --- unit: the import-channel shapes ------------------------------------ */
 
 static void unit_kt_imports(void) {
-    static const char src[] =
-        "package com.example.app\n"
-        "\n"
-        "import com.example.widgets.Widget\n"
-        "import com.example.tools.*\n"
-        "import com.example.kit.Helper as H2\n"
-        "import com.example.kit.Helper.tag\n"
-        "import java.util.ArrayList\n"
-        "\n"
-        "fun user(): Int {\n"
-        "    return 1\n"
-        "}\n";
+    static const char src[] = "package com.example.app\n"
+                              "\n"
+                              "import com.example.widgets.Widget\n"
+                              "import com.example.tools.*\n"
+                              "import com.example.kit.Helper as H2\n"
+                              "import com.example.kit.Helper.tag\n"
+                              "import java.util.ArrayList\n"
+                              "\n"
+                              "fun user(): Int {\n"
+                              "    return 1\n"
+                              "}\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -526,46 +521,45 @@ static void unit_kt_imports(void) {
 /* --- unit: module surface (top-level + the private filter) -------------- */
 
 static void unit_kt_surface(void) {
-    static const char src[] =
-        "package app.shapes\n"
-        "\n"
-        "fun topLevel(): Int {\n"
-        "    return 1\n"
-        "}\n"
-        "\n"
-        "private fun hidden(): Int {\n"
-        "    return 2\n"
-        "}\n"
-        "\n"
-        "internal fun moduleVisible(): Int {\n"
-        "    return 3\n"
-        "}\n"
-        "\n"
-        "class Holder {\n"
-        "    fun member(): Int {\n"
-        "        return 4\n"
-        "    }\n"
-        "    class Nested {\n"
-        "        fun nestedMember(): Int {\n"
-        "            return 5\n"
-        "        }\n"
-        "    }\n"
-        "}\n"
-        "\n"
-        "object Singleton {\n"
-        "    fun objectMember(): Int {\n"
-        "        return 6\n"
-        "    }\n"
-        "}\n"
-        "\n"
-        "enum class Color {\n"
-        "    RED,\n"
-        "    GREEN\n"
-        "}\n"
-        "\n"
-        "typealias Handler = (Int) -> Unit\n"
-        "\n"
-        "val prop = 7\n";
+    static const char src[] = "package app.shapes\n"
+                              "\n"
+                              "fun topLevel(): Int {\n"
+                              "    return 1\n"
+                              "}\n"
+                              "\n"
+                              "private fun hidden(): Int {\n"
+                              "    return 2\n"
+                              "}\n"
+                              "\n"
+                              "internal fun moduleVisible(): Int {\n"
+                              "    return 3\n"
+                              "}\n"
+                              "\n"
+                              "class Holder {\n"
+                              "    fun member(): Int {\n"
+                              "        return 4\n"
+                              "    }\n"
+                              "    class Nested {\n"
+                              "        fun nestedMember(): Int {\n"
+                              "            return 5\n"
+                              "        }\n"
+                              "    }\n"
+                              "}\n"
+                              "\n"
+                              "object Singleton {\n"
+                              "    fun objectMember(): Int {\n"
+                              "        return 6\n"
+                              "    }\n"
+                              "}\n"
+                              "\n"
+                              "enum class Color {\n"
+                              "    RED,\n"
+                              "    GREEN\n"
+                              "}\n"
+                              "\n"
+                              "typealias Handler = (Int) -> Unit\n"
+                              "\n"
+                              "val prop = 7\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -627,19 +621,18 @@ static void unit_kt_surface(void) {
 /* --- unit: the main fact + the package hint ------------------------------ */
 
 static void unit_kt_main_fact(void) {
-    static const char src[] =
-        "package app.entry\n"
-        "\n"
-        "fun main() {\n"
-        "}\n"
-        "fun main(args: Array<String>) {\n"
-        "}\n"
-        "class App {\n"
-        "    fun main() {\n"
-        "    }\n"
-        "}\n"
-        "fun main2(x: Int) {\n"
-        "}\n";
+    static const char src[] = "package app.entry\n"
+                              "\n"
+                              "fun main() {\n"
+                              "}\n"
+                              "fun main(args: Array<String>) {\n"
+                              "}\n"
+                              "class App {\n"
+                              "    fun main() {\n"
+                              "    }\n"
+                              "}\n"
+                              "fun main2(x: Int) {\n"
+                              "}\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -688,39 +681,28 @@ static void unit_kt_resolver(void) {
      * member shape, the cycle, the unresolved decoys, the default
      * package. 11 files, 9 contracted edges. */
     static const kt_res_file FILES[] = {
-        {"core.kt",
-         "package app.core\n\n"
-         "class Engine {\n    fun start(): Int {\n        return 1\n    }\n}\n\n"
-         "fun alpha(): Int {\n    return 2\n}\n"},
-        {"extra.kt",
-         "package app.core\n\n"
-         "fun beta(): Int {\n    return 3\n}\n"},
-        {"lib.kt",
-         "package app.lib\n\nimport app.core.Engine\n\n"
-         "fun gamma(): Int {\n    return Engine().start()\n}\n"},
-        {"wide.kt",
-         "package app.lib\n\nimport app.core.*\n\n"
-         "val useAll = alpha() + beta()\n"},
-        {"alias.kt",
-         "package app.util\n\nimport app.core.Engine as Motor\nimport app.lib.gamma\n\n"
-         "fun eps(): Int {\n    return Motor().start() + gamma()\n}\n"},
-        {"member.kt",
-         "package app.util\n\nimport app.core.Engine.start\n\n"
-         "fun memb(): Int {\n    return 1\n}\n"},
-        {"cyc_one.kt",
-         "package app.cyc\n\nimport app.cyc.Two\n\n"
-         "class One {\n    val pair = Two()\n}\n"},
-        {"cyc_two.kt",
-         "package app.cyc\n\nimport app.cyc.One\n\n"
-         "class Two {\n    val mate = One()\n}\n"},
-        {"decoy.kt",
-         "package app.decoy\n\nimport java.util.ArrayList\nimport app.missing.Ghost\n\n"
-         "fun decoy(): Int {\n    return 0\n}\n"},
-        {"nopkg.kt",
-         "fun standalone(): Int {\n    return 9\n}\n"},
-        {"user.kt",
-         "package app.user\n\nimport standalone\n\n"
-         "fun userFn(): Int {\n    return standalone()\n}\n"},
+        {"core.kt", "package app.core\n\n"
+                    "class Engine {\n    fun start(): Int {\n        return 1\n    }\n}\n\n"
+                    "fun alpha(): Int {\n    return 2\n}\n"},
+        {"extra.kt", "package app.core\n\n"
+                     "fun beta(): Int {\n    return 3\n}\n"},
+        {"lib.kt", "package app.lib\n\nimport app.core.Engine\n\n"
+                   "fun gamma(): Int {\n    return Engine().start()\n}\n"},
+        {"wide.kt", "package app.lib\n\nimport app.core.*\n\n"
+                    "val useAll = alpha() + beta()\n"},
+        {"alias.kt", "package app.util\n\nimport app.core.Engine as Motor\nimport app.lib.gamma\n\n"
+                     "fun eps(): Int {\n    return Motor().start() + gamma()\n}\n"},
+        {"member.kt", "package app.util\n\nimport app.core.Engine.start\n\n"
+                      "fun memb(): Int {\n    return 1\n}\n"},
+        {"cyc_one.kt", "package app.cyc\n\nimport app.cyc.Two\n\n"
+                       "class One {\n    val pair = Two()\n}\n"},
+        {"cyc_two.kt", "package app.cyc\n\nimport app.cyc.One\n\n"
+                       "class Two {\n    val mate = One()\n}\n"},
+        {"decoy.kt", "package app.decoy\n\nimport java.util.ArrayList\nimport app.missing.Ghost\n\n"
+                     "fun decoy(): Int {\n    return 0\n}\n"},
+        {"nopkg.kt", "fun standalone(): Int {\n    return 9\n}\n"},
+        {"user.kt", "package app.user\n\nimport standalone\n\n"
+                    "fun userFn(): Int {\n    return standalone()\n}\n"},
     };
     const size_t N_FILES = sizeof(FILES) / sizeof(FILES[0]);
     CHECK(N_FILES == 11);
@@ -805,7 +787,7 @@ static void unit_kt_resolver(void) {
     }
     CHECK(wide_to_core == 1);
     CHECK(wide_to_extra == 1);
-    CHECK(decoy_edges == 0); /* java.util + app.missing stay unresolved */
+    CHECK(decoy_edges == 0);    /* java.util + app.missing stay unresolved */
     CHECK(member_to_core == 1); /* the member shape's object reading */
     CHECK(alias_to_core == 1);
     CHECK(alias_to_lib == 1);
@@ -833,13 +815,10 @@ static void unit_kt_resolver_set(void) {
     /* two files declaring the SAME name in one package: the single-type
      * import fans out over both (the honest over-claim direction); a
      * duplicate record collapses (the imports relation is a set) */
-    static const char a_src[] =
-        "package dup\n\nfun twin(): Int {\n    return 1\n}\n";
-    static const char b_src[] =
-        "package dup\n\nfun twin(): Int {\n    return 2\n}\n";
-    static const char user_src[] =
-        "package app\n\nimport dup.twin\nimport dup.twin\n\n"
-        "fun u(): Int {\n    return twin()\n}\n";
+    static const char a_src[] = "package dup\n\nfun twin(): Int {\n    return 1\n}\n";
+    static const char b_src[] = "package dup\n\nfun twin(): Int {\n    return 2\n}\n";
+    static const char user_src[] = "package app\n\nimport dup.twin\nimport dup.twin\n\n"
+                                   "fun u(): Int {\n    return twin()\n}\n";
 
     oc_arena a;
     oc_arena_init(&a);

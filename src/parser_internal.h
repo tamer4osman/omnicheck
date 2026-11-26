@@ -33,16 +33,16 @@ struct oc_lang_entry {
     TSQuery *q_exports_cjs; /* BUGFIX N-3: CommonJS export channel; NULL
                              * for every family except JS (javascript /
                              * typescript / tsx grammars) */
-    TSQuery *q_package;   /* per-file package-clause fact; NULL when the
-                           * language has none (SPRINT-10: go) */
-    TSQuery *q_main;      /* per-file main-method fact; NULL when the
-                           * language has none (SPRINT-13: csharp) */
-    TSQuery *q_top;       /* per-file top-level-statements fact; NULL when the
-                           * language has none (SPRINT-13: csharp) */
-    TSQuery *q_bodyless;  /* SPRINT-14: bodyless-symbol query; NULL when the
-                           * language has none (SPRINT-14: java) */
-    TSQuery *q_accessors; /* SPRINT-14: accessor query; NULL when the
-                           * language has none (SPRINT-14: csharp) */
+    TSQuery *q_package;     /* per-file package-clause fact; NULL when the
+                             * language has none (SPRINT-10: go) */
+    TSQuery *q_main;        /* per-file main-method fact; NULL when the
+                             * language has none (SPRINT-13: csharp) */
+    TSQuery *q_top;         /* per-file top-level-statements fact; NULL when the
+                             * language has none (SPRINT-13: csharp) */
+    TSQuery *q_bodyless;    /* SPRINT-14: bodyless-symbol query; NULL when the
+                             * language has none (SPRINT-14: java) */
+    TSQuery *q_accessors;   /* SPRINT-14: accessor query; NULL when the
+                             * language has none (SPRINT-14: csharp) */
     const char *const *cx_kinds;
     const char *const *cx_ops;
     int (*cx_filter)(TSNode n, const char *src); /* per-node exclusion for

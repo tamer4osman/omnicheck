@@ -20,8 +20,8 @@
 #include "oc/coverage.h"
 #include "oc/graph.h"
 #include "oc/imports.h"
-#include "oc/parser.h"
 #include "oc/pack.h"
+#include "oc/parser.h"
 #include "oc/supply.h"
 #include "oc/surface.h"
 #include "testkit.h"
@@ -124,40 +124,39 @@ static size_t json_count_rule(const char *json, const char *rule) {
 /* --- unit: symbols, spans, the cpp declarator-chain shapes -------------- */
 
 static void unit_cpp_symbols(void) {
-    static const char src[] =
-        "/* free function: symbol, span = the whole definition */\n"
-        "int compute(int n)\n"
-        "{\n"
-        "    return n;\n"
-        "}\n"
-        "\n"
-        "/* inline method: the name is a field_identifier */\n"
-        "struct Widget {\n"
-        "    int scale(int v) { return v; }\n"
-        "    Widget();          /* member declaration: NOT a symbol */\n"
-        "    ~Widget();         /* member declaration: NOT a symbol */\n"
-        "    bool operator==(const Widget &o) const { return true; }\n"
-        "    static int make(void) { return 0; }\n"
-        "};\n"
-        "\n"
-        "/* out-of-class definitions: qualified_identifier name field */\n"
-        "int Widget::scale(int v) { return v + 1; }\n"
-        "Widget::Widget() {}\n"
-        "Widget::~Widget() {}\n"
-        "\n"
-        "/* templated function: the template_declaration is the wrapper,\n"
-        " * the inner function_definition is the symbol */\n"
-        "template <typename T>\n"
-        "T pick(T a, T b) { return a; }\n"
-        "\n"
-        "/* lambda: anonymous, NOT a symbol */\n"
-        "int lambda_user(int v) {\n"
-        "    auto fn = [](int x) { return x * 2; };\n"
-        "    return fn(v);\n"
-        "}\n"
-        "\n"
-        "/* prototypes are NOT symbols */\n"
-        "int add3(int a, int b, int c);\n";
+    static const char src[] = "/* free function: symbol, span = the whole definition */\n"
+                              "int compute(int n)\n"
+                              "{\n"
+                              "    return n;\n"
+                              "}\n"
+                              "\n"
+                              "/* inline method: the name is a field_identifier */\n"
+                              "struct Widget {\n"
+                              "    int scale(int v) { return v; }\n"
+                              "    Widget();          /* member declaration: NOT a symbol */\n"
+                              "    ~Widget();         /* member declaration: NOT a symbol */\n"
+                              "    bool operator==(const Widget &o) const { return true; }\n"
+                              "    static int make(void) { return 0; }\n"
+                              "};\n"
+                              "\n"
+                              "/* out-of-class definitions: qualified_identifier name field */\n"
+                              "int Widget::scale(int v) { return v + 1; }\n"
+                              "Widget::Widget() {}\n"
+                              "Widget::~Widget() {}\n"
+                              "\n"
+                              "/* templated function: the template_declaration is the wrapper,\n"
+                              " * the inner function_definition is the symbol */\n"
+                              "template <typename T>\n"
+                              "T pick(T a, T b) { return a; }\n"
+                              "\n"
+                              "/* lambda: anonymous, NOT a symbol */\n"
+                              "int lambda_user(int v) {\n"
+                              "    auto fn = [](int x) { return x * 2; };\n"
+                              "    return fn(v);\n"
+                              "}\n"
+                              "\n"
+                              "/* prototypes are NOT symbols */\n"
+                              "int add3(int a, int b, int c);\n";
 
     oc_arena a;
     oc_arena_init(&a);
@@ -173,9 +172,9 @@ static void unit_cpp_symbols(void) {
         parse_one(p, &g, "unit/widget.cpp", src, &out);
 
         CHECK(count_symbols_named(&g, "compute") == 1);
-        CHECK(count_symbols_named(&g, "scale") == 2); /* inline + out-of-class */
-        CHECK(count_symbols_named(&g, "Widget") == 1); /* the ctor (as written) */
-        CHECK(count_symbols_named(&g, "~Widget") == 1); /* the dtor spelling */
+        CHECK(count_symbols_named(&g, "scale") == 2);      /* inline + out-of-class */
+        CHECK(count_symbols_named(&g, "Widget") == 1);     /* the ctor (as written) */
+        CHECK(count_symbols_named(&g, "~Widget") == 1);    /* the dtor spelling */
         CHECK(count_symbols_named(&g, "operator==") == 1); /* the as-written spelling */
         CHECK(count_symbols_named(&g, "make") == 1);
         CHECK(count_symbols_named(&g, "pick") == 1);
@@ -676,12 +675,10 @@ static void unit_cpp_main_fact(void) {
         const char *src;
         int expect_main;
     } cases[] = {
-        {with_main, 1},
-        {with_argc, 1},
-        {member_main, 0},     /* a member function is not THE main */
-        {qualified_main, 0},  /* an out-of-class definition is not free-standing */
-        {prototype_only, 0},
-        {no_main, 0},
+        {with_main, 1},      {with_argc, 1},
+        {member_main, 0},    /* a member function is not THE main */
+        {qualified_main, 0}, /* an out-of-class definition is not free-standing */
+        {prototype_only, 0}, {no_main, 0},
     };
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
@@ -746,10 +743,9 @@ static void unit_cpp_resolver(void) {
     snprintf(root, sizeof(root), "%s/tests/fixtures/cpp_resolver", OC_REPO_ROOT);
     char paths[10][1400];
     static const char *const REL[] = {
-        "src/main.cpp",         "src/util/log.hpp",      "src/util/log.cpp",
-        "third/p.hpp",          "third/p.cpp",           "include/outer.hpp",
-        "include/sub/inner.hpp", "cyc/a.hpp",            "cyc/b.hpp",
-        "cyc/cycle_driver.cpp",
+        "src/main.cpp", "src/util/log.hpp",     "src/util/log.cpp",      "third/p.hpp",
+        "third/p.cpp",  "include/outer.hpp",    "include/sub/inner.hpp", "cyc/a.hpp",
+        "cyc/b.hpp",    "cyc/cycle_driver.cpp",
     };
     for (size_t i = 0; i < sizeof(REL) / sizeof(REL[0]); i++) {
         snprintf(paths[i], sizeof(paths[i]), "%s/%s", root, REL[i]);
@@ -832,8 +828,9 @@ static void unit_cpp_sniff(void) {
           OC_SNIFF_CPP_POSITIVE);
     /* C-compatible content, no distinctive node: inconclusive (the
      * project-root default decides) */
-    CHECK(oc_parser_sniff_header("struct point { int x; int y; };\nint add(int a, int b);\n",
-                                 strlen("struct point { int x; int y; };\nint add(int a, int b);\n")) ==
+    CHECK(oc_parser_sniff_header(
+              "struct point { int x; int y; };\nint add(int a, int b);\n",
+              strlen("struct point { int x; int y; };\nint add(int a, int b);\n")) ==
           OC_SNIFF_INCONCLUSIVE);
     /* positively C: the K&R old-style definition -- real C code,
      * structurally impossible in C++ (the cpp grammar ERRORS on it
@@ -871,8 +868,8 @@ static void unit_cpp_routing(void) {
     CHECK(oc_packs_route_source(&ps, "x/dir/file.c", "int f(void) { return 0; }\n", 26, cpp_project,
                                 2, &a, &reason) == c_pack);
     CHECK(reason == OC_ROUTE_EXT);
-    CHECK(oc_packs_route_source(&ps, "x/dir/file.cpp", "int f(void) { return 0; }\n", 26,
-                                c_project, 2, &a, &reason) == cpp_pack);
+    CHECK(oc_packs_route_source(&ps, "x/dir/file.cpp", "int f(void) { return 0; }\n", 26, c_project,
+                                2, &a, &reason) == cpp_pack);
     CHECK(reason == OC_ROUTE_EXT);
     CHECK(oc_packs_route_source(&ps, "x/dir/file.hpp", "class W { };\n", 13, c_project, 2, &a,
                                 &reason) == cpp_pack);

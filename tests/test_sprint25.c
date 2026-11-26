@@ -29,8 +29,8 @@
  * member chains (module.exports.a.b) and foreign targets (foo.exports)
  * record NOTHING.
  */
-#include "oc/compat.h"
 #include "oc/common.h"
+#include "oc/compat.h"
 #include "oc/finding.h"
 #include "oc/json.h"
 #include "oc/parser.h"
@@ -190,15 +190,13 @@ static void unit_cjs_compat_breaking(void) {
     mkdir_p("/tmp/oc_s25_cjs/v1/lib");
     mkdir_p("/tmp/oc_s25_cjs/v2/lib");
     mkdir_p("/tmp/oc_s25_cjs/v2safe/lib");
-    write_file("/tmp/oc_s25_cjs/v1/lib/feature.js",
-               "'use strict';\n"
-               "function keep() { return 1; }\n"
-               "function gone() { return 2; }\n"
-               "module.exports = { keep, gone, alpha: 1 };\n");
-    write_file("/tmp/oc_s25_cjs/v2/lib/feature.js",
-               "'use strict';\n"
-               "function keep() { return 1; }\n"
-               "module.exports = { keep, alpha: 1 };\n");
+    write_file("/tmp/oc_s25_cjs/v1/lib/feature.js", "'use strict';\n"
+                                                    "function keep() { return 1; }\n"
+                                                    "function gone() { return 2; }\n"
+                                                    "module.exports = { keep, gone, alpha: 1 };\n");
+    write_file("/tmp/oc_s25_cjs/v2/lib/feature.js", "'use strict';\n"
+                                                    "function keep() { return 1; }\n"
+                                                    "module.exports = { keep, alpha: 1 };\n");
     write_file("/tmp/oc_s25_cjs/v2safe/lib/feature.js",
                "'use strict';\n"
                "function keep() { return 1; }\n"
@@ -207,9 +205,9 @@ static void unit_cjs_compat_breaking(void) {
 
     /* breaking pair: the removed function and its export entry gate
      * BREAKING (exit 1) with exactly the two removal records */
-    int ec = run_oc_to(OC_REPO_ROOT,
-                       "compat --baseline /tmp/oc_s25_cjs/v1 --current /tmp/oc_s25_cjs/v2",
-                       "/tmp/oc_s25_cjs/break.json");
+    int ec =
+        run_oc_to(OC_REPO_ROOT, "compat --baseline /tmp/oc_s25_cjs/v1 --current /tmp/oc_s25_cjs/v2",
+                  "/tmp/oc_s25_cjs/break.json");
     CHECK(ec == 1);
     oc_json *r = load_json("/tmp/oc_s25_cjs/break.json");
     CHECK(r != NULL);
@@ -251,8 +249,7 @@ static void unit_cjs_compat_breaking(void) {
     }
 
     /* determinism: the same breaking pair twice is byte-identical */
-    run_oc_to(OC_REPO_ROOT,
-              "compat --baseline /tmp/oc_s25_cjs/v1 --current /tmp/oc_s25_cjs/v2",
+    run_oc_to(OC_REPO_ROOT, "compat --baseline /tmp/oc_s25_cjs/v1 --current /tmp/oc_s25_cjs/v2",
               "/tmp/oc_s25_cjs/break2.json");
     char *d1 = NULL, *d2 = NULL;
     size_t l1 = 0, l2 = 0;
@@ -302,7 +299,8 @@ static void unit_n1_paths_beyond_256(void) {
 
 static void unit_n2_corrupt_manifest_skip(void) {
     mkdir_p("/tmp/oc_s25_n2/sub");
-    write_file("/tmp/oc_s25_n2/package.json", "{\"name\": \"corrupt\", \"version\": \"1"); /* torn */
+    write_file("/tmp/oc_s25_n2/package.json",
+               "{\"name\": \"corrupt\", \"version\": \"1"); /* torn */
     write_file("/tmp/oc_s25_n2/app.js", "const x = 1;\n");
     write_file("/tmp/oc_s25_n2/sub/package.json",
                "{\"name\": \"ok\", \"version\": \"1.0.0\", \"license\": \"MIT\"}\n");
@@ -345,9 +343,8 @@ static void push_finding(oc_finding_vec *v, oc_arena *a, int i) {
     /* Allocate message and fp_text from arena; spec strings must be
      * arena-owned for oc_findings_push to retain them after local scope.
      */
-    char *msg = oc_arena_sprintf(a,
-        "Function 'fn%04d' spans %d lines and needs a triage verdict",
-        i, 61 + i % 40);
+    char *msg = oc_arena_sprintf(a, "Function 'fn%04d' spans %d lines and needs a triage verdict",
+                                 i, 61 + i % 40);
     char *fp = oc_arena_sprintf(a, "fp-s25-%06d", i);
     oc_finding_spec spec;
     memset(&spec, 0, sizeof(spec));
@@ -443,14 +440,13 @@ static void unit_n4_client_grows_response(void) {
 
 static void unit_oc002_rust_block_comments(void) {
     mkdir_p("/tmp/oc_s25_oc002r");
-    write_file("/tmp/oc_s25_oc002r/crate.rs",
-               "// TODO: line marker (was already seen)\n"
-               "fn keep() {}\n"
-               "/* FIXME: block marker at the open line */\n"
-               "fn keep2() {}\n"
-               "/* multi-line block with a HACK marker\n"
-               "   on the continuation line */\n"
-               "fn keep3() {}\n");
+    write_file("/tmp/oc_s25_oc002r/crate.rs", "// TODO: line marker (was already seen)\n"
+                                              "fn keep() {}\n"
+                                              "/* FIXME: block marker at the open line */\n"
+                                              "fn keep2() {}\n"
+                                              "/* multi-line block with a HACK marker\n"
+                                              "   on the continuation line */\n"
+                                              "fn keep3() {}\n");
     int ec = run_oc_to("/tmp/oc_s25_oc002r", "check crate.rs --format json",
                        "/tmp/oc_s25_oc002r/report.json");
     CHECK(ec == 0);
@@ -482,29 +478,25 @@ static void unit_oc002_rust_block_comments(void) {
 
 static void unit_n6_file_root_include_cycle(void) {
     mkdir_p("/tmp/oc_s25_n6");
-    write_file("/tmp/oc_s25_n6/engine.c",
-               "#include \"engine.h\"\n"
-               "#include \"drive.h\"\n"
-               "int engine_tick(void) { return drive_tick(); }\n");
-    write_file("/tmp/oc_s25_n6/engine.h",
-               "#include \"drive.h\"\n"
-               "int engine_tick(void);\n");
-    write_file("/tmp/oc_s25_n6/drive.h",
-               "#include \"engine.h\"\n"
-               "int drive_tick(void);\n");
+    write_file("/tmp/oc_s25_n6/engine.c", "#include \"engine.h\"\n"
+                                          "#include \"drive.h\"\n"
+                                          "int engine_tick(void) { return drive_tick(); }\n");
+    write_file("/tmp/oc_s25_n6/engine.h", "#include \"drive.h\"\n"
+                                          "int engine_tick(void);\n");
+    write_file("/tmp/oc_s25_n6/drive.h", "#include \"engine.h\"\n"
+                                         "int drive_tick(void);\n");
     /* explicit FILE arguments (the chunked-scan shape): the dirname-
      * anchored include resolution must survive -- the old N-6 bug made
      * the analysis root the file itself, so every quoted include went
      * dead and the engine.h/drive.h cycle was invisible. */
-    int ec = run_oc_to("/tmp/oc_s25_n6",
-                       "check engine.c engine.h drive.h --format json",
+    int ec = run_oc_to("/tmp/oc_s25_n6", "check engine.c engine.h drive.h --format json",
                        "/tmp/oc_s25_n6/report.json");
     CHECK(ec == 1); /* the OC003 cycle is warn severity: the CI gate trips */
     oc_json *r = load_json("/tmp/oc_s25_n6/report.json");
     CHECK(r != NULL);
     if (r) {
-        CHECK(oc_json_as_num(oc_json_get(oc_json_get(r, "meta"), "files_with_parse_errors"),
-                             -1) == 0);
+        CHECK(oc_json_as_num(oc_json_get(oc_json_get(r, "meta"), "files_with_parse_errors"), -1) ==
+              0);
         const oc_json *fs = oc_json_get(r, "findings");
         int cycles = 0;
         for (size_t i = 0; fs && i < oc_json_size(fs); i++) {

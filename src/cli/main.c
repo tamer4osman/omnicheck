@@ -542,8 +542,7 @@ int oc_cli_main(int argc, char **argv) {
     /* Mutation engine (Sprint 5, WBS 4.5): operator-set mutants run
      * against the suite; exit 1 when survivors exist (gate semantics). */
     if (strcmp(cmd, "mutate") == 0) {
-        if (n_paths == 0 &&
-            !push_path(&paths, &n_paths, &paths_cap, default_paths[0])) {
+        if (n_paths == 0 && !push_path(&paths, &n_paths, &paths_cap, default_paths[0])) {
             fprintf(stderr, "omnicheck: out of memory recording default path\n");
             exit_code = 2;
             goto out;

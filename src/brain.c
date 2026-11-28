@@ -448,8 +448,8 @@ oc_code oc_brain_cmd_create(const char *file, FILE *out, oc_status *st) {
     }
     odk_error err;
     memset(&err, 0, sizeof(err));
-    odk_status svr = odk_brain_save_file(brain, path, &err);
     long long epoch = brain_epoch(brain);
+    odk_status svr = odk_brain_save_file(brain, path, &err);
     odk_brain_free(brain);
     if (svr != ODK_OK) {
         oc_status_set(st, OC_ERR_IO, "failed to create the brain store '%s': %s", path,

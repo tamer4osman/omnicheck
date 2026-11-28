@@ -26,6 +26,20 @@ void oc_report_write_json(oc_jsonw *w, const oc_scan_result *res);
  * section, parse errors as a named section, no timestamps). */
 void oc_report_write_human(FILE *out, const oc_scan_result *res);
 
+/* T6: kernel-minified Markdown report (omnicheck.report.llm/v0) -- the
+ * token-efficient rendering for LLM consumers. Every prose field is
+ * minified with the vendored kernel's own Markdown minifier (odk_minify)
+ * and the document ends with a kernel token-estimate block
+ * (odk_token_report: raw vs compressed tokens, reduction percent). Same
+ * verdict and exit-code policy as the JSON render (handled by the CLI);
+ * byte-stable; only emitted when --format llm was requested, so every
+ * other run stays byte-identical. Requires the embedded kernel: builds
+ * without it refuse loud via oc_report_llm_available() == 0. */
+void oc_report_write_llm(FILE *out, const oc_scan_result *res);
+
+/* 1 when --format llm can actually minify (embedded kernel linked in). */
+int oc_report_llm_available(void);
+
 #ifdef __cplusplus
 }
 #endif

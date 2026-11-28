@@ -30,6 +30,7 @@
 #include "pack.h"
 #include "pass.h"
 #include "triage.h"
+#include "brain.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,7 +45,38 @@ typedef struct oc_scan_options {
     const char *osv_snapshot; /* vendored OSV snapshot (OC009); NULL = off */
     const oc_config *cfg;     /* pass options; must outlive the call */
     int want_triage;          /* OmniDecide rank-only sidecar (fail-open) */
+    int want_triage_embedded; /* --triage-embedded: in-process kernel (T2);
+                               * the sidecar keeps absolute precedence */
+    int want_triage_explain;  /* --triage-explain: attach the 9 kernel
+                               * rationale channels per finding (T1) */
+    int want_triage_brain;    /* --triage-brain: consult the brain memory
+                               * (advisory; requires want_triage) (T4) */
+    /* T7: kernel customization resources (borrowed pointers; each must
+     * outlive the call). A kernel refusal is LOUD. */
+    const char *const *triage_lexicons;
+    size_t n_triage_lexicons;
+    const char *triage_model;
 } oc_scan_options;
+
+/* T7: honest provenance of the opt-in kernel customization resources
+ * (--triage-lexicon / --triage-model). Each accepted resource carries its
+ * content sha256; applied counters come from the embedded responder. */
+#define OC_MAX_KERNEL_FILES 16
+typedef struct oc_kernel_resource {
+    char path[512];
+    char sha256[65];
+} oc_kernel_resource;
+
+typedef struct oc_kernel_files_outcome {
+    int requested; /* any lexicon or model given */
+    size_t n_lexicons;
+    oc_kernel_resource lexicons[OC_MAX_KERNEL_FILES];
+    int model_requested;
+    oc_kernel_resource model;
+    size_t lexicons_applied; /* embedded responder counters */
+    int model_applied;
+    char reason[192];
+} oc_kernel_files_outcome;
 
 /* One file that failed to parse cleanly (named, never silent). */
 typedef struct oc_scan_parse_error {
@@ -99,6 +131,11 @@ typedef struct oc_scan_result {
     size_t functions_total;
     size_t functions_measured;
     oc_triage_outcome triage; /* provider "none" unless requested */
+    oc_brain_outcome brain;   /* advisory no-op unless want_triage_brain;
+                               * the report emits the brain block only
+                               * when brain.requested */
+    oc_kernel_files_outcome kernel_files; /* T7 provenance; emitted only
+                               * when requested */
     const char *backend;      /* parser backend name ("tree-sitter") */
     const oc_pack_set *packs; /* loaded packs (report + rule context) */
     const oc_dup_index *dup;  /* duplication meta (arena-owned) */

@@ -18,6 +18,22 @@ typedef enum oc_severity { OC_SEV_INFO = 0, OC_SEV_WARN = 1, OC_SEV_ERROR = 2 } 
 const char *oc_severity_str(oc_severity s);
 int oc_severity_from_str(const char *s, oc_severity *out);
 
+/* T1: the kernel's 9 rationale channels for one finding (odk_explain,
+ * EXPLAIN.md). Advisory only: never affects severity, existence, rank
+ * arithmetic or report order. */
+typedef struct oc_triage_rationale {
+    double probability;  /* the calibrated distribution entry (== the
+                          * ranked confidence at 4 decimals) */
+    double fused;        /* clamp01(0.7*contextual + 0.3*directional)  */
+    double tf_cosine;    /* tf-weighted token cosine                   */
+    double jaccard;      /* distinct-token Jaccard                     */
+    double trigram;      /* character-trigram cosine                   */
+    double whole;        /* 0.35*cos + 0.35*jac + 0.30*trig, clamped   */
+    double best_chunk;   /* blended similarity of the best chunk       */
+    double contextual;   /* clamp01(0.4*whole + 0.6*best_chunk)        */
+    double directional;  /* pair similarity (label, instruction)       */
+} oc_triage_rationale;
+
 typedef struct oc_finding {
     const char *rule_id;   /* "OC001" */
     const char *rule_name; /* "long-function" */
@@ -33,6 +49,16 @@ typedef struct oc_finding {
     int triaged;
     int triage_rank;
     double triage_confidence;
+    /* T1 (--triage-explain): rationale channels for ranked findings. */
+    int explained;
+    oc_triage_rationale explain;
+    /* T4: filled by the brain layer (advisory only, --triage-brain
+     * opt-in). brain_rank orders TRIAGED findings by experience-adjusted
+     * confidence (0 = most urgent); rank-only guardrails hold: brain
+     * fields never affect severity, existence or report order. */
+    int brain_annotated;
+    int brain_rank;
+    double brain_bonus;
 } oc_finding;
 
 typedef struct oc_finding_vec {

@@ -59,9 +59,13 @@ typedef struct oc_json {
     const char *str; /* NUL-terminated, arena-owned */
     struct oc_json **items;
     size_t n_items;
+    size_t cap_items;  /* growth capacity; the arena never reclaims, so
+                        * geometric doubling keeps total cost O(n) */
     const char **keys; /* OBJ fields, insertion order preserved */
     struct oc_json **vals;
     size_t n_fields;
+    size_t cap_keys;
+    size_t cap_vals;
 } oc_json;
 
 /* Parse text (NUL-terminated; len is the bounded byte length) into an

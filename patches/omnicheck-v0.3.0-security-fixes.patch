@@ -1,0 +1,737 @@
+diff --git a/include/oc/json.h b/include/oc/json.h
+index f7eba57..4f2a5e3 100755
+--- a/include/oc/json.h
++++ b/include/oc/json.h
+@@ -59,9 +59,13 @@ typedef struct oc_json {
+     const char *str; /* NUL-terminated, arena-owned */
+     struct oc_json **items;
+     size_t n_items;
++    size_t cap_items;  /* growth capacity; the arena never reclaims, so
++                        * geometric doubling keeps total cost O(n) */
+     const char **keys; /* OBJ fields, insertion order preserved */
+     struct oc_json **vals;
+     size_t n_fields;
++    size_t cap_keys;
++    size_t cap_vals;
+ } oc_json;
+ 
+ /* Parse text (NUL-terminated; len is the bounded byte length) into an
+diff --git a/src/coverage.c b/src/coverage.c
+index ecfe2b3..ca0cb9c 100755
+--- a/src/coverage.c
++++ b/src/coverage.c
+@@ -7,6 +7,15 @@
+ #include "oc/graph.h"
+ #include "oc/json.h"
+ 
++/* H-3 (P-3): the Go coverprofile loader derives a malloc size from the
++ * record's end line. An unbounded `el` let 47 bytes of input ask for a
++ * 4 GB allocation (measured: 3,615 MiB peak RSS, SIGKILL -- evidence
++ * T5). 10,000,000 is a generous ceiling (no real coverage report
++ * touches files anywhere near that tall); anything beyond it is a
++ * hostile record and fails the load LOUDLY with OC_ERR_USAGE, matching
++ * the OpenCover loader's existing sanity bound in this same file. */
++#define OC_COV_MAX_LINE 10000000UL
++
+ /* ---------------------------------------------------------------- sets */
+ 
+ static int cmp_u32(const void *a, const void *b) {
+@@ -635,8 +644,10 @@ static oc_code load_jacoco(oc_coverage *cov, const char *data, size_t len, oc_ar
+         oc_status_set(st, OC_ERR_USAGE, "coverage file is XML but carries no <report> root");
+         return OC_ERR_USAGE;
+     }
+-    /* Deterministic order for suffix matching + report meta. */
+-    qsort(cov->files, cov->n_files, sizeof(oc_cov_file), cmp_cov_file);
++    /* Deterministic order for suffix matching + report meta. (M-10/T16
++     * hygiene: guard qsort against a NULL base on zero files -- UB.) */
++    if (cov->n_files > 0)
++        qsort(cov->files, cov->n_files, sizeof(oc_cov_file), cmp_cov_file);
+     return OC_OK;
+ }
+ 
+@@ -773,6 +784,13 @@ static oc_code load_go_coverprofile(oc_coverage *cov, const char *data, const ch
+                           src_name, lineno);
+             return OC_ERR_USAGE;
+         }
++        if (el > OC_COV_MAX_LINE || sl > OC_COV_MAX_LINE) {
++            oc_status_set(st, OC_ERR_USAGE,
++                          "go coverprofile '%s' line %zu: line range %lu-%lu exceeds the "
++                          "analysis budget (%lu lines per record)",
++                          src_name, lineno, sl, el, OC_COV_MAX_LINE);
++            return OC_ERR_USAGE;
++        }
+         oc_cov_file *e = cov_entry(cov, path);
+         if (!e) {
+             oc_status_set(st, OC_ERR_ALLOC, "out of memory storing coverage entry");
+@@ -1753,8 +1771,10 @@ oc_code oc_coverage_load(oc_coverage *cov, const char *const *paths, size_t n, o
+         if (rc != OC_OK)
+             return rc;
+     }
+-    /* Deterministic order for suffix matching + report meta. */
+-    qsort(cov->files, cov->n_files, sizeof(oc_cov_file), cmp_cov_file);
++    /* Deterministic order for suffix matching + report meta. (M-10/T16
++     * hygiene: guard qsort against a NULL base on zero files -- UB.) */
++    if (cov->n_files > 0)
++        qsort(cov->files, cov->n_files, sizeof(oc_cov_file), cmp_cov_file);
+     return OC_OK;
+ }
+ 
+diff --git a/src/dup.c b/src/dup.c
+index 973b2e0..75c91ed 100755
+--- a/src/dup.c
++++ b/src/dup.c
+@@ -278,7 +278,9 @@ oc_dup_index *oc_dup_build(const oc_graph *g, const oc_config *cfg, oc_arena *a,
+             n_wins++;
+         }
+     }
+-    qsort(wins, n_wins, sizeof(dup_window), cmp_window);
++    /* M-10/T16 hygiene: qsort(NULL, 0) on a window-free file is UB. */
++    if (n_wins > 0)
++        qsort(wins, n_wins, sizeof(dup_window), cmp_window);
+ 
+     /* 4. Candidate runs: verify text, lockstep-extend, emit spans. */
+     size_t wi = 0;
+diff --git a/src/json.c b/src/json.c
+index 40b586a..411ac16 100755
+--- a/src/json.c
++++ b/src/json.c
+@@ -168,6 +168,12 @@ void oc_jsonw_arr_end(oc_jsonw *w) {
+ /* =================================================================== */
+ 
+ #define OC_JSON_MAX_TEXT 64
++/* H-1 (P-1): a hostile document may carry millions of fields/items; each
++ * one costs real arena memory even under geometric growth. 1,000,000
++ * entries is far beyond every legitimate manifest/coverage/LSP payload
++ * the tool consumes, and anything larger fails the parse LOUDLY
++ * (the project contract: never silently partial, never unbounded). */
++#define OC_JSON_MAX_ENTRIES 1000000
+ 
+ typedef struct oc_json_parser {
+     const char *start;
+@@ -176,6 +182,7 @@ typedef struct oc_json_parser {
+     oc_arena *arena;
+     oc_status *st;
+     int depth;
++    size_t entries; /* H-1: total fields + items pushed so far */
+ } oc_json_parser;
+ 
+ static void jerr(oc_json_parser *ps, const char *msg) {
+@@ -184,6 +191,27 @@ static void jerr(oc_json_parser *ps, const char *msg) {
+                       (long)(ps->p - ps->start), (long)(ps->end - ps->start));
+ }
+ 
++/* H-1 (P-1): geometric growth for the parser's key/value/item vectors.
++ * The arena never reclaims, so the old per-append (n+1)-sized allocation
++ * copied the whole vector for EVERY push: O(n^2) bytes and O(n^2) work --
++ * measured at 3.6 GB peak RSS for a 30,000-field package.json (T1).
++ * Doubling from 16 allocates log2(n) buffers whose total size is a
++ * geometric series, i.e. O(final size) arena cost and amortized O(1)
++ * copy work per push; outputs are unchanged (the vectors' contents are
++ * identical, only the spare capacity differs). */
++static void **grow_ptr_vec(oc_arena *a, void **old, size_t n, size_t *cap, size_t elem) {
++    if (n < *cap)
++        return old;
++    size_t ncap = *cap ? *cap * 2 : 16;
++    void **g = (void **)oc_arena_alloc(a, ncap * elem);
++    if (!g)
++        return NULL;
++    if (n)
++        memcpy(g, old, n * elem); /* copy ONCE per doubling */
++    *cap = ncap;
++    return g;
++}
++
+ static void jskip_ws(oc_json_parser *ps) {
+     while (ps->p < ps->end) {
+         char c = *ps->p;
+@@ -387,21 +415,24 @@ static oc_json *jparse_value(oc_json_parser *ps) {
+             oc_json *val = jparse_value(ps);
+             if (!val)
+                 return NULL;
+-            const char **nk =
+-                (const char **)oc_arena_alloc(ps->arena, (v->n_fields + 1) * sizeof(char *));
+-            oc_json **nv =
+-                (oc_json **)oc_arena_alloc(ps->arena, (v->n_fields + 1) * sizeof(oc_json *));
+-            if (!nk || !nv)
++            if (ps->entries >= OC_JSON_MAX_ENTRIES) {
++                jerr(ps, "document exceeds the 1,000,000 field/item budget");
+                 return NULL;
+-            if (v->n_fields) {
+-                memcpy(nk, v->keys, v->n_fields * sizeof(char *));
+-                memcpy(nv, v->vals, v->n_fields * sizeof(oc_json *));
+             }
++            const char **nk = (const char **)grow_ptr_vec(ps->arena, (void **)v->keys,
++                                                          v->n_fields, &v->cap_keys,
++                                                          sizeof(char *));
++            oc_json **nv = (oc_json **)grow_ptr_vec(ps->arena, (void **)v->vals,
++                                                    v->n_fields, &v->cap_vals,
++                                                    sizeof(oc_json *));
++            if (!nk || !nv)
++                return NULL;
+             nk[v->n_fields] = key;
+             nv[v->n_fields] = val;
+             v->keys = nk;
+             v->vals = nv;
+             v->n_fields++;
++            ps->entries++;
+             jskip_ws(ps);
+             if (ps->p < ps->end && *ps->p == ',') {
+                 ps->p++;
+@@ -435,15 +466,19 @@ static oc_json *jparse_value(oc_json_parser *ps) {
+             oc_json *item = jparse_value(ps);
+             if (!item)
+                 return NULL;
+-            oc_json **ni =
+-                (oc_json **)oc_arena_alloc(ps->arena, (v->n_items + 1) * sizeof(oc_json *));
++            if (ps->entries >= OC_JSON_MAX_ENTRIES) {
++                jerr(ps, "document exceeds the 1,000,000 field/item budget");
++                return NULL;
++            }
++            oc_json **ni = (oc_json **)grow_ptr_vec(ps->arena, (void **)v->items,
++                                                    v->n_items, &v->cap_items,
++                                                    sizeof(oc_json *));
+             if (!ni)
+                 return NULL;
+-            if (v->n_items)
+-                memcpy(ni, v->items, v->n_items * sizeof(oc_json *));
+             ni[v->n_items] = item;
+             v->items = ni;
+             v->n_items++;
++            ps->entries++;
+             jskip_ws(ps);
+             if (ps->p < ps->end && *ps->p == ',') {
+                 ps->p++;
+@@ -540,6 +575,7 @@ oc_json *oc_json_parse(oc_arena *a, const char *text, size_t len, oc_status *st)
+     ps.arena = a;
+     ps.st = st;
+     ps.depth = 0;
++    ps.entries = 0;
+ 
+     oc_json *root = jparse_value(&ps);
+     if (!root)
+diff --git a/src/mutate.c b/src/mutate.c
+index 2e8caf7..805b832 100755
+--- a/src/mutate.c
++++ b/src/mutate.c
+@@ -1,10 +1,12 @@
+ #include "oc/mutate.h"
+ 
+ #include <fcntl.h>
++#include <limits.h>
+ #include <signal.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <sys/stat.h>
+ #include <sys/wait.h>
+ #include <time.h>
+ #include <unistd.h>
+@@ -427,6 +429,198 @@ done:
+ 
+ /* --------------------------------------------------------- runner --- */
+ 
++/* H-4 (P-4): crash-safe mutation. The engine used to splice each mutant
++ * straight into the working-tree source (fopen "wb") and restore only on
++ * the happy path: no signal handlers, no atomic replacement, no journal.
++ * A SIGKILL mid-run permanently corrupted the user's file (evidence T8:
++ * `return a == b` stayed as `return 0`). Four layers now close every
++ * death window:
++ *
++ *   1. journal_arm()  -- the pristine bytes are fsync'd to
++ *      "<file>.oc-mutate-journal" BEFORE the first splice of that file;
++ *   2. write_atomic() -- every write (mutant and restore) goes to a temp
++ *      file plus rename(), never a truncate-in-place;
++ *   3. mutate_fatal_signal() -- SIGINT/SIGTERM/SIGHUP/SIGQUIT (Ctrl-C,
++ *      CI timeouts, systemd stop) restore the journal in the handler
++ *      using only async-signal-safe calls, then exit 128+sig;
++ *   4. journal_recover() -- at startup, any journal left behind by a
++ *      dead run (SIGKILL and power loss cannot be caught) is restored
++ *      before the pre-flight suite executes, so a poisoned tree can
++ *      never silently pass.
++ *
++ * The journal is disarmed the moment the pristine bytes are back on
++ * disk, so it only ever exists while a mutant is applied. */
++
++#define OC_MUTATE_JOURNAL_SUFFIX ".oc-mutate-journal"
++
++static volatile sig_atomic_t g_journal_armed = 0;
++static volatile sig_atomic_t g_child_pid = 0; /* pid of the running suite, if any */
++static char g_journal_src[PATH_MAX];
++static char g_journal_bak[PATH_MAX];
++static int g_handlers_installed = 0;
++static struct sigaction g_old_actions[4];
++
++static void mutate_fatal_signal(int sig) {
++    if (g_journal_armed)
++        rename(g_journal_bak, g_journal_src); /* async-signal-safe */
++    if (g_child_pid > 0)
++        kill(-(pid_t)g_child_pid, SIGKILL); /* best effort: no orphaned suite */
++    _exit(128 + sig);
++}
++
++static void install_fatal_handlers(void) {
++    static const int sigs[4] = {SIGINT, SIGTERM, SIGHUP, SIGQUIT};
++    struct sigaction sa;
++    memset(&sa, 0, sizeof(sa));
++    sa.sa_handler = mutate_fatal_signal;
++    sigemptyset(&sa.sa_mask);
++    sa.sa_flags = 0;
++    for (int i = 0; i < 4; i++)
++        sigaction(sigs[i], &sa, &g_old_actions[i]);
++    g_handlers_installed = 1;
++}
++
++static void uninstall_fatal_handlers(void) {
++    if (!g_handlers_installed)
++        return;
++    static const int sigs[4] = {SIGINT, SIGTERM, SIGHUP, SIGQUIT};
++    for (int i = 0; i < 4; i++)
++        sigaction(sigs[i], &g_old_actions[i], NULL);
++    g_handlers_installed = 0;
++}
++
++/* Replace "path" with (data, len) atomically: temp file + rename, so a
++ * crash can never leave a half-written source file behind. The old
++ * truncate-in-place write preserved the target's permission bits for
++ * free; rename() from a fresh fopen() would silently drop the exec bit
++ * (caught by test_sprint5's in-source mutation of an executable fixture:
++ * calc.py came back 0644 instead of 0755). So: stat the target, fchmod
++ * the temp file to the same mode before rename, and fsync the data so
++ * the rename cannot hit disk before the bytes do. mode_override != 0
++ * wins over the stat-derived mode (journal recovery restores the
++ * PRISTINE mode even when the crashed splice already lost it). */
++static int write_atomic_mode(const char *path, const char *data, size_t len,
++                             mode_t mode_override) {
++    char tmp[PATH_MAX];
++    if (snprintf(tmp, sizeof(tmp), "%s.oc-mutate-tmp", path) >= (int)sizeof(tmp))
++        return 0;
++    mode_t mode = mode_override;
++    if (!mode) {
++        struct stat st;
++        if (stat(path, &st) == 0)
++            mode = st.st_mode & 07777;
++        else
++            mode = 0644; /* new file: standard default */
++    }
++    FILE *f = fopen(tmp, "wb");
++    if (!f)
++        return 0;
++    size_t w = fwrite(data, 1, len, f);
++    int ok = (w == len) && (fflush(f) == 0);
++    if (ok && fchmod(fileno(f), mode) != 0)
++        ok = 0;
++    if (ok && fsync(fileno(f)) != 0)
++        ok = 0;
++    if (fclose(f) != 0)
++        ok = 0;
++    if (!ok) {
++        unlink(tmp);
++        return 0;
++    }
++    if (rename(tmp, path) != 0) {
++        unlink(tmp);
++        return 0;
++    }
++    return 1;
++}
++
++static int write_atomic(const char *path, const char *data, size_t len) {
++    return write_atomic_mode(path, data, len, 0);
++}
++
++static int journal_arm(const char *src, const char *data, size_t len) {
++    if (snprintf(g_journal_bak, sizeof(g_journal_bak), "%s" OC_MUTATE_JOURNAL_SUFFIX, src) >=
++        (int)sizeof(g_journal_bak))
++        return -1;
++    if (snprintf(g_journal_src, sizeof(g_journal_src), "%s", src) >=
++        (int)sizeof(g_journal_src))
++        return -1;
++    FILE *f = fopen(g_journal_bak, "wb");
++    if (!f)
++        return -1;
++    /* the journal doubles as the pristine-mode record: the fatal-signal
++     * handler restores by plain rename(), and journal_recover() reads
++     * this mode back, so permission bits survive every death window. */
++    struct stat st;
++    mode_t mode = 0644;
++    if (stat(src, &st) == 0)
++        mode = st.st_mode & 07777;
++    size_t w = fwrite(data, 1, len, f);
++    int ok = (w == len) && (fflush(f) == 0);
++    if (ok && fchmod(fileno(f), mode) != 0)
++        ok = 0;
++    if (ok && fsync(fileno(f)) != 0)
++        ok = 0;
++    if (fclose(f) != 0)
++        ok = 0;
++    if (!ok) {
++        unlink(g_journal_bak);
++        return -1;
++    }
++    g_journal_armed = 1;
++    return 0;
++}
++
++static void journal_disarm(void) {
++    if (g_journal_armed)
++        unlink(g_journal_bak);
++    g_journal_armed = 0;
++    g_journal_bak[0] = '\0';
++    g_journal_src[0] = '\0';
++}
++
++/* Startup recovery: if a journal from a dead run exists for "src",
++ * restore the pristine bytes, then drop the journal. A restore failure
++ * keeps the journal so the next run can try again. */
++static void journal_recover(const char *src) {
++    char bak[PATH_MAX];
++    if (snprintf(bak, sizeof(bak), "%s" OC_MUTATE_JOURNAL_SUFFIX, src) >= (int)sizeof(bak))
++        return;
++    FILE *f = fopen(bak, "rb");
++    if (!f)
++        return; /* no journal: nothing to recover */
++    if (fseek(f, 0, SEEK_END) != 0) {
++        fclose(f);
++        return;
++    }
++    long sz = ftell(f);
++    if (sz < 0 || fseek(f, 0, SEEK_SET) != 0) {
++        fclose(f);
++        return;
++    }
++    size_t len = (size_t)sz;
++    char *data = (char *)malloc(len ? len : 1);
++    if (!data) {
++        fclose(f); /* leave the journal for the next run */
++        return;
++    }
++    if (fread(data, 1, len, f) != len) {
++        free(data);
++        fclose(f);
++        return;
++    }
++    fclose(f);
++    /* the journal file itself carries the pristine permission bits
++     * (journal_arm fchmod'ed it) -- restore content AND mode from it. */
++    struct stat jst;
++    mode_t mode = 0;
++    if (stat(bak, &jst) == 0)
++        mode = jst.st_mode & 07777;
++    if (write_atomic_mode(src, data, len, mode))
++        unlink(bak); /* only drop the journal once the file is restored */
++    free(data);
++}
++
+ /* Executes the suite command in the current working directory with a
+  * hard timeout: /bin/sh -c, own process group, deadline kill. Returns
+  * the mutant status. Never inherits the analysis process's failure. */
+@@ -436,6 +630,7 @@ static oc_mut_status run_test(const char *cmd, long timeout_s) {
+         return OC_MUT_KILLED; /* fork failure: treat conservatively as killed */
+     if (pid == 0) {
+         setpgid(0, 0);
++        g_child_pid = 0; /* the child does not own itself */
+         /* the suite's own output is not part of the mutation report
+          * contract: silence it so the JSON report stays byte-clean.
+          * If freopen fails, fall back to closing the fd and opening
+@@ -454,6 +649,7 @@ static oc_mut_status run_test(const char *cmd, long timeout_s) {
+         _exit(127);
+     }
+     setpgid(pid, pid); /* also from the parent, race-safe */
++    g_child_pid = (sig_atomic_t)pid; /* the fatal handler kills the suite group */
+     long elapsed_ms = 0;
+     int status = 0;
+     for (;;) {
+@@ -474,8 +670,11 @@ static oc_mut_status run_test(const char *cmd, long timeout_s) {
+         nanosleep(&ts, NULL);
+         elapsed_ms += 50;
+     }
+-    if (WIFEXITED(status))
++    if (WIFEXITED(status)) {
++        g_child_pid = 0;
+         return WEXITSTATUS(status) == 0 ? OC_MUT_SURVIVED : OC_MUT_KILLED;
++    }
++    g_child_pid = 0;
+     return OC_MUT_KILLED; /* signaled */
+ }
+ 
+@@ -700,6 +899,11 @@ oc_code oc_mutate_run(const oc_mutate_options *o, oc_mutate_report *rep, FILE *o
+                       "--test-cmd is required: the engine never guesses how to run a suite");
+         return OC_ERR_USAGE;
+     }
++    /* H-4 (P-4): arm the crash-safety net BEFORE anything can splice a
++     * mutant. SIGKILL cannot be caught -- the journal plus startup
++     * recovery covers it -- but SIGINT/SIGTERM/SIGHUP/SIGQUIT (Ctrl-C,
++     * CI timeouts, systemd stop) restore the file inside the handler. */
++    install_fatal_handlers();
+     long timeout = o->timeout_s > 0 ? o->timeout_s : 30;
+     memset(rep, 0, sizeof(*rep));
+     oc_mutants_init(&rep->mutants);
+@@ -725,6 +929,13 @@ oc_code oc_mutate_run(const oc_mutate_options *o, oc_mutate_report *rep, FILE *o
+     if (rc != OC_OK)
+         goto done;
+ 
++    /* H-4 (P-4) startup recovery: a previous run may have died (SIGKILL,
++     * OOM kill, power loss) with a mutant spliced into a source file.
++     * Its journal holds the pristine bytes; restore them BEFORE the
++     * pre-flight suite executes so a poisoned tree can never pass. */
++    for (size_t i = 0; i < files.n; i++)
++        journal_recover(files.items[i]);
++
+     if (o->n_coverage > 0) {
+         rc = oc_coverage_load(&cov, o->coverage, o->n_coverage, &arena, st);
+         if (rc != OC_OK)
+@@ -853,40 +1064,47 @@ oc_code oc_mutate_run(const oc_mutate_options *o, oc_mutate_report *rep, FILE *o
+         memcpy(mutated + m->byte_start, m->replacement, strlen(m->replacement));
+         memcpy(mutated + m->byte_start + strlen(m->replacement), orig + m->byte_end,
+                orig_len - m->byte_end);
+-        FILE *f = fopen(m->file, "wb");
+-        int write_ok = f != NULL;
+-        if (f) {
+-            write_ok = fwrite(mutated, 1, new_len, f) == new_len;
+-            fclose(f);
++        /* H-4 (P-4): journal the pristine bytes BEFORE touching the file
++         * (fsync'd), then splice via temp-file+rename -- an atomic
++         * replacement. Every death window now has a recovery path:
++         * handled signals restore inside the handler; SIGKILL and power
++         * loss leave the journal for the startup recovery of the next
++         * run. The journal is dropped the moment the pristine bytes are
++         * back on disk. */
++        if (journal_arm(m->file, orig, orig_len) != 0) {
++            free(mutated);
++            free(orig);
++            oc_status_set(st, OC_ERR_IO, "cannot journal '%s' before mutation", m->file);
++            rc = OC_ERR_IO;
++            goto done_collect;
+         }
+-        free(mutated);
+-        if (!write_ok) {
+-            /* restore before failing */
+-            f = fopen(m->file, "wb");
+-            if (f) {
+-                fwrite(orig, 1, orig_len, f);
+-                fclose(f);
++        if (!write_atomic(m->file, mutated, new_len)) {
++            if (!write_atomic(m->file, orig, orig_len)) {
++                /* journal stays armed: the next run's startup recovery
++                 * restores the pristine bytes */
++            } else {
++                journal_disarm();
+             }
++            free(mutated);
+             free(orig);
+             oc_status_set(st, OC_ERR_IO, "cannot write mutated file '%s'", m->file);
+             rc = OC_ERR_IO;
+             goto done_collect;
+         }
++        free(mutated);
+         rep->executed++;
+         oc_mut_status verdict = run_test(o->test_cmd, timeout);
+         /* restore the original bytes unconditionally */
+-        f = fopen(m->file, "wb");
+-        int restore_ok = f != NULL;
+-        if (f) {
+-            restore_ok = fwrite(orig, 1, orig_len, f) == orig_len;
+-            fclose(f);
+-        }
+-        free(orig);
+-        if (!restore_ok) {
++        if (!write_atomic(m->file, orig, orig_len)) {
++            free(orig);
++            /* journal stays armed: the next run's startup recovery
++             * restores the pristine bytes */
+             oc_status_set(st, OC_ERR_IO, "cannot restore mutated file '%s'", m->file);
+             rc = OC_ERR_IO;
+             goto done_collect;
+         }
++        journal_disarm();
++        free(orig);
+         m->status = verdict;
+         if (verdict == OC_MUT_KILLED)
+             rep->killed++;
+@@ -906,6 +1124,10 @@ done_collect:
+     rep->wall_seconds = (double)(t1.tv_sec - t0.tv_sec) + (double)(t1.tv_nsec - t0.tv_nsec) / 1e9;
+ 
+ done:
++    /* H-4 (P-4): leave no handler behind; if a journal is somehow still
++     * armed on a normal path, the recovery of the next run is the
++     * backstop. */
++    uninstall_fatal_handlers();
+     cache_map_free(&cache);
+     oc_coverage_destroy(&cov);
+     oc_paths_destroy(&files);
+diff --git a/src/parser_ts.c b/src/parser_ts.c
+index 27f750e..fddddec 100755
+--- a/src/parser_ts.c
++++ b/src/parser_ts.c
+@@ -3975,13 +3975,29 @@ static char *rust_leaf_bind_name(oc_arena *a, const char *leaf) {
+  * identifier / scoped_identifier / bare crate-self-super / use_as_clause
+  * / use_wildcard / scoped_use_list / nested use_list). Each leaf pushes
+  * ONE import record and ONE bind record (the leaf segment pre-alias;
+- * globs bind NULL). Returns 0 on OOM (the caller aborts the parse --
+- * fail loud, never silently partial). */
++ * globs bind NULL). Returns 0 on OOM or on exceeding the nesting budget
++ * (the caller aborts the parse -- fail loud, never silently partial).
++ *
++ * H-2 (P-2): this walk used to recurse once per nesting level with no
++ * depth limit while allocating an ever-longer prefix at every level --
++ * a 500 KB Rust file with a 100,000-level use-tree overflowed the C
++ * stack (SIGSEGV, ASan: rust_use_expand parser_ts.c:4052/4075, evidence
++ * T7) and accumulated O(depth^2) prefix bytes in the arena. The explicit
++ * depth budget bounds both; the parse-level tree-depth guard in
++ * oc_parser_ts_parse provides the outer defense. */
++#define OC_RUST_USE_MAX_DEPTH 256
+ static int rust_use_expand(oc_arena *a, TSNode n, const char *src, const char *prefix,
+                            const char *from_path, oc_import_vec *imports, oc_bind_vec *binds,
+-                           oc_lang_family family, int *oom) {
++                           oc_lang_family family, int *oom, oc_status *st, int depth) {
+     if (*oom)
+         return 0;
++    if (depth >= OC_RUST_USE_MAX_DEPTH) {
++        oc_status_set(st, OC_ERR_PARSE,
++                      "Rust use-tree in '%s' nests more than %d levels deep -- over the "
++                      "expansion budget; refusing (fail loud, never guessed)",
++                      from_path, OC_RUST_USE_MAX_DEPTH);
++        return 0;
++    }
+     const char *t = ts_node_type(n);
+     if (strcmp(t, "identifier") == 0 || strcmp(t, "scoped_identifier") == 0 ||
+         strcmp(t, "crate") == 0 || strcmp(t, "self") == 0 || strcmp(t, "super") == 0 ||
+@@ -4049,7 +4065,8 @@ static int rust_use_expand(oc_arena *a, TSNode n, const char *src, const char *p
+             TSNode c = ts_node_child(n, i);
+             if (!ts_node_is_named(c))
+                 continue;
+-            if (!rust_use_expand(a, c, src, prefix, from_path, imports, binds, family, oom))
++            if (!rust_use_expand(a, c, src, prefix, from_path, imports, binds, family, oom, st,
++                                 depth + 1))
+                 return 0;
+         }
+         return 1;
+@@ -4072,7 +4089,8 @@ static int rust_use_expand(oc_arena *a, TSNode n, const char *src, const char *p
+         }
+         if (ts_node_is_null(list))
+             return 1;
+-        return rust_use_expand(a, list, src, new_prefix, from_path, imports, binds, family, oom);
++        return rust_use_expand(a, list, src, new_prefix, from_path, imports, binds, family, oom,
++                               st, depth + 1);
+     }
+     /* metavariable and anything else: nothing recorded, never guessed */
+     return 1;
+@@ -4359,6 +4377,68 @@ static int php_use_expand(oc_arena *a, TSNode decl, const char *src, const char
+     return 1;
+ }
+ 
++/*
++ * H-5: syntax-tree depth budget. gprof on a 30,000-deep nested-call
++ * chain: 95% of wall time inside ts_query_cursor__advance -- the
++ * vendored tree-sitter query engine is quadratic on adversarially deep
++ * trees, and every pass in this file (functions, accessors, imports,
++ * exports, surface) runs query cursors over the same root. Legitimate
++ * code nests orders of magnitude below this budget (the deepest pinned
++ * fixture, brace_bomb.js, sits near ~2k raw bracket levels); anything
++ * deeper is hostile input and is refused LOUDLY before any cursor runs,
++ * per the project contract (scan.c aborts the run with this message).
++ * The probe itself is one linear arena-stack DFS (the diagnose_tree /
++ * count_complexity pattern) -- no quadratic behavior, no recursion.
++ */
++#define OC_TS_MAX_TREE_DEPTH 8192
++
++static uint32_t ts_max_depth(oc_arena *a, TSNode root) {
++    typedef struct dframe {
++        TSNode node;
++        uint32_t depth;
++        struct dframe *next;
++    } dframe;
++    dframe *free_list = NULL;
++    dframe *stack = NULL;
++    uint32_t maxd = 0;
++
++    dframe *rootf = (dframe *)oc_arena_alloc(a, sizeof(*rootf));
++    if (!rootf)
++        return 0; /* OOM: caller fails loud, never fails open */
++    rootf->node = root;
++    rootf->depth = 1;
++    rootf->next = NULL;
++    stack = rootf;
++
++    while (stack) {
++        dframe *cur = stack;
++        stack = cur->next;
++        TSNode n = cur->node;
++        uint32_t d = cur->depth;
++        cur->next = free_list;
++        free_list = cur;
++
++        if (d > maxd)
++            maxd = d;
++        uint32_t nc = ts_node_child_count(n);
++        for (uint32_t i = 0; i < nc; i++) {
++            dframe *nf = free_list;
++            if (nf) {
++                free_list = nf->next;
++            } else {
++                nf = (dframe *)oc_arena_alloc(a, sizeof(*nf));
++                if (!nf)
++                    return 0; /* OOM: caller fails loud */
++            }
++            nf->node = ts_node_child(n, i);
++            nf->depth = d + 1;
++            nf->next = stack;
++            stack = nf;
++        }
++    }
++    return maxd;
++}
++
+ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g, oc_parse_out *out,
+                            oc_status *st) {
+     struct oc_lang_entry *e = find_lang(p, in->grammar);
+@@ -4384,6 +4464,26 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
+     }
+     TSNode root = ts_tree_root_node(tree);
+ 
++    /* H-5 guard: measure the tree depth BEFORE any query cursor runs
++     * (diagnose, functions, imports, exports, surface...). One linear
++     * pass; OOM fails loud, never fails open. */
++    uint32_t tree_depth = ts_max_depth(p->arena, root);
++    if (tree_depth == 0) {
++        ts_tree_delete(tree);
++        oc_status_set(st, OC_ERR_ALLOC, "out of memory measuring syntax-tree depth of '%s'",
++                      in->path);
++        return OC_ERR_ALLOC;
++    }
++    if (tree_depth > OC_TS_MAX_TREE_DEPTH) {
++        ts_tree_delete(tree);
++        oc_status_set(st, OC_ERR_PARSE,
++                      "syntax tree of '%s' nests %u levels deep -- over the %d-level "
++                      "analysis budget; refusing to scan (query evaluation is quadratic "
++                      "on such trees)",
++                      in->path, tree_depth, OC_TS_MAX_TREE_DEPTH);
++        return OC_ERR_PARSE;
++    }
++
+     if (out)
+         diagnose_tree(p->arena, root, &out->diag);
+ 
+@@ -5006,13 +5106,17 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
+                 TSNode arg = ts_node_child_by_field_name(ist, "argument", 8);
+                 if (!ts_node_is_null(arg)) {
+                     int oom = 0;
+-                    rust_use_expand(p->arena, arg, in->source, "", in->path, out->imports,
+-                                    out->binds, e->family, &oom);
+-                    if (oom) {
++                    if (!rust_use_expand(p->arena, arg, in->source, "", in->path, out->imports,
++                                         out->binds, e->family, &oom, st, 0)) {
+                         ts_query_cursor_delete(icur);
+                         ts_tree_delete(tree);
+-                        oc_status_set(st, OC_ERR_ALLOC, "out of memory recording use-tree records");
+-                        return OC_ERR_ALLOC;
++                        /* OOM and depth-budget failures both abort the
++                         * parse loudly; the status already carries the
++                         * depth message in the non-OOM case. */
++                        if (oom)
++                            oc_status_set(st, OC_ERR_ALLOC,
++                                          "out of memory recording use-tree records");
++                        return oom ? OC_ERR_ALLOC : st->code;
+                     }
+                 }
+                 continue; /* the use channel is complete for this match */

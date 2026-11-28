@@ -412,13 +412,13 @@ static oc_json *jparse_value(oc_json_parser *ps) {
                 return NULL;
             }
             ps->p++;
-            oc_json *val = jparse_value(ps);
-            if (!val)
-                return NULL;
             if (ps->entries >= OC_JSON_MAX_ENTRIES) {
                 jerr(ps, "document exceeds the 1,000,000 field/item budget");
                 return NULL;
             }
+            oc_json *val = jparse_value(ps);
+            if (!val)
+                return NULL;
             const char **nk = (const char **)grow_ptr_vec(ps->arena, (void **)v->keys,
                                                           v->n_fields, &v->cap_keys,
                                                           sizeof(char *));
@@ -463,13 +463,13 @@ static oc_json *jparse_value(oc_json_parser *ps) {
             return v;
         }
         for (;;) {
-            oc_json *item = jparse_value(ps);
-            if (!item)
-                return NULL;
             if (ps->entries >= OC_JSON_MAX_ENTRIES) {
                 jerr(ps, "document exceeds the 1,000,000 field/item budget");
                 return NULL;
             }
+            oc_json *item = jparse_value(ps);
+            if (!item)
+                return NULL;
             oc_json **ni = (oc_json **)grow_ptr_vec(ps->arena, (void **)v->items,
                                                     v->n_items, &v->cap_items,
                                                     sizeof(oc_json *));

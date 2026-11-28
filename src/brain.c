@@ -23,10 +23,14 @@
  */
 
 /* Resolves the brain file path: OC_BRAIN_FILE override or the
- * project-local default. */
-static void brain_file_path(char *buf, size_t sz) {
+ * project-local default. Returns 0 on truncation (caller fails loud). */
+static int brain_file_path(char *buf, size_t sz) {
     const char *env = getenv("OC_BRAIN_FILE");
-    snprintf(buf, sz, "%s", (env && env[0]) ? env : OC_BRAIN_DEFAULT_FILE);
+    const char *src = (env && env[0]) ? env : OC_BRAIN_DEFAULT_FILE;
+    int n = snprintf(buf, sz, "%s", src);
+    if (n < 0 || (size_t)n >= sz)
+        return 0;
+    return 1;
 }
 
 static int file_exists(const char *path) {
@@ -64,7 +68,11 @@ oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out,
     memset(out, 0, sizeof(*out));
     out->requested = 1;
     out->epoch = -1;
-    brain_file_path(out->file, sizeof(out->file));
+    if (!brain_file_path(out->file, sizeof(out->file))) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
     snprintf(out->reason, sizeof(out->reason),
              "brain advisory requires the embedded OmniDecide kernel "
              "(rebuild with -DOC_EMBED_OMNIDECIDE=ON)");
@@ -72,7 +80,8 @@ oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out,
 }
 
 #define BRAIN_EXPLICIT_STUB(name)                                             \
-    oc_code name(FILE *out, oc_status *st) {                                  \
+    oc_code name(const char *file, FILE *out, oc_status *st) {                \
+        (void)file;                                                           \
         (void)out;                                                            \
         oc_status_set(st, OC_ERR_USAGE,                                       \
                       "oc brain requires the embedded OmniDecide kernel "     \
@@ -123,9 +132,19 @@ oc_code oc_brain_cmd_discard(const char *file, long index, FILE *out,
 
 oc_code oc_brain_cmd_reset(const char *file, FILE *out, oc_status *st) {
     char path[512];
-    brain_file_path(path, sizeof(path));
-    if (file && file[0])
-        snprintf(path, sizeof(path), "%s", file);
+    /* Prefer explicit file over environment/default; validate selected path. */
+    if (file && file[0]) {
+        int n = snprintf(path, sizeof(path), "%s", file);
+        if (n < 0 || (size_t)n >= sizeof(path)) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "specified --brain-file path is too long");
+            return OC_ERR_USAGE;
+        }
+    } else if (!brain_file_path(path, sizeof(path))) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
     int existed = file_exists(path) ? 1 : 0;
     int removed = 0;
     if (existed)
@@ -209,7 +228,11 @@ oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out,
     memset(out, 0, sizeof(*out));
     out->requested = 1;
     out->epoch = -1;
-    brain_file_path(out->file, sizeof(out->file));
+    if (!brain_file_path(out->file, sizeof(out->file))) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
 
     /* Rank-only boundary: only triaged findings can be annotated. */
     size_t n_triaged = 0;
@@ -240,16 +263,16 @@ oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out,
     }
     out->epoch = brain_epoch(brain);
 
-    /* One advise() over ALL findings (options array = full vector;
-     * untriaged entries simply never receive annotations). */
-    double *bonuses = (double *)calloc(v->n ? v->n : 1, sizeof(*bonuses));
+    /* One advise() over triaged findings only (options array = triaged
+     * subset; untriaged entries never receive annotations). */
+    double *bonuses = (double *)calloc(n_triaged ? n_triaged : 1, sizeof(*bonuses));
     if (!bonuses) {
         odk_brain_free(brain);
         snprintf(out->reason, sizeof(out->reason),
                  "out of memory consulting the brain (fail-open)");
         return OC_OK;
     }
-    const char **options = (const char **)calloc(v->n ? v->n : 1,
+    const char **options = (const char **)calloc(n_triaged ? n_triaged : 1,
                                                  sizeof(*options));
     if (!options) {
         free(bonuses);
@@ -258,13 +281,16 @@ oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out,
                  "out of memory consulting the brain (fail-open)");
         return OC_OK;
     }
-    for (size_t i = 0; i < v->n; i++)
-        options[i] = v->items[i].message;
+    for (size_t i = 0, j = 0; i < v->n; i++) {
+        if (!v->items[i].triaged)
+            continue;
+        options[j++] = v->items[i].message;
+    }
 
     odk_error err;
     memset(&err, 0, sizeof(err));
     odk_status rc = odk_brain_advise(brain, "rank", OC_TRIAGE_INSTRUCTION,
-                                     options, v->n, bonuses, &err);
+                                     options, n_triaged, bonuses, &err);
     if (rc != ODK_OK) {
         free(bonuses);
         free(options);
@@ -304,7 +330,7 @@ oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out,
             continue;
         idx[k] = i;
         double c = v->items[i].triage_confidence +
-                   OC_BRAIN_WEIGHT * bonuses[i];
+                   OC_BRAIN_WEIGHT * bonuses[k];
         if (c < 0.0)
             c = 0.0;
         if (c > 1.0)
@@ -330,7 +356,7 @@ oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out,
         oc_finding *f = &v->items[idx[best]];
         f->brain_annotated = 1;
         f->brain_rank = (int)rank;
-        f->brain_bonus = bonuses[idx[best]];
+        f->brain_bonus = bonuses[best];
         idx[best] = (size_t)-1;
         out->adjusted++;
     }
@@ -347,9 +373,19 @@ oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out,
 
 oc_code oc_brain_cmd_info(const char *file, FILE *out, oc_status *st) {
     char path[512];
-    brain_file_path(path, sizeof(path));
-    if (file && file[0])
-        snprintf(path, sizeof(path), "%s", file);
+    /* Prefer explicit file over environment/default; validate selected path. */
+    if (file && file[0]) {
+        int n = snprintf(path, sizeof(path), "%s", file);
+        if (n < 0 || (size_t)n >= sizeof(path)) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "specified --brain-file path is too long");
+            return OC_ERR_USAGE;
+        }
+    } else if (!brain_file_path(path, sizeof(path))) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
     int existed = file_exists(path) ? 1 : 0;
 
     long long epoch = -1;
@@ -429,9 +465,19 @@ oc_code oc_brain_cmd_info(const char *file, FILE *out, oc_status *st) {
 
 oc_code oc_brain_cmd_create(const char *file, FILE *out, oc_status *st) {
     char path[512];
-    brain_file_path(path, sizeof(path));
-    if (file && file[0])
-        snprintf(path, sizeof(path), "%s", file);
+    /* Prefer explicit file over environment/default; validate selected path. */
+    if (file && file[0]) {
+        int n = snprintf(path, sizeof(path), "%s", file);
+        if (n < 0 || (size_t)n >= sizeof(path)) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "specified --brain-file path is too long");
+            return OC_ERR_USAGE;
+        }
+    } else if (!brain_file_path(path, sizeof(path))) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
     if (file_exists(path)) {
         oc_status_set(st, OC_ERR_USAGE,
                       "brain store '%s' already exists; refusing to overwrite "
@@ -454,7 +500,11 @@ oc_code oc_brain_cmd_create(const char *file, FILE *out, oc_status *st) {
         return OC_ERR_IO;
     }
     char sha[65] = "";
-    file_sha256(path, sha);
+    if (!file_sha256(path, sha)) {
+        oc_status_set(st, OC_ERR_IO, "failed to hash the brain file '%s'",
+                     path);
+        return OC_ERR_IO;
+    }
     fprintf(out,
             "{\"schema\":\"omnicheck.brain.create/v0\",\"file\":");
     oc_jsonw w;
@@ -562,10 +612,22 @@ oc_code oc_brain_cmd_record(const char *file, const char *report_path,
         return rc;
     }
 
+    /* Prefer explicit file over environment/default; validate selected path. */
     char path[512];
-    brain_file_path(path, sizeof(path));
-    if (file && file[0])
-        snprintf(path, sizeof(path), "%s", file);
+    if (file && file[0]) {
+        int n = snprintf(path, sizeof(path), "%s", file);
+        if (n < 0 || (size_t)n >= sizeof(path)) {
+            oc_arena_destroy(&a);
+            oc_status_set(st, OC_ERR_USAGE,
+                          "specified --brain-file path is too long");
+            return OC_ERR_USAGE;
+        }
+    } else if (!brain_file_path(path, sizeof(path))) {
+        oc_arena_destroy(&a);
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
     int existed = 0;
     odk_brain *brain = brain_open(path, &existed);
     if (!brain) {
@@ -600,7 +662,12 @@ oc_code oc_brain_cmd_record(const char *file, const char *report_path,
     }
 
     char sha[65] = "";
-    file_sha256(path, sha);
+    if (!file_sha256(path, sha)) {
+        oc_arena_destroy(&a);
+        oc_status_set(st, OC_ERR_IO, "failed to hash the brain file '%s'",
+                     path);
+        return OC_ERR_IO;
+    }
     oc_strbuf b;
     oc_strbuf_init(&b);
     int ok = 1;
@@ -640,6 +707,77 @@ oc_code oc_brain_cmd_record(const char *file, const char *report_path,
     return OC_OK;
 }
 
+oc_code oc_brain_cmd_save(const char *file, FILE *out, oc_status *st) {
+    char path[512];
+    /* Prefer explicit file over environment/default; validate selected path. */
+    if (file && file[0]) {
+        int n = snprintf(path, sizeof(path), "%s", file);
+        if (n < 0 || (size_t)n >= sizeof(path)) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "specified --brain-file path is too long");
+            return OC_ERR_USAGE;
+        }
+    } else if (!brain_file_path(path, sizeof(path))) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
+    /* Save requires an existing brain; distinguish absent from corrupt. */
+    if (!file_exists(path)) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "no brain store at '%s' (create one with 'oc brain create' "
+                      "or record an outcome)",
+                      path);
+        return OC_ERR_USAGE;
+    }
+    odk_error err;
+    memset(&err, 0, sizeof(err));
+    odk_brain *brain = odk_brain_load_file(path, &err);
+    if (!brain) {
+        oc_status_set(st, OC_ERR_PARSE,
+                      "brain file '%s' is corrupt or unreadable: %s", path,
+                      err.text[0] ? err.text : "kernel load failed");
+        return OC_ERR_PARSE;
+    }
+    odk_status svr = odk_brain_save_file(brain, path, &err);
+    long long epoch = brain_epoch(brain);
+    odk_brain_free(brain);
+    if (svr != ODK_OK) {
+        oc_status_set(st, OC_ERR_IO, "failed to save the brain file '%s': %s",
+                      path, err.text[0] ? err.text : "kernel save failed");
+        return OC_ERR_IO;
+    }
+    char sha[65] = "";
+    if (!file_sha256(path, sha)) {
+        oc_status_set(st, OC_ERR_IO, "failed to hash the brain file '%s'",
+                     path);
+        return OC_ERR_IO;
+    }
+    fprintf(out, "{\"schema\":\"omnicheck.brain.save/v0\",\"file\":");
+    oc_jsonw w;
+    oc_jsonw_init(&w);
+    oc_jsonw_str(&w, path);
+    size_t w1 = fwrite(w.buf.data ? w.buf.data : "null", 1,
+                       w.buf.data ? strlen(w.buf.data) : 4, out);
+    size_t w1_len = w.buf.data ? strlen(w.buf.data) : 4;
+    oc_jsonw_destroy(&w);
+    if (w1 != w1_len || ferror(out)) {
+        oc_status_set(st, OC_ERR_IO,
+                      "failed to write the save result (brain store was saved to '%s')",
+                      path);
+        return OC_ERR_IO;
+    }
+    int w2 = fprintf(out, ",\"saved\":true,\"existed\":true,\"epoch\":%lld,"
+                     "\"sha256\":\"%s\"}\n", epoch, sha);
+    if (w2 < 0 || ferror(out)) {
+        oc_status_set(st, OC_ERR_IO,
+                      "failed to write the save result (brain store was saved to '%s')",
+                      path);
+        return OC_ERR_IO;
+    }
+    return OC_OK;
+}
+
 oc_code oc_brain_cmd_advise(const char *file, const char *report_path,
                             FILE *out, oc_status *st) {
     if (!report_path || !report_path[0]) {
@@ -647,9 +785,19 @@ oc_code oc_brain_cmd_advise(const char *file, const char *report_path,
         return OC_ERR_USAGE;
     }
     char path[512];
-    brain_file_path(path, sizeof(path));
-    if (file && file[0])
-        snprintf(path, sizeof(path), "%s", file);
+    /* Prefer explicit file over environment/default; validate selected path. */
+    if (file && file[0]) {
+        int n = snprintf(path, sizeof(path), "%s", file);
+        if (n < 0 || (size_t)n >= sizeof(path)) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "specified --brain-file path is too long");
+            return OC_ERR_USAGE;
+        }
+    } else if (!brain_file_path(path, sizeof(path))) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
 
     oc_arena a;
     oc_arena_init(&a);
@@ -706,9 +854,21 @@ oc_code oc_brain_cmd_advise(const char *file, const char *report_path,
         const char *msg = oc_json_as_str(oc_json_get(f, "message"), NULL);
         if (!fp || !msg)
             continue;
+        double conf = oc_json_as_num(oc_json_get(f, "triage_confidence"), 0.0);
+        if (conf < 0.0 || conf > 1.0) {
+            oc_status_set(st, OC_ERR_PARSE,
+                          "finding '%s' has triage_confidence outside [0,1]",
+                          fp);
+            free(fps);
+            free(texts);
+            free(confs);
+            free(bonuses);
+            oc_arena_destroy(&a);
+            return OC_ERR_PARSE;
+        }
         fps[m] = fp;
         texts[m] = msg;
-        confs[m] = oc_json_as_num(oc_json_get(f, "triage_confidence"), 0.0);
+        confs[m] = conf;
         m++;
     }
 
@@ -719,14 +879,14 @@ oc_code oc_brain_cmd_advise(const char *file, const char *report_path,
         memset(&err, 0, sizeof(err));
         odk_brain *brain = odk_brain_load_file(path, &err);
         if (!brain) {
+            oc_status_set(st, OC_ERR_PARSE,
+                          "brain file '%s' is corrupt or unreadable: %s", path,
+                          err.text[0] ? err.text : "kernel load failed");
             free(fps);
             free(texts);
             free(confs);
             free(bonuses);
             oc_arena_destroy(&a);
-            oc_status_set(st, OC_ERR_PARSE,
-                          "brain file '%s' is corrupt or unreadable: %s", path,
-                          err.text[0] ? err.text : "kernel load failed");
             return OC_ERR_PARSE;
         }
         epoch = brain_epoch(brain);
@@ -735,13 +895,13 @@ oc_code oc_brain_cmd_advise(const char *file, const char *report_path,
                                           texts, m, bonuses, &err);
         odk_brain_free(brain);
         if (rc2 != ODK_OK) {
+            oc_status_set(st, OC_ERR_INTERNAL, "brain advise failed: %s",
+                          err.text[0] ? err.text : "unknown error");
             free(fps);
             free(texts);
             free(confs);
             free(bonuses);
             oc_arena_destroy(&a);
-            oc_status_set(st, OC_ERR_INTERNAL, "brain advise failed: %s",
-                          err.text[0] ? err.text : "unknown error");
             return OC_ERR_INTERNAL;
         }
     }
@@ -803,9 +963,19 @@ oc_code oc_brain_cmd_advise(const char *file, const char *report_path,
 
 oc_code oc_brain_cmd_entries(const char *file, FILE *out, oc_status *st) {
     char path[512];
-    brain_file_path(path, sizeof(path));
-    if (file && file[0])
-        snprintf(path, sizeof(path), "%s", file);
+    /* Prefer explicit file over environment/default; validate selected path. */
+    if (file && file[0]) {
+        int n = snprintf(path, sizeof(path), "%s", file);
+        if (n < 0 || (size_t)n >= sizeof(path)) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "specified --brain-file path is too long");
+            return OC_ERR_USAGE;
+        }
+    } else if (!brain_file_path(path, sizeof(path))) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
     if (!file_exists(path)) {
         oc_status_set(st, OC_ERR_USAGE,
                       "no brain store at '%s' (create one with 'oc brain "
@@ -830,16 +1000,36 @@ oc_code oc_brain_cmd_entries(const char *file, FILE *out, oc_status *st) {
         return OC_ERR_ALLOC;
     }
     char sha[65] = "";
-    file_sha256(path, sha);
+    if (!file_sha256(path, sha)) {
+        free(entries);
+        oc_status_set(st, OC_ERR_IO, "failed to hash the brain file '%s'",
+                     path);
+        return OC_ERR_IO;
+    }
     fprintf(out, "{\"schema\":\"omnicheck.brain.entries/v0\",\"file\":");
     oc_jsonw w;
     oc_jsonw_init(&w);
     oc_jsonw_str(&w, path);
-    fprintf(out, "%s,\"sha256\":\"%s\",\"epoch\":%lld,\"entries_report\":",
-            w.buf.data ? w.buf.data : "null", sha, epoch);
+    size_t w1 = fwrite(w.buf.data ? w.buf.data : "null", 1,
+                       w.buf.data ? strlen(w.buf.data) : 4, out);
+    size_t w1_len = w.buf.data ? strlen(w.buf.data) : 4;
+    if (w1 != w1_len || ferror(out)) {
+        oc_status_set(st, OC_ERR_IO, "failed to write the entries document");
+        return OC_ERR_IO;
+    }
+    int w2 = fprintf(out, ",\"sha256\":\"%s\",\"epoch\":%lld,\"entries_report\":",
+                     sha, epoch);
+    if (w2 < 0 || ferror(out)) {
+        oc_status_set(st, OC_ERR_IO, "failed to write the entries document");
+        return OC_ERR_IO;
+    }
     oc_jsonw_destroy(&w);
-    fputs(entries, out);
-    fputs("}\n", out); /* close the wrapper root around the kernel payload */
+    size_t w3 = fwrite(entries, 1, strlen(entries), out);
+    int w4 = fprintf(out, "}\n");
+    if (w3 != strlen(entries) || w4 < 0 || ferror(out)) {
+        oc_status_set(st, OC_ERR_IO, "failed to write the entries document");
+        return OC_ERR_IO;
+    }
     free(entries);
     return OC_OK;
 }
@@ -847,9 +1037,19 @@ oc_code oc_brain_cmd_entries(const char *file, FILE *out, oc_status *st) {
 oc_code oc_brain_cmd_discard(const char *file, long index, FILE *out,
                              oc_status *st) {
     char path[512];
-    brain_file_path(path, sizeof(path));
-    if (file && file[0])
-        snprintf(path, sizeof(path), "%s", file);
+    /* Prefer explicit file over environment/default; validate selected path. */
+    if (file && file[0]) {
+        int n = snprintf(path, sizeof(path), "%s", file);
+        if (n < 0 || (size_t)n >= sizeof(path)) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "specified --brain-file path is too long");
+            return OC_ERR_USAGE;
+        }
+    } else if (!brain_file_path(path, sizeof(path))) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
     if (!file_exists(path)) {
         oc_status_set(st, OC_ERR_USAGE, "no brain store at '%s'", path);
         return OC_ERR_USAGE;
@@ -869,6 +1069,31 @@ oc_code oc_brain_cmd_discard(const char *file, long index, FILE *out,
                       err.text[0] ? err.text : "kernel load failed");
         return OC_ERR_PARSE;
     }
+    /* Validate index against actual entry count to avoid truncation
+     * when casting long -> size_t on 32-bit platforms. */
+    char *entries_json = odk_brain_entries_report_alloc(brain);
+    size_t n_entries = 0;
+    if (entries_json) {
+        oc_arena a;
+        oc_arena_init(&a);
+        oc_status st;
+        oc_status_clear(&st);
+        oc_json *root = oc_json_parse(&a, entries_json, strlen(entries_json), &st);
+        if (root && root->type == OC_JSON_OBJ) {
+            const oc_json *me = oc_json_get(root, "memory_entries");
+            if (me && me->type == OC_JSON_NUM)
+                n_entries = (size_t)me->number;
+        }
+        oc_arena_destroy(&a);
+        free(entries_json);
+    }
+    if (n_entries > 0 && (size_t)index >= n_entries) {
+        odk_brain_free(brain);
+        oc_status_set(st, OC_ERR_USAGE,
+                      "--index %ld out of range (brain has %zu entries)",
+                      index, n_entries);
+        return OC_ERR_USAGE;
+    }
     odk_status rc = odk_brain_discard_entry(brain, (size_t)index, &err);
     if (rc != ODK_OK) {
         odk_brain_free(brain);
@@ -885,24 +1110,47 @@ oc_code oc_brain_cmd_discard(const char *file, long index, FILE *out,
         return OC_ERR_IO;
     }
     char sha[65] = "";
-    file_sha256(path, sha);
-    fprintf(out,
-            "{\"schema\":\"omnicheck.brain.discard/v0\",\"file\":");
+    if (!file_sha256(path, sha)) {
+        oc_status_set(st, OC_ERR_IO, "failed to hash the brain file '%s'",
+                     path);
+        return OC_ERR_IO;
+    }
+    fprintf(out, "{\"schema\":\"omnicheck.brain.discard/v0\",\"file\":");
     oc_jsonw w;
     oc_jsonw_init(&w);
     oc_jsonw_str(&w, path);
-    fprintf(out, "%s,\"index\":%ld,\"discarded\":true,\"epoch\":%lld,"
-                 "\"sha256\":\"%s\"}\n",
-            w.buf.data ? w.buf.data : "null", index, epoch, sha);
+    size_t w1 = fwrite(w.buf.data ? w.buf.data : "null", 1,
+                       w.buf.data ? strlen(w.buf.data) : 4, out);
+    size_t w1_len = w.buf.data ? strlen(w.buf.data) : 4;
+    if (w1 != w1_len || ferror(out)) {
+        oc_status_set(st, OC_ERR_IO, "failed to write the discard document");
+        return OC_ERR_IO;
+    }
+    int w2 = fprintf(out, ",\"index\":%ld,\"discarded\":true,\"epoch\":%lld,"
+                     "\"sha256\":\"%s\"}\n", index, epoch, sha);
+    if (w2 < 0 || ferror(out)) {
+        oc_status_set(st, OC_ERR_IO, "failed to write the discard document");
+        return OC_ERR_IO;
+    }
     oc_jsonw_destroy(&w);
     return OC_OK;
 }
 
 oc_code oc_brain_cmd_reset(const char *file, FILE *out, oc_status *st) {
     char path[512];
-    brain_file_path(path, sizeof(path));
-    if (file && file[0])
-        snprintf(path, sizeof(path), "%s", file);
+    /* Prefer explicit file over environment/default; validate selected path. */
+    if (file && file[0]) {
+        int n = snprintf(path, sizeof(path), "%s", file);
+        if (n < 0 || (size_t)n >= sizeof(path)) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "specified --brain-file path is too long");
+            return OC_ERR_USAGE;
+        }
+    } else if (!brain_file_path(path, sizeof(path))) {
+        oc_status_set(st, OC_ERR_USAGE,
+                      "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_ERR_USAGE;
+    }
     int existed = file_exists(path) ? 1 : 0;
     int removed = 0;
     if (existed)
@@ -911,52 +1159,37 @@ oc_code oc_brain_cmd_reset(const char *file, FILE *out, oc_status *st) {
     oc_jsonw w;
     oc_jsonw_init(&w);
     oc_jsonw_str(&w, path);
-    fprintf(out, "%s,\"removed\":%s}\n", w.buf.data ? w.buf.data : "null",
-            removed ? "true" : "false");
+    size_t w1 = fwrite(w.buf.data ? w.buf.data : "null", 1,
+                       w.buf.data ? strlen(w.buf.data) : 4, out);
+    size_t w1_len = w.buf.data ? strlen(w.buf.data) : 4;
+    if (w1 != w1_len || ferror(out)) {
+        if (existed && !removed) {
+            oc_status_set(st, OC_ERR_IO, "failed to remove the brain file '%s'",
+                          path);
+            return OC_ERR_IO;
+        }
+        oc_status_set(st, OC_ERR_IO, "failed to write the reset result for '%s'",
+                      path);
+        return OC_ERR_IO;
+    }
+    int w2 = fprintf(out, ",\"removed\":%s}\n",
+                     removed ? "true" : "false");
+    if (w2 < 0 || ferror(out)) {
+        if (existed && !removed) {
+            oc_status_set(st, OC_ERR_IO, "failed to remove the brain file '%s'",
+                          path);
+            return OC_ERR_IO;
+        }
+        oc_status_set(st, OC_ERR_IO, "failed to write the reset result for '%s'",
+                      path);
+        return OC_ERR_IO;
+    }
     oc_jsonw_destroy(&w);
     if (existed && !removed) {
         oc_status_set(st, OC_ERR_IO, "failed to remove the brain file '%s'",
                       path);
         return OC_ERR_IO;
     }
-    return OC_OK;
-}
-
-oc_code oc_brain_cmd_save(const char *file, FILE *out, oc_status *st) {
-    char path[512];
-    brain_file_path(path, sizeof(path));
-    if (file && file[0])
-        snprintf(path, sizeof(path), "%s", file);
-    int existed = 0;
-    odk_brain *brain = brain_open(path, &existed);
-    if (!brain) {
-        oc_status_set(st, OC_ERR_PARSE,
-                      "brain file '%s' is corrupt; save refused (fail loud "
-                      "-- use 'oc brain reset' to start over)",
-                      path);
-        return OC_ERR_PARSE;
-    }
-    odk_error err;
-    memset(&err, 0, sizeof(err));
-    odk_status svr = odk_brain_save_file(brain, path, &err);
-    long long epoch = brain_epoch(brain);
-    odk_brain_free(brain);
-    if (svr != ODK_OK) {
-        oc_status_set(st, OC_ERR_IO, "failed to save the brain file '%s': %s",
-                      path, err.text[0] ? err.text : "kernel save failed");
-        return OC_ERR_IO;
-    }
-    char sha[65] = "";
-    file_sha256(path, sha);
-    fprintf(out, "{\"schema\":\"omnicheck.brain.save/v0\",\"file\":");
-    oc_jsonw w;
-    oc_jsonw_init(&w);
-    oc_jsonw_str(&w, path);
-    fprintf(out, "%s,\"saved\":true,\"existed\":%s,\"epoch\":%lld,"
-                 "\"sha256\":\"%s\"}\n",
-            w.buf.data ? w.buf.data : "null", existed ? "true" : "false",
-            epoch, sha);
-    oc_jsonw_destroy(&w);
     return OC_OK;
 }
 

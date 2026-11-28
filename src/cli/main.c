@@ -1,5 +1,6 @@
 #include "oc/cli.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -160,7 +161,8 @@ static int cmd_check(const check_options *opt, oc_status *st) {
             fprintf(stderr,
                     "omnicheck: --format llm requires the embedded OmniDecide "
                     "kernel (rebuild with -DOC_EMBED_OMNIDECIDE=ON)\n");
-            exit_code = 2;
+            oc_scan_result_destroy(&res);
+            return 2;
         } else {
             oc_report_write_llm(stdout, &res);
             /* Same exit-code policy as the JSON render below. */
@@ -349,8 +351,10 @@ static int cmd_brain(int argc, char **argv, oc_status *st) {
                 return 2;
             }
             char *end = NULL;
+            errno = 0;
             index = strtol(argv[++i], &end, 10);
-            if (!end || end == argv[i] || *end != '\0' || index < 0) {
+            if (errno == ERANGE || !end || end == argv[i] || *end != '\0' ||
+                index < 0) {
                 fprintf(stderr, "omnicheck: --index requires a non-negative number\n");
                 return 2;
             }

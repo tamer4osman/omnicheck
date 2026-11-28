@@ -168,6 +168,12 @@ void oc_jsonw_arr_end(oc_jsonw *w) {
 /* =================================================================== */
 
 #define OC_JSON_MAX_TEXT 64
+/* H-1 (P-1): a hostile document may carry millions of fields/items; each
+ * one costs real arena memory even under geometric growth. 1,000,000
+ * entries is far beyond every legitimate manifest/coverage/LSP payload
+ * the tool consumes, and anything larger fails the parse LOUDLY
+ * (the project contract: never silently partial, never unbounded). */
+#define OC_JSON_MAX_ENTRIES 1000000
 
 typedef struct oc_json_parser {
     const char *start;
@@ -176,12 +182,34 @@ typedef struct oc_json_parser {
     oc_arena *arena;
     oc_status *st;
     int depth;
+    size_t entries; /* H-1: total fields + items pushed so far */
 } oc_json_parser;
 
 static void jerr(oc_json_parser *ps, const char *msg) {
     if (ps->st && ps->st->code == OC_OK)
         oc_status_set(ps->st, OC_ERR_PARSE, "JSON: %s (at byte %ld of %ld)", msg,
                       (long)(ps->p - ps->start), (long)(ps->end - ps->start));
+}
+
+/* H-1 (P-1): geometric growth for the parser's key/value/item vectors.
+ * The arena never reclaims, so the old per-append (n+1)-sized allocation
+ * copied the whole vector for EVERY push: O(n^2) bytes and O(n^2) work --
+ * measured at 3.6 GB peak RSS for a 30,000-field package.json (T1).
+ * Doubling from 16 allocates log2(n) buffers whose total size is a
+ * geometric series, i.e. O(final size) arena cost and amortized O(1)
+ * copy work per push; outputs are unchanged (the vectors' contents are
+ * identical, only the spare capacity differs). */
+static void **grow_ptr_vec(oc_arena *a, void **old, size_t n, size_t *cap, size_t elem) {
+    if (n < *cap)
+        return old;
+    size_t ncap = *cap ? *cap * 2 : 16;
+    void **g = (void **)oc_arena_alloc(a, ncap * elem);
+    if (!g)
+        return NULL;
+    if (n)
+        memcpy(g, old, n * elem); /* copy ONCE per doubling */
+    *cap = ncap;
+    return g;
 }
 
 static void jskip_ws(oc_json_parser *ps) {
@@ -387,21 +415,24 @@ static oc_json *jparse_value(oc_json_parser *ps) {
             oc_json *val = jparse_value(ps);
             if (!val)
                 return NULL;
-            const char **nk =
-                (const char **)oc_arena_alloc(ps->arena, (v->n_fields + 1) * sizeof(char *));
-            oc_json **nv =
-                (oc_json **)oc_arena_alloc(ps->arena, (v->n_fields + 1) * sizeof(oc_json *));
+            if (ps->entries >= OC_JSON_MAX_ENTRIES) {
+                jerr(ps, "document exceeds the 1,000,000 field/item budget");
+                return NULL;
+            }
+            const char **nk = (const char **)grow_ptr_vec(ps->arena, (void **)v->keys,
+                                                          v->n_fields, &v->cap_keys,
+                                                          sizeof(char *));
+            oc_json **nv = (oc_json **)grow_ptr_vec(ps->arena, (void **)v->vals,
+                                                    v->n_fields, &v->cap_vals,
+                                                    sizeof(oc_json *));
             if (!nk || !nv)
                 return NULL;
-            if (v->n_fields) {
-                memcpy(nk, v->keys, v->n_fields * sizeof(char *));
-                memcpy(nv, v->vals, v->n_fields * sizeof(oc_json *));
-            }
             nk[v->n_fields] = key;
             nv[v->n_fields] = val;
             v->keys = nk;
             v->vals = nv;
             v->n_fields++;
+            ps->entries++;
             jskip_ws(ps);
             if (ps->p < ps->end && *ps->p == ',') {
                 ps->p++;
@@ -435,15 +466,19 @@ static oc_json *jparse_value(oc_json_parser *ps) {
             oc_json *item = jparse_value(ps);
             if (!item)
                 return NULL;
-            oc_json **ni =
-                (oc_json **)oc_arena_alloc(ps->arena, (v->n_items + 1) * sizeof(oc_json *));
+            if (ps->entries >= OC_JSON_MAX_ENTRIES) {
+                jerr(ps, "document exceeds the 1,000,000 field/item budget");
+                return NULL;
+            }
+            oc_json **ni = (oc_json **)grow_ptr_vec(ps->arena, (void **)v->items,
+                                                    v->n_items, &v->cap_items,
+                                                    sizeof(oc_json *));
             if (!ni)
                 return NULL;
-            if (v->n_items)
-                memcpy(ni, v->items, v->n_items * sizeof(oc_json *));
             ni[v->n_items] = item;
             v->items = ni;
             v->n_items++;
+            ps->entries++;
             jskip_ws(ps);
             if (ps->p < ps->end && *ps->p == ',') {
                 ps->p++;
@@ -540,6 +575,7 @@ oc_json *oc_json_parse(oc_arena *a, const char *text, size_t len, oc_status *st)
     ps.arena = a;
     ps.st = st;
     ps.depth = 0;
+    ps.entries = 0;
 
     oc_json *root = jparse_value(&ps);
     if (!root)

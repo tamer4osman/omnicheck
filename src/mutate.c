@@ -1,10 +1,12 @@
 #include "oc/mutate.h"
 
 #include <fcntl.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -427,6 +429,198 @@ done:
 
 /* --------------------------------------------------------- runner --- */
 
+/* H-4 (P-4): crash-safe mutation. The engine used to splice each mutant
+ * straight into the working-tree source (fopen "wb") and restore only on
+ * the happy path: no signal handlers, no atomic replacement, no journal.
+ * A SIGKILL mid-run permanently corrupted the user's file (evidence T8:
+ * `return a == b` stayed as `return 0`). Four layers now close every
+ * death window:
+ *
+ *   1. journal_arm()  -- the pristine bytes are fsync'd to
+ *      "<file>.oc-mutate-journal" BEFORE the first splice of that file;
+ *   2. write_atomic() -- every write (mutant and restore) goes to a temp
+ *      file plus rename(), never a truncate-in-place;
+ *   3. mutate_fatal_signal() -- SIGINT/SIGTERM/SIGHUP/SIGQUIT (Ctrl-C,
+ *      CI timeouts, systemd stop) restore the journal in the handler
+ *      using only async-signal-safe calls, then exit 128+sig;
+ *   4. journal_recover() -- at startup, any journal left behind by a
+ *      dead run (SIGKILL and power loss cannot be caught) is restored
+ *      before the pre-flight suite executes, so a poisoned tree can
+ *      never silently pass.
+ *
+ * The journal is disarmed the moment the pristine bytes are back on
+ * disk, so it only ever exists while a mutant is applied. */
+
+#define OC_MUTATE_JOURNAL_SUFFIX ".oc-mutate-journal"
+
+static volatile sig_atomic_t g_journal_armed = 0;
+static volatile sig_atomic_t g_child_pid = 0; /* pid of the running suite, if any */
+static char g_journal_src[PATH_MAX];
+static char g_journal_bak[PATH_MAX];
+static int g_handlers_installed = 0;
+static struct sigaction g_old_actions[4];
+
+static void mutate_fatal_signal(int sig) {
+    if (g_journal_armed)
+        rename(g_journal_bak, g_journal_src); /* async-signal-safe */
+    if (g_child_pid > 0)
+        kill(-(pid_t)g_child_pid, SIGKILL); /* best effort: no orphaned suite */
+    _exit(128 + sig);
+}
+
+static void install_fatal_handlers(void) {
+    static const int sigs[4] = {SIGINT, SIGTERM, SIGHUP, SIGQUIT};
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = mutate_fatal_signal;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    for (int i = 0; i < 4; i++)
+        sigaction(sigs[i], &sa, &g_old_actions[i]);
+    g_handlers_installed = 1;
+}
+
+static void uninstall_fatal_handlers(void) {
+    if (!g_handlers_installed)
+        return;
+    static const int sigs[4] = {SIGINT, SIGTERM, SIGHUP, SIGQUIT};
+    for (int i = 0; i < 4; i++)
+        sigaction(sigs[i], &g_old_actions[i], NULL);
+    g_handlers_installed = 0;
+}
+
+/* Replace "path" with (data, len) atomically: temp file + rename, so a
+ * crash can never leave a half-written source file behind. The old
+ * truncate-in-place write preserved the target's permission bits for
+ * free; rename() from a fresh fopen() would silently drop the exec bit
+ * (caught by test_sprint5's in-source mutation of an executable fixture:
+ * calc.py came back 0644 instead of 0755). So: stat the target, fchmod
+ * the temp file to the same mode before rename, and fsync the data so
+ * the rename cannot hit disk before the bytes do. mode_override != 0
+ * wins over the stat-derived mode (journal recovery restores the
+ * PRISTINE mode even when the crashed splice already lost it). */
+static int write_atomic_mode(const char *path, const char *data, size_t len,
+                             mode_t mode_override) {
+    char tmp[PATH_MAX];
+    if (snprintf(tmp, sizeof(tmp), "%s.oc-mutate-tmp", path) >= (int)sizeof(tmp))
+        return 0;
+    mode_t mode = mode_override;
+    if (!mode) {
+        struct stat st;
+        if (stat(path, &st) == 0)
+            mode = st.st_mode & 07777;
+        else
+            mode = 0644; /* new file: standard default */
+    }
+    FILE *f = fopen(tmp, "wb");
+    if (!f)
+        return 0;
+    size_t w = fwrite(data, 1, len, f);
+    int ok = (w == len) && (fflush(f) == 0);
+    if (ok && fchmod(fileno(f), mode) != 0)
+        ok = 0;
+    if (ok && fsync(fileno(f)) != 0)
+        ok = 0;
+    if (fclose(f) != 0)
+        ok = 0;
+    if (!ok) {
+        unlink(tmp);
+        return 0;
+    }
+    if (rename(tmp, path) != 0) {
+        unlink(tmp);
+        return 0;
+    }
+    return 1;
+}
+
+static int write_atomic(const char *path, const char *data, size_t len) {
+    return write_atomic_mode(path, data, len, 0);
+}
+
+static int journal_arm(const char *src, const char *data, size_t len) {
+    if (snprintf(g_journal_bak, sizeof(g_journal_bak), "%s" OC_MUTATE_JOURNAL_SUFFIX, src) >=
+        (int)sizeof(g_journal_bak))
+        return -1;
+    if (snprintf(g_journal_src, sizeof(g_journal_src), "%s", src) >=
+        (int)sizeof(g_journal_src))
+        return -1;
+    FILE *f = fopen(g_journal_bak, "wb");
+    if (!f)
+        return -1;
+    /* the journal doubles as the pristine-mode record: the fatal-signal
+     * handler restores by plain rename(), and journal_recover() reads
+     * this mode back, so permission bits survive every death window. */
+    struct stat st;
+    mode_t mode = 0644;
+    if (stat(src, &st) == 0)
+        mode = st.st_mode & 07777;
+    size_t w = fwrite(data, 1, len, f);
+    int ok = (w == len) && (fflush(f) == 0);
+    if (ok && fchmod(fileno(f), mode) != 0)
+        ok = 0;
+    if (ok && fsync(fileno(f)) != 0)
+        ok = 0;
+    if (fclose(f) != 0)
+        ok = 0;
+    if (!ok) {
+        unlink(g_journal_bak);
+        return -1;
+    }
+    g_journal_armed = 1;
+    return 0;
+}
+
+static void journal_disarm(void) {
+    if (g_journal_armed)
+        unlink(g_journal_bak);
+    g_journal_armed = 0;
+    g_journal_bak[0] = '\0';
+    g_journal_src[0] = '\0';
+}
+
+/* Startup recovery: if a journal from a dead run exists for "src",
+ * restore the pristine bytes, then drop the journal. A restore failure
+ * keeps the journal so the next run can try again. */
+static void journal_recover(const char *src) {
+    char bak[PATH_MAX];
+    if (snprintf(bak, sizeof(bak), "%s" OC_MUTATE_JOURNAL_SUFFIX, src) >= (int)sizeof(bak))
+        return;
+    FILE *f = fopen(bak, "rb");
+    if (!f)
+        return; /* no journal: nothing to recover */
+    if (fseek(f, 0, SEEK_END) != 0) {
+        fclose(f);
+        return;
+    }
+    long sz = ftell(f);
+    if (sz < 0 || fseek(f, 0, SEEK_SET) != 0) {
+        fclose(f);
+        return;
+    }
+    size_t len = (size_t)sz;
+    char *data = (char *)malloc(len ? len : 1);
+    if (!data) {
+        fclose(f); /* leave the journal for the next run */
+        return;
+    }
+    if (fread(data, 1, len, f) != len) {
+        free(data);
+        fclose(f);
+        return;
+    }
+    fclose(f);
+    /* the journal file itself carries the pristine permission bits
+     * (journal_arm fchmod'ed it) -- restore content AND mode from it. */
+    struct stat jst;
+    mode_t mode = 0;
+    if (stat(bak, &jst) == 0)
+        mode = jst.st_mode & 07777;
+    if (write_atomic_mode(src, data, len, mode))
+        unlink(bak); /* only drop the journal once the file is restored */
+    free(data);
+}
+
 /* Executes the suite command in the current working directory with a
  * hard timeout: /bin/sh -c, own process group, deadline kill. Returns
  * the mutant status. Never inherits the analysis process's failure. */
@@ -436,6 +630,7 @@ static oc_mut_status run_test(const char *cmd, long timeout_s) {
         return OC_MUT_KILLED; /* fork failure: treat conservatively as killed */
     if (pid == 0) {
         setpgid(0, 0);
+        g_child_pid = 0; /* the child does not own itself */
         /* the suite's own output is not part of the mutation report
          * contract: silence it so the JSON report stays byte-clean.
          * If freopen fails, fall back to closing the fd and opening
@@ -454,6 +649,7 @@ static oc_mut_status run_test(const char *cmd, long timeout_s) {
         _exit(127);
     }
     setpgid(pid, pid); /* also from the parent, race-safe */
+    g_child_pid = (sig_atomic_t)pid; /* the fatal handler kills the suite group */
     long elapsed_ms = 0;
     int status = 0;
     for (;;) {
@@ -474,8 +670,11 @@ static oc_mut_status run_test(const char *cmd, long timeout_s) {
         nanosleep(&ts, NULL);
         elapsed_ms += 50;
     }
-    if (WIFEXITED(status))
+    if (WIFEXITED(status)) {
+        g_child_pid = 0;
         return WEXITSTATUS(status) == 0 ? OC_MUT_SURVIVED : OC_MUT_KILLED;
+    }
+    g_child_pid = 0;
     return OC_MUT_KILLED; /* signaled */
 }
 
@@ -700,6 +899,11 @@ oc_code oc_mutate_run(const oc_mutate_options *o, oc_mutate_report *rep, FILE *o
                       "--test-cmd is required: the engine never guesses how to run a suite");
         return OC_ERR_USAGE;
     }
+    /* H-4 (P-4): arm the crash-safety net BEFORE anything can splice a
+     * mutant. SIGKILL cannot be caught -- the journal plus startup
+     * recovery covers it -- but SIGINT/SIGTERM/SIGHUP/SIGQUIT (Ctrl-C,
+     * CI timeouts, systemd stop) restore the file inside the handler. */
+    install_fatal_handlers();
     long timeout = o->timeout_s > 0 ? o->timeout_s : 30;
     memset(rep, 0, sizeof(*rep));
     oc_mutants_init(&rep->mutants);
@@ -724,6 +928,13 @@ oc_code oc_mutate_run(const oc_mutate_options *o, oc_mutate_report *rep, FILE *o
     rc = build_graph(o, &arena, &graph, &files, st);
     if (rc != OC_OK)
         goto done;
+
+    /* H-4 (P-4) startup recovery: a previous run may have died (SIGKILL,
+     * OOM kill, power loss) with a mutant spliced into a source file.
+     * Its journal holds the pristine bytes; restore them BEFORE the
+     * pre-flight suite executes so a poisoned tree can never pass. */
+    for (size_t i = 0; i < files.n; i++)
+        journal_recover(files.items[i]);
 
     if (o->n_coverage > 0) {
         rc = oc_coverage_load(&cov, o->coverage, o->n_coverage, &arena, st);
@@ -853,40 +1064,47 @@ oc_code oc_mutate_run(const oc_mutate_options *o, oc_mutate_report *rep, FILE *o
         memcpy(mutated + m->byte_start, m->replacement, strlen(m->replacement));
         memcpy(mutated + m->byte_start + strlen(m->replacement), orig + m->byte_end,
                orig_len - m->byte_end);
-        FILE *f = fopen(m->file, "wb");
-        int write_ok = f != NULL;
-        if (f) {
-            write_ok = fwrite(mutated, 1, new_len, f) == new_len;
-            fclose(f);
+        /* H-4 (P-4): journal the pristine bytes BEFORE touching the file
+         * (fsync'd), then splice via temp-file+rename -- an atomic
+         * replacement. Every death window now has a recovery path:
+         * handled signals restore inside the handler; SIGKILL and power
+         * loss leave the journal for the startup recovery of the next
+         * run. The journal is dropped the moment the pristine bytes are
+         * back on disk. */
+        if (journal_arm(m->file, orig, orig_len) != 0) {
+            free(mutated);
+            free(orig);
+            oc_status_set(st, OC_ERR_IO, "cannot journal '%s' before mutation", m->file);
+            rc = OC_ERR_IO;
+            goto done_collect;
         }
-        free(mutated);
-        if (!write_ok) {
-            /* restore before failing */
-            f = fopen(m->file, "wb");
-            if (f) {
-                fwrite(orig, 1, orig_len, f);
-                fclose(f);
+        if (!write_atomic(m->file, mutated, new_len)) {
+            if (!write_atomic(m->file, orig, orig_len)) {
+                /* journal stays armed: the next run's startup recovery
+                 * restores the pristine bytes */
+            } else {
+                journal_disarm();
             }
+            free(mutated);
             free(orig);
             oc_status_set(st, OC_ERR_IO, "cannot write mutated file '%s'", m->file);
             rc = OC_ERR_IO;
             goto done_collect;
         }
+        free(mutated);
         rep->executed++;
         oc_mut_status verdict = run_test(o->test_cmd, timeout);
         /* restore the original bytes unconditionally */
-        f = fopen(m->file, "wb");
-        int restore_ok = f != NULL;
-        if (f) {
-            restore_ok = fwrite(orig, 1, orig_len, f) == orig_len;
-            fclose(f);
-        }
-        free(orig);
-        if (!restore_ok) {
+        if (!write_atomic(m->file, orig, orig_len)) {
+            free(orig);
+            /* journal stays armed: the next run's startup recovery
+             * restores the pristine bytes */
             oc_status_set(st, OC_ERR_IO, "cannot restore mutated file '%s'", m->file);
             rc = OC_ERR_IO;
             goto done_collect;
         }
+        journal_disarm();
+        free(orig);
         m->status = verdict;
         if (verdict == OC_MUT_KILLED)
             rep->killed++;
@@ -906,6 +1124,10 @@ done_collect:
     rep->wall_seconds = (double)(t1.tv_sec - t0.tv_sec) + (double)(t1.tv_nsec - t0.tv_nsec) / 1e9;
 
 done:
+    /* H-4 (P-4): leave no handler behind; if a journal is somehow still
+     * armed on a normal path, the recovery of the next run is the
+     * backstop. */
+    uninstall_fatal_handlers();
     cache_map_free(&cache);
     oc_coverage_destroy(&cov);
     oc_paths_destroy(&files);

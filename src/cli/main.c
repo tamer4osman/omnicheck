@@ -5,6 +5,8 @@
 #include <string.h>
 
 #include "oc/compat.h"
+#include "oc/reportdiff.h"
+#include "oc/spine.h"
 #include "oc/coverage.h"
 #include "oc/discover.h"
 #include "oc/dup.h"
@@ -46,6 +48,13 @@ static void print_usage(FILE *out) {
             "  oc lsp [--packs-dir DIR] [--config K=V]      LSP 3.17 server over stdio\n"
             "  oc mcp [--packs-dir DIR] [--config K=V]      MCP tools server over stdio\n"
             "  oc compat --baseline DIR --current DIR       breaking-change gate (WBS 4.6)\n"
+            "  oc diff --baseline R1.json --current R2.json introduced/resolved/persistent\n"
+            "      report diff by fingerprint; --semantic adds advisory kernel scores (T3)\n"
+            "  oc brain create|record|advise|info|entries|discard|reset|save\n"
+            "      advisory experience memory (T4)\n"
+            "  oc pin create --request JSON [--class C]   decision pin (T5)\n"
+            "  oc pin replay --id PIN | oc replay --id PIN  replay per REPLAY.md\n"
+            "  oc pin list                                  deterministic listing\n"
             "  oc mutate [paths...] --test-cmd CMD          mutation engine (WBS 4.5)\n"
             "  oc --version | --help\n"
             "\n"
@@ -58,8 +67,21 @@ static void print_usage(FILE *out) {
             "                    fields plus the CRAP leaderboard\n"
             "  --osv-snapshot FILE  vendored OSV snapshot for OC009 dep-vuln\n"
             "  --triage          enable the OmniDecide rank-only sidecar (fail-open)\n"
+            "  --triage-embedded run triage with the in-process embedded kernel\n"
+            "                    (byte-identical protocol-v0; the sidecar keeps\n"
+            "                    absolute precedence when OC_OMNIDECIDE_BIN is set)\n"
+            "  --triage-explain  attach the 9 kernel rationale channels per\n"
+            "                    finding (requires --triage-embedded; fail-open)\n"
+            "  --triage-brain    consult the brain memory for advisory\n"
+            "                    experience-adjusted ranks (fail-open)\n"
+            "  --triage-lexicon FILE  kernel lexicon pack for triage (repeatable;\n"
+            "                    sha256 recorded in the report; a kernel refusal\n"
+            "                    is loud)\n"
+            "  --triage-model FILE    kernel scoring-model file (128-byte v1);\n"
+            "                    sha256 recorded; a kernel refusal is loud\n"
             "  --fail-on LEVEL   info|warn|error (default warn) exit-1 threshold\n"
-            "  --format FMT      json|human (default json; Sprint 3, WBS 2.6)\n"
+            "  --format FMT      json|human|llm (default json; llm = kernel-minified\n"
+            "                    Markdown with token estimates, T6)\n"
             "\n"
             "mutate options:\n"
             "  --test-cmd CMD    suite command run per mutant (required)\n"
@@ -86,6 +108,12 @@ static int fail_with_status(const oc_status *st) {
 typedef struct check_options {
     const char *packs_dir;
     int want_triage;
+    int want_triage_embedded;
+    int want_triage_explain;
+    int want_triage_brain;
+    const char *const *triage_lexicons;
+    size_t n_triage_lexicons;
+    const char *triage_model;
     oc_severity fail_on;
     oc_config cfg;
     const char *const *paths;
@@ -110,6 +138,12 @@ static int cmd_check(const check_options *opt, oc_status *st) {
     sopt.osv_snapshot = opt->osv_snapshot;
     sopt.cfg = &opt->cfg;
     sopt.want_triage = opt->want_triage;
+    sopt.want_triage_embedded = opt->want_triage_embedded;
+    sopt.want_triage_explain = opt->want_triage_explain;
+    sopt.want_triage_brain = opt->want_triage_brain;
+    sopt.triage_lexicons = opt->triage_lexicons;
+    sopt.n_triage_lexicons = opt->n_triage_lexicons;
+    sopt.triage_model = opt->triage_model;
 
     oc_scan_result res;
     memset(&res, 0, sizeof(res));
@@ -119,6 +153,23 @@ static int cmd_check(const check_options *opt, oc_status *st) {
     int exit_code = 0;
     if (strcmp(opt->format, "human") == 0) {
         oc_report_write_human(stdout, &res);
+    } else if (strcmp(opt->format, "llm") == 0) {
+        /* T6: kernel-minified Markdown with token estimates. An explicit
+         * request on a build without the embedded kernel refuses loud. */
+        if (!oc_report_llm_available()) {
+            fprintf(stderr,
+                    "omnicheck: --format llm requires the embedded OmniDecide "
+                    "kernel (rebuild with -DOC_EMBED_OMNIDECIDE=ON)\n");
+            exit_code = 2;
+        } else {
+            oc_report_write_llm(stdout, &res);
+            /* Same exit-code policy as the JSON render below. */
+            if (res.n_parse_errors > 0)
+                exit_code = 2;
+            else if (res.findings.n > 0 &&
+                     oc_findings_max_severity(&res.findings) >= opt->fail_on)
+                exit_code = 1;
+        }
     } else {
         oc_jsonw w;
         oc_jsonw_init(&w);
@@ -144,6 +195,208 @@ static int cmd_check(const check_options *opt, oc_status *st) {
 
     oc_scan_result_destroy(&res);
     return exit_code;
+}
+
+/* ------------------------------------------------------------------- pin */
+
+/* T5: `oc pin create|add|list|replay` + `oc replay --id`. The spine owns
+ * decision semantics and ids; the store is OmniCheck's own document.
+ * Own flag namespace: dispatches before the flat parser. */
+static int cmd_pin(int argc, char **argv, oc_status *st) {
+    /* oc pin create --request JSON [--class C] [--spine-file F]
+       oc pin list [--spine-file F]
+       oc pin replay --id PIN_ID [--spine-file F]  (the create alias
+       "add" is accepted for compatibility with the reference generation) */
+    const char *sub = (argc >= 3) ? argv[2] : NULL;
+    const char *spine_file = NULL, *request = NULL, *cls = NULL, *id = NULL;
+    if (!sub || (strcmp(sub, "add") != 0 && strcmp(sub, "create") != 0 &&
+                 strcmp(sub, "list") != 0 && strcmp(sub, "replay") != 0)) {
+        fprintf(stderr,
+                "omnicheck: pin requires a subcommand: create|replay|list\n");
+        return 2;
+    }
+    for (int i = 3; i < argc; i++) {
+        const char *a = argv[i];
+        if (strcmp(a, "--spine-file") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --spine-file requires a path\n");
+                return 2;
+            }
+            spine_file = argv[++i];
+        } else if (strcmp(a, "--request") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --request requires a JSON document\n");
+                return 2;
+            }
+            request = argv[++i];
+        } else if (strcmp(a, "--class") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --class requires exact|semantic|foreign\n");
+                return 2;
+            }
+            cls = argv[++i];
+        } else if (strcmp(a, "--id") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --id requires a pin id\n");
+                return 2;
+            }
+            id = argv[++i];
+        } else {
+            fprintf(stderr, "omnicheck: unexpected pin argument '%s'\n", a);
+            return 2;
+        }
+    }
+    if (strcmp(sub, "list") == 0)
+        return oc_spine_cmd_list(spine_file, stdout, st) == OC_OK ? 0 : 2;
+    if (strcmp(sub, "replay") == 0) {
+        int verdict = 0;
+        oc_code rc = oc_spine_cmd_replay(spine_file, id, stdout, &verdict, st);
+        if (rc != OC_OK)
+            return 2;
+        return verdict; /* 0 = exact/semantic/foreign, 1 = mismatch */
+    }
+    if (!request) {
+        fprintf(stderr,
+                "omnicheck: pin create requires --request '{\"primitive\":...}'\n");
+        return 2;
+    }
+    return oc_spine_cmd_add(spine_file, request, cls ? cls : "exact", stdout,
+                            st) == OC_OK
+               ? 0
+               : 2;
+}
+
+static int cmd_replay(int argc, char **argv, oc_status *st) {
+    /* oc replay --id PIN_ID [--spine-file F] */
+    const char *spine_file = NULL, *id = NULL;
+    for (int i = 2; i < argc; i++) {
+        const char *a = argv[i];
+        if (strcmp(a, "--spine-file") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --spine-file requires a path\n");
+                return 2;
+            }
+            spine_file = argv[++i];
+        } else if (strcmp(a, "--id") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --id requires a pin id\n");
+                return 2;
+            }
+            id = argv[++i];
+        } else {
+            fprintf(stderr, "omnicheck: unexpected replay argument '%s'\n", a);
+            return 2;
+        }
+    }
+    int verdict = 0;
+    oc_code rc = oc_spine_cmd_replay(spine_file, id, stdout, &verdict, st);
+    if (rc != OC_OK)
+        return 2;
+    return verdict; /* 0 = exact/semantic/foreign, 1 = mismatch */
+}
+
+/* ------------------------------------------------------------------ brain */
+
+/* T4: `oc brain` subcommand dispatcher. Explicit commands fail loud
+ * (they are the human interface, not pipeline components). */
+static int cmd_brain(int argc, char **argv, oc_status *st) {
+    const char *sub = (argc >= 3) ? argv[2] : NULL;
+    const char *brain_file = NULL, *report = NULL, *fp = NULL, *outcome = NULL;
+    long index = -1;
+    int have_index = 0;
+    static const char *const SUBS[] = {"create", "record", "advise", "info",
+                                       "entries", "discard", "reset", "save"};
+    int known = 0;
+    for (size_t k = 0; k < sizeof(SUBS) / sizeof(*SUBS); k++)
+        if (sub && strcmp(sub, SUBS[k]) == 0)
+            known = 1;
+    if (!known) {
+        fprintf(stderr,
+                "omnicheck: brain requires a subcommand: "
+                "create|record|advise|info|entries|discard|reset|save\n");
+        return 2;
+    }
+    for (int i = 3; i < argc; i++) {
+        const char *a = argv[i];
+        if (strcmp(a, "--brain-file") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --brain-file requires a path\n");
+                return 2;
+            }
+            brain_file = argv[++i];
+        } else if (strcmp(a, "--report") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --report requires a path\n");
+                return 2;
+            }
+            report = argv[++i];
+        } else if (strcmp(a, "--fingerprint") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --fingerprint requires a value\n");
+                return 2;
+            }
+            fp = argv[++i];
+        } else if (strcmp(a, "--outcome") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr,
+                        "omnicheck: --outcome requires accepted|fixed|dismissed\n");
+                return 2;
+            }
+            outcome = argv[++i];
+        } else if (strcmp(a, "--index") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --index requires a number\n");
+                return 2;
+            }
+            char *end = NULL;
+            index = strtol(argv[++i], &end, 10);
+            if (!end || end == argv[i] || *end != '\0' || index < 0) {
+                fprintf(stderr, "omnicheck: --index requires a non-negative number\n");
+                return 2;
+            }
+            have_index = 1;
+        } else {
+            fprintf(stderr, "omnicheck: unexpected brain argument '%s'\n", a);
+            return 2;
+        }
+    }
+    if (strcmp(sub, "create") == 0)
+        return oc_brain_cmd_create(brain_file, stdout, st) == OC_OK ? 0 : 2;
+    if (strcmp(sub, "info") == 0)
+        return oc_brain_cmd_info(brain_file, stdout, st) == OC_OK ? 0 : 2;
+    if (strcmp(sub, "entries") == 0)
+        return oc_brain_cmd_entries(brain_file, stdout, st) == OC_OK ? 0 : 2;
+    if (strcmp(sub, "reset") == 0)
+        return oc_brain_cmd_reset(brain_file, stdout, st) == OC_OK ? 0 : 2;
+    if (strcmp(sub, "save") == 0)
+        return oc_brain_cmd_save(brain_file, stdout, st) == OC_OK ? 0 : 2;
+    if (strcmp(sub, "discard") == 0) {
+        if (!have_index) {
+            fprintf(stderr,
+                    "omnicheck: brain discard requires --index N (see 'oc brain "
+                    "entries')\n");
+            return 2;
+        }
+        return oc_brain_cmd_discard(brain_file, index, stdout, st) == OC_OK ? 0 : 2;
+    }
+    if (strcmp(sub, "advise") == 0) {
+        if (!report) {
+            fprintf(stderr, "omnicheck: brain advise requires --report REPORT.json\n");
+            return 2;
+        }
+        return oc_brain_cmd_advise(brain_file, report, stdout, st) == OC_OK ? 0 : 2;
+    }
+    /* record */
+    if (!report || !fp || !outcome) {
+        fprintf(stderr,
+                "omnicheck: brain record requires --report REPORT.json "
+                "--fingerprint FP --outcome accepted|fixed|dismissed\n");
+        return 2;
+    }
+    return oc_brain_cmd_record(brain_file, report, fp, outcome, stdout, st) ==
+                   OC_OK
+               ? 0
+               : 2;
 }
 
 /* ----------------------------------------------------------------- graph */
@@ -335,6 +588,8 @@ int oc_cli_main(int argc, char **argv) {
     }
     if (strcmp(cmd, "check") != 0 && strcmp(cmd, "graph") != 0 && strcmp(cmd, "packs") != 0 &&
         strcmp(cmd, "lsp") != 0 && strcmp(cmd, "mcp") != 0 && strcmp(cmd, "compat") != 0 &&
+        strcmp(cmd, "diff") != 0 && strcmp(cmd, "brain") != 0 &&
+        strcmp(cmd, "pin") != 0 && strcmp(cmd, "replay") != 0 &&
         strcmp(cmd, "mutate") != 0) {
         fprintf(stderr, "omnicheck: unknown command '%s'\n\n", cmd);
         print_usage(stderr);
@@ -357,6 +612,10 @@ int oc_cli_main(int argc, char **argv) {
     const char *cov_files[64];
     const char *default_paths[1] = {"."};
     const char *opt_baseline = NULL, *opt_current = NULL, *opt_test_cmd = NULL;
+    int opt_semantic = 0;
+    const char *lex_files[16];
+    size_t n_lex = 0;
+    const char *opt_model = NULL;
     const char *opt_cache = NULL;
     long opt_timeout = 0;
     size_t opt_max_mutants = 0;
@@ -364,6 +623,33 @@ int oc_cli_main(int argc, char **argv) {
     int exit_code = 0;
     oc_status st;
     oc_status_clear(&st);
+
+    /* T5: the pin/replay commands carry their OWN flag namespace
+     * (--request, --class, --id, --spine-file): dispatch before the flat
+     * parser. */
+    if (strcmp(cmd, "pin") == 0) {
+        exit_code = cmd_pin(argc, argv, &st);
+        if (exit_code == 2 && st.code != OC_OK)
+            fail_with_status(&st);
+        goto out;
+    }
+    if (strcmp(cmd, "replay") == 0) {
+        exit_code = cmd_replay(argc, argv, &st);
+        if (exit_code == 2 && st.code != OC_OK)
+            fail_with_status(&st);
+        goto out;
+    }
+
+    /* T4: the brain commands carry their OWN flag namespace
+     * (--brain-file, --report, --fingerprint, --outcome, --index), so
+     * they dispatch BEFORE the flat check/mutate flag parser below --
+     * the same early-dispatch discipline the reference generation used. */
+    if (strcmp(cmd, "brain") == 0) {
+        exit_code = cmd_brain(argc, argv, &st);
+        if (exit_code == 2 && st.code != OC_OK)
+            fail_with_status(&st);
+        goto out;
+    }
 
     for (int i = 2; i < argc; i++) {
         const char *a = argv[i];
@@ -424,14 +710,46 @@ int oc_cli_main(int argc, char **argv) {
             }
         } else if (strcmp(a, "--format") == 0) {
             if (i + 1 >= argc ||
-                (strcmp(argv[i + 1], "json") != 0 && strcmp(argv[i + 1], "human") != 0)) {
-                fprintf(stderr, "omnicheck: --format expects json|human\n");
+                (strcmp(argv[i + 1], "json") != 0 &&
+                 strcmp(argv[i + 1], "human") != 0 &&
+                 strcmp(argv[i + 1], "llm") != 0)) {
+                fprintf(stderr, "omnicheck: --format expects json|human|llm\n");
                 exit_code = 2;
                 goto out;
             }
             opt.format = argv[++i];
         } else if (strcmp(a, "--triage") == 0) {
             opt.want_triage = 1;
+        } else if (strcmp(a, "--triage-embedded") == 0) {
+            opt.want_triage = 1;
+            opt.want_triage_embedded = 1;
+        } else if (strcmp(a, "--triage-explain") == 0) {
+            opt.want_triage = 1;
+            opt.want_triage_explain = 1;
+        } else if (strcmp(a, "--triage-brain") == 0) {
+            opt.want_triage = 1;
+            opt.want_triage_brain = 1;
+        } else if (strcmp(a, "--triage-lexicon") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --triage-lexicon requires a path\n");
+                exit_code = 2;
+                goto out;
+            }
+            if (n_lex >= sizeof(lex_files) / sizeof(lex_files[0])) {
+                fprintf(stderr,
+                        "omnicheck: too many --triage-lexicon options (max %zu)\n",
+                        sizeof(lex_files) / sizeof(lex_files[0]));
+                exit_code = 2;
+                goto out;
+            }
+            lex_files[n_lex++] = argv[++i];
+        } else if (strcmp(a, "--triage-model") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "omnicheck: --triage-model requires a path\n");
+                exit_code = 2;
+                goto out;
+            }
+            opt_model = argv[++i];
         } else if (strcmp(a, "--baseline") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "omnicheck: --baseline requires a directory\n");
@@ -446,6 +764,8 @@ int oc_cli_main(int argc, char **argv) {
                 goto out;
             }
             opt_current = argv[++i];
+        } else if (strcmp(a, "--semantic") == 0) {
+            opt_semantic = 1;
         } else if (strcmp(a, "--test-cmd") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "omnicheck: --test-cmd requires a command\n");
@@ -539,6 +859,28 @@ int oc_cli_main(int argc, char **argv) {
         goto out;
     }
 
+    /* T3: introduced/resolved/persistent diff between two reports; exit 1
+     * gates on introduced+resolved (the CI gate), exit 2 is a tool error.
+     * --semantic adds advisory kernel scores (never affects the gate). */
+    if (strcmp(cmd, "diff") == 0) {
+        if (!opt_baseline || !opt_current) {
+            fprintf(stderr,
+                    "omnicheck: diff requires --baseline REPORT.json and "
+                    "--current REPORT.json\n");
+            exit_code = 2;
+            goto out;
+        }
+        int semantic_changes = 0;
+        oc_code drc = oc_reportdiff_run(opt_baseline, opt_current, opt_semantic,
+                                        &semantic_changes, stdout, &st);
+        if (drc != OC_OK) {
+            exit_code = fail_with_status(&st);
+            goto out;
+        }
+        exit_code = semantic_changes ? 1 : 0;
+        goto out;
+    }
+
     /* Mutation engine (Sprint 5, WBS 4.5): operator-set mutants run
      * against the suite; exit 1 when survivors exist (gate semantics). */
     if (strcmp(cmd, "mutate") == 0) {
@@ -581,10 +923,22 @@ int oc_cli_main(int argc, char **argv) {
     }
 
     if (strcmp(cmd, "check") == 0) {
+        /* T7: kernel resources without an active triage are inert -- an
+         * explicit flag that cannot do its job is a usage error. */
+        if ((n_lex > 0 || (opt_model && opt_model[0])) && !opt.want_triage) {
+            fprintf(stderr,
+                    "omnicheck: --triage-lexicon/--triage-model require triage "
+                    "(--triage or --triage-embedded)\n");
+            exit_code = 2;
+            goto out;
+        }
         opt.paths = paths;
         opt.n_paths = n_paths;
         opt.coverage = cov_files;
         opt.n_coverage = n_cov;
+        opt.triage_lexicons = lex_files;
+        opt.n_triage_lexicons = n_lex;
+        opt.triage_model = opt_model;
         exit_code = cmd_check(&opt, &st);
     } else {
         exit_code = cmd_graph(opt.packs_dir, paths, n_paths, cov_files, n_cov, &st);

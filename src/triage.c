@@ -2,6 +2,7 @@
 
 #include "oc/json.h"
 #include "oc/str.h"
+#include "oc/triage_embed.h"
 
 #include <errno.h>
 #include <poll.h>
@@ -14,10 +15,22 @@
 #include <unistd.h>
 
 /*
- * OmniDecide sidecar client (rank-only, fail-open; see triage.h for the
- * protocol and guardrails). Sprint 0 ships the full client contract and
- * validates it with tools/mock_omnidecide.py; the production shim links
- * omnidecide-c and speaks the same one-line JSON protocol.
+ * OmniDecide triage: sidecar client + T2 embedded provider (rank-only,
+ * fail-open; see triage.h for the protocol and guardrails). Sprint 0
+ * ships the full client contract and validates it with
+ * tools/mock_omnidecide.py; the production shim links omnidecide-c and
+ * speaks the same one-line JSON protocol.
+ *
+ * T2 (OC_EMBED_OMNIDECIDE): the vendored kernel can be linked INTO lib
+ * oc (--triage-embedded). The embedded path consumes the SAME
+ * protocol-v0 request the sidecar would receive and produces the SAME
+ * one-line response -- byte for byte (C1 contract, asserted by
+ * tests/test_triage_embed.c). Both paths share ONE response-application
+ * code (triage_consume_response below); only the provider label differs
+ * ("embedded:omnidecide-X.Y.Z" vs the sidecar binary path). The sidecar
+ * keeps ABSOLUTE precedence: with OC_OMNIDECIDE_BIN set, both --triage
+ * and --triage-embedded go through the sidecar seam, so the seam stays
+ * fully testable against an embedded build.
  *
  * Timeout discipline (reworked after the real OmniDecide kernel exposed
  * the original design's limits -- the mock always exited instantly, so a
@@ -96,17 +109,136 @@ static void fail_open(const char *bin, oc_triage_outcome *out, const char *why) 
     snprintf(out->reason, sizeof(out->reason), "%s", why);
 }
 
-oc_code oc_triage_rank_findings(oc_finding_vec *v, oc_triage_outcome *out, oc_status *st) {
-    memset(out, 0, sizeof(*out));
-    out->provider[0] = '\0';
-    out->ranked = 0;
+/* T2: shared response consumer for BOTH provider paths (C1 protocol
+ * equality): parse the one-line protocol-v0 response, annotate
+ * rank+confidence (rank-only, never drop/reorder/re-severity), count
+ * DISTINCT annotated findings honestly and set the outcome. The two
+ * reason strings arrive verbatim per path so each keeps its exact
+ * historical report bytes (the byte-stability guarantee: only the
+ * provider label differs between sidecar and embedded runs). */
+static void triage_consume_response(const char *resp, size_t resp_len,
+                                    const char *provider,
+                                    const char *invalid_json_reason,
+                                    const char *no_ranks_reason,
+                                    oc_finding_vec *v, oc_triage_outcome *out) {
+    /* Parse with a local throwaway arena. */
+    oc_arena tmp;
+    oc_arena_init(&tmp);
+    oc_arena_set_block_size(&tmp, 8 * 1024);
+    oc_status parse_st;
+    oc_status_clear(&parse_st);
+    oc_json *root = oc_json_parse(&tmp, resp, resp_len, &parse_st);
+    if (!root || root->type != OC_JSON_OBJ) {
+        oc_arena_destroy(&tmp);
+        fail_open(provider, out, invalid_json_reason);
+        return;
+    }
+    const char *model = oc_json_as_str(oc_json_get(root, "model"), "");
+    snprintf(out->model, sizeof(out->model), "%s", model);
+    const oc_json *ranks = oc_json_get(root, "ranks");
+    if (ranks && ranks->type == OC_JSON_ARR) {
+        for (size_t i = 0; i < ranks->n_items; i++) {
+            const oc_json *r = ranks->items[i];
+            const char *id = oc_json_as_str(oc_json_get(r, "id"), NULL);
+            if (!id)
+                continue;
+            double rank = oc_json_as_num(oc_json_get(r, "rank"), -1.0);
+            double conf = oc_json_as_num(oc_json_get(r, "confidence"), 0.0);
+            for (size_t j = 0; j < v->n; j++) {
+                if (strcmp(v->items[j].fingerprint, id) == 0) {
+                    /* Rank-only guardrail: annotate, never remove.
+                     * Annotate EVERY finding carrying this fingerprint:
+                     * fingerprints deliberately exclude line numbers, so
+                     * byte-identical siblings (same rule, file, anchor,
+                     * snippet) share one identity and must all be
+                     * annotated, not just the first match. */
+                    v->items[j].triaged = 1;
+                    v->items[j].triage_rank = (rank >= 0.0) ? (int)rank : -1;
+                    v->items[j].triage_confidence = conf;
+                }
+            }
+        }
+    }
+    oc_arena_destroy(&tmp);
 
-    const char *bin = getenv("OC_OMNIDECIDE_BIN");
-    if (!bin || bin[0] == '\0') {
-        fail_open("none", out, "OC_OMNIDECIDE_BIN not set; triage disabled (fail-open)");
+    /* ranked_count counts DISTINCT findings annotated, never response
+     * entries: a provider that repeats an id (or identical siblings that
+     * share one fingerprint) must not inflate the honest meta counter. */
+    for (size_t j = 0; j < v->n; j++)
+        if (v->items[j].triaged)
+            out->ranked_count++;
+
+    if (out->ranked_count == 0) {
+        fail_open(provider, out, no_ranks_reason);
+    } else {
+        out->ranked = 1;
+        snprintf(out->provider, sizeof(out->provider), "%s", provider);
+        snprintf(out->reason, sizeof(out->reason), "ok");
+    }
+}
+
+#if defined(OC_EMBED_OMNIDECIDE)
+/* T2: embedded provider path. One in-process call; the same budget is
+ * enforced as an honest post-check (a kernel run that blew its budget
+ * fail-opens instead of quietly shipping a late rank). */
+static oc_code triage_run_embedded(oc_finding_vec *v, oc_triage_outcome *out,
+                                   oc_status *st) {
+    char label[64];
+    oc_triage_embed_provider_label(label, sizeof(label));
+    if (v->n == 0) {
+        fail_open(label, out, "no findings to rank");
         oc_status_clear(st);
         return OC_OK;
     }
+    oc_strbuf ereq;
+    oc_strbuf_init(&ereq);
+    if (!build_request(v, &ereq)) {
+        oc_strbuf_destroy(&ereq);
+        oc_status_set(st, OC_ERR_ALLOC, "out of memory building triage request");
+        return OC_ERR_ALLOC;
+    }
+    long long edeadline = triage_now_ms() + triage_budget_ms();
+    char *eresp = NULL;
+    size_t eresp_len = 0;
+    char ewhy[192];
+    ewhy[0] = '\0';
+    int eok = oc_triage_embed_respond(ereq.data, ereq.len, &eresp,
+                                      &eresp_len, ewhy, sizeof(ewhy));
+    oc_strbuf_destroy(&ereq);
+    if (!eok) {
+        /* T7: an explicitly configured resource the kernel refuses is
+         * LOUD (named usage error), never a silent fail-open. */
+        if (strncmp(ewhy, "kernel rejected ", 16) == 0) {
+            oc_status_set(st, OC_ERR_USAGE, "%s", ewhy);
+            return OC_ERR_USAGE;
+        }
+        fail_open(label, out,
+                  ewhy[0] ? ewhy : "embedded provider failed (fail-open)");
+        oc_status_clear(st);
+        return OC_OK;
+    }
+    if (triage_now_ms() > edeadline) {
+        free(eresp);
+        fail_open(label, out,
+                  "embedded triage exceeded its time budget (fail-open)");
+        oc_status_clear(st);
+        return OC_OK;
+    }
+    triage_consume_response(eresp, eresp_len, label,
+                            "embedded provider response was not valid JSON",
+                            "embedded provider returned no usable ranks", v,
+                            out);
+    free(eresp);
+    oc_status_clear(st);
+    return OC_OK;
+}
+#endif /* OC_EMBED_OMNIDECIDE */
+
+/* Sidecar path: spawn $OC_OMNIDECIDE_BIN, one request line in, one
+ * response line out (historical flow; the response consumer is now the
+ * shared T2 code so both paths apply responses identically). */
+static oc_code triage_run_sidecar(oc_finding_vec *v, oc_triage_outcome *out,
+                                  oc_status *st, const char *bin) {
     if (v->n == 0) {
         fail_open(bin, out, "no findings to rank");
         oc_status_clear(st);
@@ -310,62 +442,173 @@ oc_code oc_triage_rank_findings(oc_finding_vec *v, oc_triage_outcome *out, oc_st
     }
 
     resp[resp_len] = '\0';
-    /* Parse with a local throwaway arena. */
+    triage_consume_response(resp, resp_len, bin,
+                            "sidecar response was not valid JSON",
+                            "sidecar returned no usable ranks", v, out);
+    free(resp);
+    oc_status_clear(st);
+    return OC_OK;
+}
+
+oc_code oc_triage_rank_findings(oc_finding_vec *v, oc_triage_outcome *out, oc_status *st) {
+    return oc_triage_rank_findings_mode(v, out, st, OC_TRIAGE_MODE_AUTO);
+}
+
+oc_code oc_triage_rank_findings_mode(oc_finding_vec *v, oc_triage_outcome *out,
+                                     oc_status *st, oc_triage_mode mode) {
+    memset(out, 0, sizeof(*out));
+    out->provider[0] = '\0';
+    out->ranked = 0;
+
+    const char *bin = getenv("OC_OMNIDECIDE_BIN");
+    if (bin && bin[0]) {
+        /* Absolute sidecar precedence (both --triage and --triage-embedded):
+         * an explicitly configured sidecar always wins, so the seam stays
+         * testable against an embedded build. EXCEPT: T7 kernel resources
+         * have no sidecar channel -- an explicit request is refused loud
+         * rather than silently ignored. */
+        if (oc_triage_embed_files_requested()) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "--triage-lexicon/--triage-model require the embedded "
+                          "kernel; the sidecar protocol-v0 has no resource "
+                          "channel (unset OC_OMNIDECIDE_BIN or drop the "
+                          "resource flags)");
+            return OC_ERR_USAGE;
+        }
+        return triage_run_sidecar(v, out, st, bin);
+    }
+    if (mode == OC_TRIAGE_MODE_EMBEDDED) {
+#if defined(OC_EMBED_OMNIDECIDE)
+        /* Explicit request: a contradictory runtime opt-out is refused
+         * loud (the caller asked for the embedded kernel by name). */
+        const char *em = getenv("OC_OMNIDECIDE_EMBED");
+        if (em && (strcmp(em, "off") == 0 || strcmp(em, "0") == 0)) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "--triage-embedded requested but OC_OMNIDECIDE_EMBED=%s "
+                          "disables the embedded kernel (fail loud)",
+                          em);
+            return OC_ERR_USAGE;
+        }
+        return triage_run_embedded(v, out, st);
+#else
+        oc_status_set(st, OC_ERR_USAGE,
+                      "--triage-embedded requires a build with "
+                      "-DOC_EMBED_OMNIDECIDE=ON; this build has no embedded kernel");
+        return OC_ERR_USAGE;
+#endif
+    }
+    fail_open("none", out, "OC_OMNIDECIDE_BIN not set; triage disabled (fail-open)");
+    oc_status_clear(st);
+    return OC_OK;
+}
+
+oc_code oc_triage_explain_attach(oc_finding_vec *v, oc_triage_outcome *out,
+                                 oc_status *st) {
+    out->explain_requested = 1;
+    out->explained_count = 0;
+    snprintf(out->explain_reason, sizeof(out->explain_reason), "ok");
+
+    if (!out->ranked) {
+        snprintf(out->explain_reason, sizeof(out->explain_reason),
+                 "triage did not rank; nothing to explain (fail-open)");
+        oc_status_clear(st);
+        return OC_OK;
+    }
+    if (strncmp(out->provider, "embedded:", 9) != 0) {
+        snprintf(out->explain_reason, sizeof(out->explain_reason),
+                 "rationale channels require the embedded kernel "
+                 "(--triage-embedded); the sidecar protocol-v0 carries no "
+                 "rationale");
+        oc_status_clear(st);
+        return OC_OK;
+    }
+    if (v->n < 2) {
+        snprintf(out->explain_reason, sizeof(out->explain_reason),
+                 "rank primitive needs at least 2 options; %zu finding(s)",
+                 v->n);
+        oc_status_clear(st);
+        return OC_OK;
+    }
+
+    /* The SAME request bytes the rank call consumed (build_request is
+     * deterministic over the findings vector), so the explain pass sees
+     * exactly the options the ranking saw. */
+    oc_strbuf req;
+    oc_strbuf_init(&req);
+    if (!build_request(v, &req)) {
+        oc_strbuf_destroy(&req);
+        snprintf(out->explain_reason, sizeof(out->explain_reason),
+                 "out of memory building the explain request (fail-open)");
+        oc_status_clear(st);
+        return OC_OK;
+    }
+    char *eresp = NULL;
+    size_t eresp_len = 0;
+    char ewhy[192];
+    ewhy[0] = '\0';
+    int eok = oc_triage_embed_explain(req.data, req.len, &eresp, &eresp_len,
+                                      ewhy, sizeof(ewhy));
+    oc_strbuf_destroy(&req);
+    if (!eok) {
+        snprintf(out->explain_reason, sizeof(out->explain_reason), "%s",
+                 ewhy[0] ? ewhy : "embedded explain failed (fail-open)");
+        oc_status_clear(st);
+        return OC_OK;
+    }
+
+    /* Attach channels by fingerprint (annotate EVERY matching finding,
+     * same sibling discipline as the rank consumer). */
     oc_arena tmp;
     oc_arena_init(&tmp);
     oc_arena_set_block_size(&tmp, 8 * 1024);
     oc_status parse_st;
     oc_status_clear(&parse_st);
-    oc_json *root = oc_json_parse(&tmp, resp, resp_len, &parse_st);
-    free(resp); /* parsed or not, the raw bytes are no longer needed */
+    oc_json *root = oc_json_parse(&tmp, eresp, eresp_len, &parse_st);
+    free(eresp);
     if (!root || root->type != OC_JSON_OBJ) {
         oc_arena_destroy(&tmp);
-        fail_open(bin, out, "sidecar response was not valid JSON");
+        snprintf(out->explain_reason, sizeof(out->explain_reason),
+                 "embedded explain response was not valid JSON (fail-open)");
         oc_status_clear(st);
         return OC_OK;
     }
-    const char *model = oc_json_as_str(oc_json_get(root, "model"), "");
-    snprintf(out->model, sizeof(out->model), "%s", model);
-    const oc_json *ranks = oc_json_get(root, "ranks");
-    if (ranks && ranks->type == OC_JSON_ARR) {
-        for (size_t i = 0; i < ranks->n_items; i++) {
-            const oc_json *r = ranks->items[i];
-            const char *id = oc_json_as_str(oc_json_get(r, "id"), NULL);
+    const oc_json *items = oc_json_get(root, "explain");
+    if (items && items->type == OC_JSON_ARR) {
+        for (size_t i = 0; i < items->n_items; i++) {
+            const oc_json *e = items->items[i];
+            const char *id = oc_json_as_str(oc_json_get(e, "id"), NULL);
             if (!id)
                 continue;
-            double rank = oc_json_as_num(oc_json_get(r, "rank"), -1.0);
-            double conf = oc_json_as_num(oc_json_get(r, "confidence"), 0.0);
             for (size_t j = 0; j < v->n; j++) {
-                if (strcmp(v->items[j].fingerprint, id) == 0) {
-                    /* Rank-only guardrail: annotate, never remove.
-                     * Annotate EVERY finding carrying this fingerprint:
-                     * fingerprints deliberately exclude line numbers, so
-                     * byte-identical siblings (same rule, file, anchor,
-                     * snippet) share one identity and must all be
-                     * annotated, not just the first match. */
-                    v->items[j].triaged = 1;
-                    v->items[j].triage_rank = (rank >= 0.0) ? (int)rank : -1;
-                    v->items[j].triage_confidence = conf;
-                }
+                if (strcmp(v->items[j].fingerprint, id) != 0)
+                    continue;
+                v->items[j].explained = 1;
+                v->items[j].explain.probability =
+                    oc_json_as_num(oc_json_get(e, "probability"), 0.0);
+                v->items[j].explain.fused =
+                    oc_json_as_num(oc_json_get(e, "fused"), 0.0);
+                v->items[j].explain.tf_cosine =
+                    oc_json_as_num(oc_json_get(e, "tf_cosine"), 0.0);
+                v->items[j].explain.jaccard =
+                    oc_json_as_num(oc_json_get(e, "jaccard"), 0.0);
+                v->items[j].explain.trigram =
+                    oc_json_as_num(oc_json_get(e, "trigram"), 0.0);
+                v->items[j].explain.whole =
+                    oc_json_as_num(oc_json_get(e, "whole"), 0.0);
+                v->items[j].explain.best_chunk =
+                    oc_json_as_num(oc_json_get(e, "best_chunk"), 0.0);
+                v->items[j].explain.contextual =
+                    oc_json_as_num(oc_json_get(e, "contextual"), 0.0);
+                v->items[j].explain.directional =
+                    oc_json_as_num(oc_json_get(e, "directional"), 0.0);
             }
         }
     }
     oc_arena_destroy(&tmp);
 
-    /* ranked_count counts DISTINCT findings annotated, never response
-     * entries: a provider that repeats an id (or identical siblings that
-     * share one fingerprint) must not inflate the honest meta counter. */
     for (size_t j = 0; j < v->n; j++)
-        if (v->items[j].triaged)
-            out->ranked_count++;
-
-    if (out->ranked_count == 0) {
-        fail_open(bin, out, "sidecar returned no usable ranks");
-    } else {
-        out->ranked = 1;
-        snprintf(out->provider, sizeof(out->provider), "%s", bin);
-        snprintf(out->reason, sizeof(out->reason), "ok");
-    }
+        if (v->items[j].explained)
+            out->explained_count++;
     oc_status_clear(st);
     return OC_OK;
 }

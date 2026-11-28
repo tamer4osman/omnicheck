@@ -278,7 +278,9 @@ oc_dup_index *oc_dup_build(const oc_graph *g, const oc_config *cfg, oc_arena *a,
             n_wins++;
         }
     }
-    qsort(wins, n_wins, sizeof(dup_window), cmp_window);
+    /* M-10/T16 hygiene: qsort(NULL, 0) on a window-free file is UB. */
+    if (n_wins > 0)
+        qsort(wins, n_wins, sizeof(dup_window), cmp_window);
 
     /* 4. Candidate runs: verify text, lockstep-extend, emit spans. */
     size_t wi = 0;

@@ -3975,13 +3975,29 @@ static char *rust_leaf_bind_name(oc_arena *a, const char *leaf) {
  * identifier / scoped_identifier / bare crate-self-super / use_as_clause
  * / use_wildcard / scoped_use_list / nested use_list). Each leaf pushes
  * ONE import record and ONE bind record (the leaf segment pre-alias;
- * globs bind NULL). Returns 0 on OOM (the caller aborts the parse --
- * fail loud, never silently partial). */
+ * globs bind NULL). Returns 0 on OOM or on exceeding the nesting budget
+ * (the caller aborts the parse -- fail loud, never silently partial).
+ *
+ * H-2 (P-2): this walk used to recurse once per nesting level with no
+ * depth limit while allocating an ever-longer prefix at every level --
+ * a 500 KB Rust file with a 100,000-level use-tree overflowed the C
+ * stack (SIGSEGV, ASan: rust_use_expand parser_ts.c:4052/4075, evidence
+ * T7) and accumulated O(depth^2) prefix bytes in the arena. The explicit
+ * depth budget bounds both; the parse-level tree-depth guard in
+ * oc_parser_ts_parse provides the outer defense. */
+#define OC_RUST_USE_MAX_DEPTH 256
 static int rust_use_expand(oc_arena *a, TSNode n, const char *src, const char *prefix,
                            const char *from_path, oc_import_vec *imports, oc_bind_vec *binds,
-                           oc_lang_family family, int *oom) {
+                           oc_lang_family family, int *oom, oc_status *st, int depth) {
     if (*oom)
         return 0;
+    if (depth >= OC_RUST_USE_MAX_DEPTH) {
+        oc_status_set(st, OC_ERR_PARSE,
+                      "Rust use-tree in '%s' nests more than %d levels deep -- over the "
+                      "expansion budget; refusing (fail loud, never guessed)",
+                      from_path, OC_RUST_USE_MAX_DEPTH);
+        return 0;
+    }
     const char *t = ts_node_type(n);
     if (strcmp(t, "identifier") == 0 || strcmp(t, "scoped_identifier") == 0 ||
         strcmp(t, "crate") == 0 || strcmp(t, "self") == 0 || strcmp(t, "super") == 0 ||
@@ -4049,7 +4065,8 @@ static int rust_use_expand(oc_arena *a, TSNode n, const char *src, const char *p
             TSNode c = ts_node_child(n, i);
             if (!ts_node_is_named(c))
                 continue;
-            if (!rust_use_expand(a, c, src, prefix, from_path, imports, binds, family, oom))
+            if (!rust_use_expand(a, c, src, prefix, from_path, imports, binds, family, oom, st,
+                                 depth + 1))
                 return 0;
         }
         return 1;
@@ -4072,7 +4089,8 @@ static int rust_use_expand(oc_arena *a, TSNode n, const char *src, const char *p
         }
         if (ts_node_is_null(list))
             return 1;
-        return rust_use_expand(a, list, src, new_prefix, from_path, imports, binds, family, oom);
+        return rust_use_expand(a, list, src, new_prefix, from_path, imports, binds, family, oom,
+                               st, depth + 1);
     }
     /* metavariable and anything else: nothing recorded, never guessed */
     return 1;
@@ -4359,6 +4377,68 @@ static int php_use_expand(oc_arena *a, TSNode decl, const char *src, const char 
     return 1;
 }
 
+/*
+ * H-5: syntax-tree depth budget. gprof on a 30,000-deep nested-call
+ * chain: 95% of wall time inside ts_query_cursor__advance -- the
+ * vendored tree-sitter query engine is quadratic on adversarially deep
+ * trees, and every pass in this file (functions, accessors, imports,
+ * exports, surface) runs query cursors over the same root. Legitimate
+ * code nests orders of magnitude below this budget (the deepest pinned
+ * fixture, brace_bomb.js, sits near ~2k raw bracket levels); anything
+ * deeper is hostile input and is refused LOUDLY before any cursor runs,
+ * per the project contract (scan.c aborts the run with this message).
+ * The probe itself is one linear arena-stack DFS (the diagnose_tree /
+ * count_complexity pattern) -- no quadratic behavior, no recursion.
+ */
+#define OC_TS_MAX_TREE_DEPTH 8192
+
+static uint32_t ts_max_depth(oc_arena *a, TSNode root) {
+    typedef struct dframe {
+        TSNode node;
+        uint32_t depth;
+        struct dframe *next;
+    } dframe;
+    dframe *free_list = NULL;
+    dframe *stack = NULL;
+    uint32_t maxd = 0;
+
+    dframe *rootf = (dframe *)oc_arena_alloc(a, sizeof(*rootf));
+    if (!rootf)
+        return 0; /* OOM: caller fails loud, never fails open */
+    rootf->node = root;
+    rootf->depth = 1;
+    rootf->next = NULL;
+    stack = rootf;
+
+    while (stack) {
+        dframe *cur = stack;
+        stack = cur->next;
+        TSNode n = cur->node;
+        uint32_t d = cur->depth;
+        cur->next = free_list;
+        free_list = cur;
+
+        if (d > maxd)
+            maxd = d;
+        uint32_t nc = ts_node_child_count(n);
+        for (uint32_t i = 0; i < nc; i++) {
+            dframe *nf = free_list;
+            if (nf) {
+                free_list = nf->next;
+            } else {
+                nf = (dframe *)oc_arena_alloc(a, sizeof(*nf));
+                if (!nf)
+                    return 0; /* OOM: caller fails loud */
+            }
+            nf->node = ts_node_child(n, i);
+            nf->depth = d + 1;
+            nf->next = stack;
+            stack = nf;
+        }
+    }
+    return maxd;
+}
+
 oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g, oc_parse_out *out,
                            oc_status *st) {
     struct oc_lang_entry *e = find_lang(p, in->grammar);
@@ -4383,6 +4463,26 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
         return OC_ERR_PARSE;
     }
     TSNode root = ts_tree_root_node(tree);
+
+    /* H-5 guard: measure the tree depth BEFORE any query cursor runs
+     * (diagnose, functions, imports, exports, surface...). One linear
+     * pass; OOM fails loud, never fails open. */
+    uint32_t tree_depth = ts_max_depth(p->arena, root);
+    if (tree_depth == 0) {
+        ts_tree_delete(tree);
+        oc_status_set(st, OC_ERR_ALLOC, "out of memory measuring syntax-tree depth of '%s'",
+                      in->path);
+        return OC_ERR_ALLOC;
+    }
+    if (tree_depth > OC_TS_MAX_TREE_DEPTH) {
+        ts_tree_delete(tree);
+        oc_status_set(st, OC_ERR_PARSE,
+                      "syntax tree of '%s' nests %u levels deep -- over the %d-level "
+                      "analysis budget; refusing to scan (query evaluation is quadratic "
+                      "on such trees)",
+                      in->path, tree_depth, OC_TS_MAX_TREE_DEPTH);
+        return OC_ERR_PARSE;
+    }
 
     if (out)
         diagnose_tree(p->arena, root, &out->diag);
@@ -5006,13 +5106,17 @@ oc_code oc_parser_ts_parse(oc_parser *p, const oc_parser_input *in, oc_graph *g,
                 TSNode arg = ts_node_child_by_field_name(ist, "argument", 8);
                 if (!ts_node_is_null(arg)) {
                     int oom = 0;
-                    rust_use_expand(p->arena, arg, in->source, "", in->path, out->imports,
-                                    out->binds, e->family, &oom);
-                    if (oom) {
+                    if (!rust_use_expand(p->arena, arg, in->source, "", in->path, out->imports,
+                                         out->binds, e->family, &oom, st, 0)) {
                         ts_query_cursor_delete(icur);
                         ts_tree_delete(tree);
-                        oc_status_set(st, OC_ERR_ALLOC, "out of memory recording use-tree records");
-                        return OC_ERR_ALLOC;
+                        /* OOM and depth-budget failures both abort the
+                         * parse loudly; the status already carries the
+                         * depth message in the non-OOM case. */
+                        if (oom)
+                            oc_status_set(st, OC_ERR_ALLOC,
+                                          "out of memory recording use-tree records");
+                        return oom ? OC_ERR_ALLOC : st->code;
                     }
                 }
                 continue; /* the use channel is complete for this match */

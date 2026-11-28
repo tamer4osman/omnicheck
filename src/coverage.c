@@ -7,6 +7,15 @@
 #include "oc/graph.h"
 #include "oc/json.h"
 
+/* H-3 (P-3): the Go coverprofile loader derives a malloc size from the
+ * record's end line. An unbounded `el` let 47 bytes of input ask for a
+ * 4 GB allocation (measured: 3,615 MiB peak RSS, SIGKILL -- evidence
+ * T5). 10,000,000 is a generous ceiling (no real coverage report
+ * touches files anywhere near that tall); anything beyond it is a
+ * hostile record and fails the load LOUDLY with OC_ERR_USAGE, matching
+ * the OpenCover loader's existing sanity bound in this same file. */
+#define OC_COV_MAX_LINE 10000000UL
+
 /* ---------------------------------------------------------------- sets */
 
 static int cmp_u32(const void *a, const void *b) {
@@ -635,8 +644,10 @@ static oc_code load_jacoco(oc_coverage *cov, const char *data, size_t len, oc_ar
         oc_status_set(st, OC_ERR_USAGE, "coverage file is XML but carries no <report> root");
         return OC_ERR_USAGE;
     }
-    /* Deterministic order for suffix matching + report meta. */
-    qsort(cov->files, cov->n_files, sizeof(oc_cov_file), cmp_cov_file);
+    /* Deterministic order for suffix matching + report meta. (M-10/T16
+     * hygiene: guard qsort against a NULL base on zero files -- UB.) */
+    if (cov->n_files > 0)
+        qsort(cov->files, cov->n_files, sizeof(oc_cov_file), cmp_cov_file);
     return OC_OK;
 }
 
@@ -771,6 +782,13 @@ static oc_code load_go_coverprofile(oc_coverage *cov, const char *data, const ch
         if (sl < 1 || el < sl) {
             oc_status_set(st, OC_ERR_USAGE, "go coverprofile '%s' line %zu: bad line range",
                           src_name, lineno);
+            return OC_ERR_USAGE;
+        }
+        if (el > OC_COV_MAX_LINE || sl > OC_COV_MAX_LINE) {
+            oc_status_set(st, OC_ERR_USAGE,
+                          "go coverprofile '%s' line %zu: line range %lu-%lu exceeds the "
+                          "analysis budget (%lu lines per record)",
+                          src_name, lineno, sl, el, OC_COV_MAX_LINE);
             return OC_ERR_USAGE;
         }
         oc_cov_file *e = cov_entry(cov, path);
@@ -1753,8 +1771,10 @@ oc_code oc_coverage_load(oc_coverage *cov, const char *const *paths, size_t n, o
         if (rc != OC_OK)
             return rc;
     }
-    /* Deterministic order for suffix matching + report meta. */
-    qsort(cov->files, cov->n_files, sizeof(oc_cov_file), cmp_cov_file);
+    /* Deterministic order for suffix matching + report meta. (M-10/T16
+     * hygiene: guard qsort against a NULL base on zero files -- UB.) */
+    if (cov->n_files > 0)
+        qsort(cov->files, cov->n_files, sizeof(oc_cov_file), cmp_cov_file);
     return OC_OK;
 }
 

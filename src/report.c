@@ -1,11 +1,13 @@
 #include "oc/report.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "oc/finding.h"
 #include "oc/pack.h"
 #include "oc/triage.h"
+#include "oc/brain.h"
 
 /*
  * The two renderers below moved verbatim from src/cli/main.c (Sprint 4):
@@ -158,6 +160,39 @@ void oc_report_write_json(oc_jsonw *w, const oc_scan_result *res) {
             oc_jsonw_key(w, "triage_confidence");
             oc_jsonw_float(w, f->triage_confidence);
         }
+        /* T1: the 9 kernel rationale channels, only on --triage-explain
+         * runs (runs without the flag stay byte-stable). Fixed field
+         * order; advisory data that never affects rank or order. */
+        if (f->explained) {
+            oc_jsonw_key(w, "explain");
+            oc_jsonw_obj_begin(w);
+            oc_jsonw_key(w, "probability");
+            oc_jsonw_float(w, f->explain.probability);
+            oc_jsonw_key(w, "fused");
+            oc_jsonw_float(w, f->explain.fused);
+            oc_jsonw_key(w, "tf_cosine");
+            oc_jsonw_float(w, f->explain.tf_cosine);
+            oc_jsonw_key(w, "jaccard");
+            oc_jsonw_float(w, f->explain.jaccard);
+            oc_jsonw_key(w, "trigram");
+            oc_jsonw_float(w, f->explain.trigram);
+            oc_jsonw_key(w, "whole");
+            oc_jsonw_float(w, f->explain.whole);
+            oc_jsonw_key(w, "best_chunk");
+            oc_jsonw_float(w, f->explain.best_chunk);
+            oc_jsonw_key(w, "contextual");
+            oc_jsonw_float(w, f->explain.contextual);
+            oc_jsonw_key(w, "directional");
+            oc_jsonw_float(w, f->explain.directional);
+            oc_jsonw_obj_end(w);
+        }
+        /* T4: brain advisory annotation (rank-only; --triage-brain opt-in). */
+        if (f->brain_annotated) {
+            oc_jsonw_key(w, "brain_bonus");
+            oc_jsonw_float(w, f->brain_bonus);
+            oc_jsonw_key(w, "brain_rank");
+            oc_jsonw_int(w, f->brain_rank);
+        }
         oc_jsonw_obj_end(w);
     }
     oc_jsonw_arr_end(w);
@@ -215,9 +250,75 @@ void oc_report_write_json(oc_jsonw *w, const oc_scan_result *res) {
     oc_jsonw_uint(w, triage->ranked_count);
     oc_jsonw_key(w, "reason");
     oc_jsonw_str(w, triage->reason);
+    /* T1: explain meta only when requested (byte-stability). */
+    if (triage->explain_requested) {
+        oc_jsonw_key(w, "explained_count");
+        oc_jsonw_uint(w, triage->explained_count);
+        oc_jsonw_key(w, "explain_reason");
+        oc_jsonw_str(w, triage->explain_reason);
+    }
     oc_jsonw_key(w, "guardrails");
     oc_jsonw_str(w, "rank-only; prose-inputs-only; confidence-exposed; fail-open");
     oc_jsonw_obj_end(w);
+
+    /* T4: the brain block appears ONLY when --triage-brain was requested,
+     * so every report without the flag stays byte-identical. */
+    if (res->brain.requested) {
+        oc_jsonw_key(w, "brain");
+        oc_jsonw_obj_begin(w);
+        oc_jsonw_key(w, "applied");
+        oc_jsonw_bool(w, res->brain.applied);
+        oc_jsonw_key(w, "file");
+        oc_jsonw_str(w, res->brain.file);
+        oc_jsonw_key(w, "epoch");
+        if (res->brain.epoch >= 0)
+            oc_jsonw_int(w, res->brain.epoch);
+        else
+            oc_jsonw_str(w, NULL);
+        oc_jsonw_key(w, "weight");
+        oc_jsonw_float(w, OC_BRAIN_WEIGHT);
+        oc_jsonw_key(w, "adjusted");
+        oc_jsonw_uint(w, res->brain.adjusted);
+        oc_jsonw_key(w, "reason");
+        oc_jsonw_str(w, res->brain.reason);
+        oc_jsonw_obj_end(w);
+    }
+
+    /* T7: the kernel-files provenance block appears ONLY when
+     * --triage-lexicon/--triage-model was requested (byte-stability). */
+    if (res->kernel_files.requested) {
+        oc_jsonw_key(w, "kernel_files");
+        oc_jsonw_obj_begin(w);
+        oc_jsonw_key(w, "lexicons");
+        oc_jsonw_arr_begin(w);
+        for (size_t i = 0; i < res->kernel_files.n_lexicons; i++) {
+            oc_jsonw_obj_begin(w);
+            oc_jsonw_key(w, "path");
+            oc_jsonw_str(w, res->kernel_files.lexicons[i].path);
+            oc_jsonw_key(w, "sha256");
+            oc_jsonw_str(w, res->kernel_files.lexicons[i].sha256);
+            oc_jsonw_obj_end(w);
+        }
+        oc_jsonw_arr_end(w);
+        oc_jsonw_key(w, "lexicons_applied");
+        oc_jsonw_uint(w, res->kernel_files.lexicons_applied);
+        oc_jsonw_key(w, "model");
+        if (res->kernel_files.model_requested) {
+            oc_jsonw_obj_begin(w);
+            oc_jsonw_key(w, "path");
+            oc_jsonw_str(w, res->kernel_files.model.path);
+            oc_jsonw_key(w, "sha256");
+            oc_jsonw_str(w, res->kernel_files.model.sha256);
+            oc_jsonw_obj_end(w);
+        } else {
+            oc_jsonw_str(w, NULL);
+        }
+        oc_jsonw_key(w, "model_applied");
+        oc_jsonw_int(w, res->kernel_files.model_applied);
+        oc_jsonw_key(w, "reason");
+        oc_jsonw_str(w, res->kernel_files.reason);
+        oc_jsonw_obj_end(w);
+    }
 
     oc_jsonw_obj_end(w);
 }
@@ -348,3 +449,149 @@ void oc_report_write_human(FILE *out, const oc_scan_result *res) {
                     res->parse_errors[i].first_line, res->parse_errors[i].first_column);
     }
 }
+
+/* ------------------------------------------------------------------ T6 -- */
+
+#if defined(OC_EMBED_OMNIDECIDE)
+#include <omnidecide.h>
+
+/* Appends the minified prose to the accumulator buffers (raw + minified,
+ * newline-joined) and returns the minified copy flattened to ONE line
+ * (embedded newlines become single spaces -- the llm render is
+ * line-oriented). Malloc'd; static buffer not possible (per-finding). */
+static char *llm_minify(const char *text, oc_strbuf *raw_acc,
+                        oc_strbuf *min_acc) {
+    const char *src = text ? text : "";
+    char *min = odk_minify(src);
+    if (!min)
+        min = (char *)""; /* allocation failure: passthrough, no crash */
+    /* Flatten: odk_minify compresses paragraphs and may keep newlines. */
+    size_t n = strlen(min);
+    char *flat = (char *)malloc(n + 1);
+    if (flat) {
+        size_t w = 0;
+        for (size_t i = 0; i < n; i++) {
+            char c = (min[i] == '\n' || min[i] == '\r' || min[i] == '\t') ? ' '
+                                                                          : min[i];
+            if (c == ' ' && (w == 0 || flat[w - 1] == ' '))
+                continue; /* collapse runs of whitespace */
+            flat[w++] = c;
+        }
+        while (w > 0 && flat[w - 1] == ' ')
+            w--; /* no trailing blank before the next pipe */
+        flat[w] = '\0';
+    } else {
+        flat = min; /* OOM: keep the minified text as-is */
+        min = NULL; /* ownership moved; do not double-free */
+    }
+    if (min && min != (char *)"")
+        free(min);
+    if (raw_acc->len)
+        oc_strbuf_appendc(raw_acc, '\n');
+    oc_strbuf_appends(raw_acc, src);
+    if (min_acc->len)
+        oc_strbuf_appendc(min_acc, '\n');
+    oc_strbuf_appends(min_acc, flat);
+    return flat;
+}
+
+void oc_report_write_llm(FILE *out, const oc_scan_result *res) {
+    const oc_pack_set *ps = res->packs;
+    const oc_finding_vec *findings = &res->findings;
+    const oc_triage_outcome *triage = &res->triage;
+
+    oc_strbuf raw_acc, min_acc;
+    oc_strbuf_init(&raw_acc);
+    oc_strbuf_init(&min_acc);
+
+    /* Header comment: schema, tool identity, backend, packs. */
+    fprintf(out,
+            "<!-- omnicheck.report.llm/v0 tool=omnicheck version=%s "
+            "backend=%s packs=",
+            OC_VERSION_STRING, res->backend ? res->backend : "");
+    for (size_t i = 0; i < ps->n_packs; i++)
+        fprintf(out, "%s%s", i ? "," : "", ps->packs[i].id);
+    fprintf(out, " -->\n");
+    fprintf(out, "files_analyzed=%zu files_with_parse_errors=%zu findings=%zu\n",
+            res->files_analyzed, res->n_parse_errors, findings->n);
+
+    fprintf(out, "\n## findings\n");
+    for (size_t i = 0; i < findings->n; i++) {
+        const oc_finding *f = &findings->items[i];
+        char *min = llm_minify(f->message, &raw_acc, &min_acc);
+        fprintf(out, "- %s|%s|%s:%zu:%zu|%s|%s|%s\n", f->rule_id,
+                oc_severity_str(f->severity), f->file, f->line, f->col,
+                f->symbol ? f->symbol : "-", min, f->fingerprint);
+        free(min); /* llm_minify owns the flattened copy */
+        if (f->triaged) {
+            fprintf(out,
+                    "  rank=%d confidence=%.4f brain_rank=%d brain_bonus=%.4f\n",
+                    f->triage_rank, f->triage_confidence, f->brain_annotated
+                        ? f->brain_rank
+                        : -1,
+                    f->brain_annotated ? f->brain_bonus : 0.0);
+        }
+        if (f->explained) {
+            fprintf(out,
+                    "  explain p=%.4f fused=%.4f cos=%.4f jac=%.4f trig=%.4f "
+                    "whole=%.4f chunk=%.4f ctx=%.4f dir=%.4f\n",
+                    f->explain.probability, f->explain.fused,
+                    f->explain.tf_cosine, f->explain.jaccard,
+                    f->explain.trigram, f->explain.whole, f->explain.best_chunk,
+                    f->explain.contextual, f->explain.directional);
+        }
+    }
+
+    fprintf(out, "\n## triage\n");
+    {
+        char *min = llm_minify(triage->reason, &raw_acc, &min_acc);
+        fprintf(out, "provider=%s model=%s ranked=%d ranked_count=%zu reason=%s\n",
+                triage->provider[0] ? triage->provider : "none",
+                triage->model, triage->ranked, triage->ranked_count, min);
+        free(min); /* llm_minify owns the flattened copy */
+        if (triage->explain_requested) {
+            fprintf(out, "explained_count=%zu explain_reason=%s\n",
+                    triage->explained_count, triage->explain_reason);
+        }
+    }
+
+    /* T4: brain block only when requested (byte-stability parity with the
+     * JSON render). */
+    if (res->brain.requested) {
+        fprintf(out,
+                "brain applied=%d file=%s epoch=%lld weight=%.1f adjusted=%zu "
+                "reason=%s\n",
+                res->brain.applied, res->brain.file, res->brain.epoch,
+                OC_BRAIN_WEIGHT, res->brain.adjusted, res->brain.reason);
+    }
+
+    /* Token estimates over the accumulated prose (kernel minifier). */
+    fprintf(out, "\n## tokens\n");
+    odk_token_report_t tr;
+    memset(&tr, 0, sizeof(tr));
+    if (raw_acc.len > 0)
+        odk_token_report(raw_acc.data, min_acc.data, &tr);
+    fprintf(out,
+            "raw_tokens=%d compressed_tokens=%d reduction_pct=%.1f\n",
+            tr.raw_tokens, tr.compressed_tokens, tr.reduction_pct);
+
+    oc_strbuf_destroy(&raw_acc);
+    oc_strbuf_destroy(&min_acc);
+}
+
+int oc_report_llm_available(void) {
+    return 1;
+}
+
+#else /* !OC_EMBED_OMNIDECIDE */
+
+void oc_report_write_llm(FILE *out, const oc_scan_result *res) {
+    (void)out;
+    (void)res; /* never called: the CLI refuses --format llm loud */
+}
+
+int oc_report_llm_available(void) {
+    return 0;
+}
+
+#endif /* OC_EMBED_OMNIDECIDE */

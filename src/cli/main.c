@@ -6,8 +6,6 @@
 #include <string.h>
 
 #include "oc/compat.h"
-#include "oc/reportdiff.h"
-#include "oc/spine.h"
 #include "oc/coverage.h"
 #include "oc/discover.h"
 #include "oc/dup.h"
@@ -22,7 +20,9 @@
 #include "oc/parser.h"
 #include "oc/pass.h"
 #include "oc/report.h"
+#include "oc/reportdiff.h"
 #include "oc/scan.h"
+#include "oc/spine.h"
 #include "oc/surface.h"
 #include "oc/triage.h"
 
@@ -158,9 +158,8 @@ static int cmd_check(const check_options *opt, oc_status *st) {
         /* T6: kernel-minified Markdown with token estimates. An explicit
          * request on a build without the embedded kernel refuses loud. */
         if (!oc_report_llm_available()) {
-            fprintf(stderr,
-                    "omnicheck: --format llm requires the embedded OmniDecide "
-                    "kernel (rebuild with -DOC_EMBED_OMNIDECIDE=ON)\n");
+            fprintf(stderr, "omnicheck: --format llm requires the embedded OmniDecide "
+                            "kernel (rebuild with -DOC_EMBED_OMNIDECIDE=ON)\n");
             oc_scan_result_destroy(&res);
             return 2;
         } else {
@@ -168,8 +167,7 @@ static int cmd_check(const check_options *opt, oc_status *st) {
             /* Same exit-code policy as the JSON render below. */
             if (res.n_parse_errors > 0)
                 exit_code = 2;
-            else if (res.findings.n > 0 &&
-                     oc_findings_max_severity(&res.findings) >= opt->fail_on)
+            else if (res.findings.n > 0 && oc_findings_max_severity(&res.findings) >= opt->fail_on)
                 exit_code = 1;
         }
     } else {
@@ -213,8 +211,7 @@ static int cmd_pin(int argc, char **argv, oc_status *st) {
     const char *spine_file = NULL, *request = NULL, *cls = NULL, *id = NULL;
     if (!sub || (strcmp(sub, "add") != 0 && strcmp(sub, "create") != 0 &&
                  strcmp(sub, "list") != 0 && strcmp(sub, "replay") != 0)) {
-        fprintf(stderr,
-                "omnicheck: pin requires a subcommand: create|replay|list\n");
+        fprintf(stderr, "omnicheck: pin requires a subcommand: create|replay|list\n");
         return 2;
     }
     for (int i = 3; i < argc; i++) {
@@ -258,14 +255,10 @@ static int cmd_pin(int argc, char **argv, oc_status *st) {
         return verdict; /* 0 = exact/semantic/foreign, 1 = mismatch */
     }
     if (!request) {
-        fprintf(stderr,
-                "omnicheck: pin create requires --request '{\"primitive\":...}'\n");
+        fprintf(stderr, "omnicheck: pin create requires --request '{\"primitive\":...}'\n");
         return 2;
     }
-    return oc_spine_cmd_add(spine_file, request, cls ? cls : "exact", stdout,
-                            st) == OC_OK
-               ? 0
-               : 2;
+    return oc_spine_cmd_add(spine_file, request, cls ? cls : "exact", stdout, st) == OC_OK ? 0 : 2;
 }
 
 static int cmd_replay(int argc, char **argv, oc_status *st) {
@@ -306,16 +299,15 @@ static int cmd_brain(int argc, char **argv, oc_status *st) {
     const char *brain_file = NULL, *report = NULL, *fp = NULL, *outcome = NULL;
     long index = -1;
     int have_index = 0;
-    static const char *const SUBS[] = {"create", "record", "advise", "info",
-                                       "entries", "discard", "reset", "save"};
+    static const char *const SUBS[] = {"create",  "record",  "advise", "info",
+                                       "entries", "discard", "reset",  "save"};
     int known = 0;
     for (size_t k = 0; k < sizeof(SUBS) / sizeof(*SUBS); k++)
         if (sub && strcmp(sub, SUBS[k]) == 0)
             known = 1;
     if (!known) {
-        fprintf(stderr,
-                "omnicheck: brain requires a subcommand: "
-                "create|record|advise|info|entries|discard|reset|save\n");
+        fprintf(stderr, "omnicheck: brain requires a subcommand: "
+                        "create|record|advise|info|entries|discard|reset|save\n");
         return 2;
     }
     for (int i = 3; i < argc; i++) {
@@ -340,8 +332,7 @@ static int cmd_brain(int argc, char **argv, oc_status *st) {
             fp = argv[++i];
         } else if (strcmp(a, "--outcome") == 0) {
             if (i + 1 >= argc) {
-                fprintf(stderr,
-                        "omnicheck: --outcome requires accepted|fixed|dismissed\n");
+                fprintf(stderr, "omnicheck: --outcome requires accepted|fixed|dismissed\n");
                 return 2;
             }
             outcome = argv[++i];
@@ -353,8 +344,7 @@ static int cmd_brain(int argc, char **argv, oc_status *st) {
             char *end = NULL;
             errno = 0;
             index = strtol(argv[++i], &end, 10);
-            if (errno == ERANGE || !end || end == argv[i] || *end != '\0' ||
-                index < 0) {
+            if (errno == ERANGE || !end || end == argv[i] || *end != '\0' || index < 0) {
                 fprintf(stderr, "omnicheck: --index requires a non-negative number\n");
                 return 2;
             }
@@ -376,9 +366,8 @@ static int cmd_brain(int argc, char **argv, oc_status *st) {
         return oc_brain_cmd_save(brain_file, stdout, st) == OC_OK ? 0 : 2;
     if (strcmp(sub, "discard") == 0) {
         if (!have_index) {
-            fprintf(stderr,
-                    "omnicheck: brain discard requires --index N (see 'oc brain "
-                    "entries')\n");
+            fprintf(stderr, "omnicheck: brain discard requires --index N (see 'oc brain "
+                            "entries')\n");
             return 2;
         }
         return oc_brain_cmd_discard(brain_file, index, stdout, st) == OC_OK ? 0 : 2;
@@ -392,15 +381,11 @@ static int cmd_brain(int argc, char **argv, oc_status *st) {
     }
     /* record */
     if (!report || !fp || !outcome) {
-        fprintf(stderr,
-                "omnicheck: brain record requires --report REPORT.json "
-                "--fingerprint FP --outcome accepted|fixed|dismissed\n");
+        fprintf(stderr, "omnicheck: brain record requires --report REPORT.json "
+                        "--fingerprint FP --outcome accepted|fixed|dismissed\n");
         return 2;
     }
-    return oc_brain_cmd_record(brain_file, report, fp, outcome, stdout, st) ==
-                   OC_OK
-               ? 0
-               : 2;
+    return oc_brain_cmd_record(brain_file, report, fp, outcome, stdout, st) == OC_OK ? 0 : 2;
 }
 
 /* ----------------------------------------------------------------- graph */
@@ -592,9 +577,8 @@ int oc_cli_main(int argc, char **argv) {
     }
     if (strcmp(cmd, "check") != 0 && strcmp(cmd, "graph") != 0 && strcmp(cmd, "packs") != 0 &&
         strcmp(cmd, "lsp") != 0 && strcmp(cmd, "mcp") != 0 && strcmp(cmd, "compat") != 0 &&
-        strcmp(cmd, "diff") != 0 && strcmp(cmd, "brain") != 0 &&
-        strcmp(cmd, "pin") != 0 && strcmp(cmd, "replay") != 0 &&
-        strcmp(cmd, "mutate") != 0) {
+        strcmp(cmd, "diff") != 0 && strcmp(cmd, "brain") != 0 && strcmp(cmd, "pin") != 0 &&
+        strcmp(cmd, "replay") != 0 && strcmp(cmd, "mutate") != 0) {
         fprintf(stderr, "omnicheck: unknown command '%s'\n\n", cmd);
         print_usage(stderr);
         return 2;
@@ -714,8 +698,7 @@ int oc_cli_main(int argc, char **argv) {
             }
         } else if (strcmp(a, "--format") == 0) {
             if (i + 1 >= argc ||
-                (strcmp(argv[i + 1], "json") != 0 &&
-                 strcmp(argv[i + 1], "human") != 0 &&
+                (strcmp(argv[i + 1], "json") != 0 && strcmp(argv[i + 1], "human") != 0 &&
                  strcmp(argv[i + 1], "llm") != 0)) {
                 fprintf(stderr, "omnicheck: --format expects json|human|llm\n");
                 exit_code = 2;
@@ -740,8 +723,7 @@ int oc_cli_main(int argc, char **argv) {
                 goto out;
             }
             if (n_lex >= sizeof(lex_files) / sizeof(lex_files[0])) {
-                fprintf(stderr,
-                        "omnicheck: too many --triage-lexicon options (max %zu)\n",
+                fprintf(stderr, "omnicheck: too many --triage-lexicon options (max %zu)\n",
                         sizeof(lex_files) / sizeof(lex_files[0]));
                 exit_code = 2;
                 goto out;
@@ -868,15 +850,14 @@ int oc_cli_main(int argc, char **argv) {
      * --semantic adds advisory kernel scores (never affects the gate). */
     if (strcmp(cmd, "diff") == 0) {
         if (!opt_baseline || !opt_current) {
-            fprintf(stderr,
-                    "omnicheck: diff requires --baseline REPORT.json and "
-                    "--current REPORT.json\n");
+            fprintf(stderr, "omnicheck: diff requires --baseline REPORT.json and "
+                            "--current REPORT.json\n");
             exit_code = 2;
             goto out;
         }
         int semantic_changes = 0;
-        oc_code drc = oc_reportdiff_run(opt_baseline, opt_current, opt_semantic,
-                                        &semantic_changes, stdout, &st);
+        oc_code drc = oc_reportdiff_run(opt_baseline, opt_current, opt_semantic, &semantic_changes,
+                                        stdout, &st);
         if (drc != OC_OK) {
             exit_code = fail_with_status(&st);
             goto out;
@@ -930,9 +911,8 @@ int oc_cli_main(int argc, char **argv) {
         /* T7: kernel resources without an active triage are inert -- an
          * explicit flag that cannot do its job is a usage error. */
         if ((n_lex > 0 || (opt_model && opt_model[0])) && !opt.want_triage) {
-            fprintf(stderr,
-                    "omnicheck: --triage-lexicon/--triage-model require triage "
-                    "(--triage or --triage-embedded)\n");
+            fprintf(stderr, "omnicheck: --triage-lexicon/--triage-model require triage "
+                            "(--triage or --triage-embedded)\n");
             exit_code = 2;
             goto out;
         }

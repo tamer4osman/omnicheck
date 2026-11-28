@@ -48,14 +48,14 @@ extern "C" {
  * {"schema":"omnicheck.spine.pin/v0","id":"<store-order-pin-id>","file":"<store-path>","saved":true}
  * The id is a deterministic counter (p000000, p000001, ...); file is the
  * store path used; saved is true on successful persistent storage. */
-oc_code oc_spine_cmd_add(const char *file, const char *request,
-                         const char *replay_class, FILE *out, oc_status *st);
+oc_code oc_spine_cmd_add(const char *file, const char *request, const char *replay_class, FILE *out,
+                         oc_status *st);
 
 /* `oc replay --id <pin-id>`: replay one pinned decision (see the class
  * contract above). *verdict_out (when non-NULL) receives 0 for
  * exact/semantic/foreign and 1 for mismatch (the CLI gate code). */
-oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out,
-                            int *verdict_out, oc_status *st);
+oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out, int *verdict_out,
+                            oc_status *st);
 
 /* `oc pin list`: deterministic listing of the store. */
 oc_code oc_spine_cmd_list(const char *file, FILE *out, oc_status *st);

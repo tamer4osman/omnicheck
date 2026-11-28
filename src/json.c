@@ -419,12 +419,10 @@ static oc_json *jparse_value(oc_json_parser *ps) {
             oc_json *val = jparse_value(ps);
             if (!val)
                 return NULL;
-            const char **nk = (const char **)grow_ptr_vec(ps->arena, (void **)v->keys,
-                                                          v->n_fields, &v->cap_keys,
-                                                          sizeof(char *));
-            oc_json **nv = (oc_json **)grow_ptr_vec(ps->arena, (void **)v->vals,
-                                                    v->n_fields, &v->cap_vals,
-                                                    sizeof(oc_json *));
+            const char **nk = (const char **)grow_ptr_vec(ps->arena, (void **)v->keys, v->n_fields,
+                                                          &v->cap_keys, sizeof(char *));
+            oc_json **nv = (oc_json **)grow_ptr_vec(ps->arena, (void **)v->vals, v->n_fields,
+                                                    &v->cap_vals, sizeof(oc_json *));
             if (!nk || !nv)
                 return NULL;
             nk[v->n_fields] = key;
@@ -470,9 +468,8 @@ static oc_json *jparse_value(oc_json_parser *ps) {
             oc_json *item = jparse_value(ps);
             if (!item)
                 return NULL;
-            oc_json **ni = (oc_json **)grow_ptr_vec(ps->arena, (void **)v->items,
-                                                    v->n_items, &v->cap_items,
-                                                    sizeof(oc_json *));
+            oc_json **ni = (oc_json **)grow_ptr_vec(ps->arena, (void **)v->items, v->n_items,
+                                                    &v->cap_items, sizeof(oc_json *));
             if (!ni)
                 return NULL;
             ni[v->n_items] = item;

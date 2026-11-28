@@ -47,8 +47,14 @@ Adversarial fixtures from the assessment report, re-run after the fix
 ## Behavioural notes
 
 * Deep/hostile inputs now fail with a specific, actionable message and
-  exit code 2 (usage/parse error) instead of crashing or hanging -- the
-  same loud-failure contract the rest of the engine already follows.
+  exit code 2 (usage/parse error) when rejected by a budget (JSON field/item
+  limit, Go coverage line limit, tree depth limit); inputs that complete
+  analysis retain their original exit code (0 or 1 for findings). The JSON
+  parser's budget diagnostic ("document exceeds the 1,000,000 field/item budget")
+  is distinct from exit code 2; the coverage loader replaces this diagnostic
+  for line-count rejections. Other inputs rejected by the loader or parser
+  (malformed JSON, bad paths) also exit 2; the engine follows the same
+  loud-failure contract throughout.
 * `oc mutate` creates two transient files next to a target while a
   mutant is applied: `<file>.oc-mutate-journal` (pristine bytes +
   pristine permission bits) and `<file>.oc-mutate-tmp` (atomic-replace

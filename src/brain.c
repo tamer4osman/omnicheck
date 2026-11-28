@@ -204,8 +204,9 @@ oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out, oc_st
     out->requested = 1;
     out->epoch = -1;
     if (!brain_file_path(out->file, sizeof(out->file))) {
-        oc_status_set(st, OC_ERR_USAGE, "brain file path overflow (OC_BRAIN_FILE too long)");
-        return OC_ERR_USAGE;
+        snprintf(out->reason, sizeof(out->reason),
+                 "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_OK;
     }
 
     /* Rank-only boundary: only triaged findings can be annotated. */

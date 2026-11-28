@@ -8,7 +8,8 @@ wait4() rusage measurement. RLIMIT_AS keeps the sandbox alive.
 Usage:
   python3 oc_kill_highs_poc.py <oc-binary> [--baseline|--verify] [--quick]
 
-Fixtures live in /home/z/my-project/poc/<name>/ and are regenerated if missing.
+Fixtures live in $OMNICHECK_POC_DIR/<name>/ (default: ./poc) and are regenerated if missing.
+Packs live in $OMNICHECK_PACKS_DIR (default: ./packs).
 """
 import json
 import os
@@ -17,8 +18,8 @@ import subprocess
 import sys
 import time
 
-PACKS = "/home/z/my-project/repo-omnicheck/packs"
-POC = "/home/z/my-project/poc"
+PACKS = os.environ.get("OMNICHECK_PACKS_DIR", os.path.join(os.getcwd(), "packs"))
+POC = os.environ.get("OMNICHECK_POC_DIR", os.path.join(os.getcwd(), "poc"))
 AS_LIMIT_MB = 2500  # RLIMIT_AS cap: big enough to demonstrate the quadratic
                     # blowup, small enough to never kill the sandbox
 

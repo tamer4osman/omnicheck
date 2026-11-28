@@ -63,13 +63,13 @@ static int file_sha256(const char *path, char *hex /* 65 bytes */) {
  * commands fail loud (they cannot do their job without the kernel). */
 oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out, oc_status *st) {
     (void)v;
-    (void)st;
     memset(out, 0, sizeof(*out));
     out->requested = 1;
     out->epoch = -1;
     if (!brain_file_path(out->file, sizeof(out->file))) {
-        oc_status_set(st, OC_ERR_USAGE, "brain file path overflow (OC_BRAIN_FILE too long)");
-        return OC_ERR_USAGE;
+        snprintf(out->reason, sizeof(out->reason),
+                 "brain file path overflow (OC_BRAIN_FILE too long)");
+        return OC_OK;
     }
     snprintf(out->reason, sizeof(out->reason),
              "brain advisory requires the embedded OmniDecide kernel "
@@ -199,7 +199,7 @@ static long long brain_epoch(const odk_brain *brain) {
 }
 
 oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out, oc_status *st) {
-    (void)st;
+    (void)v;
     memset(out, 0, sizeof(*out));
     out->requested = 1;
     out->epoch = -1;

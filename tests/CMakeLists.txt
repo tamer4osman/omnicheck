@@ -148,6 +148,97 @@ if(TARGET oc-omnidecide-provider)
         OC_TRIAGE_CORPUS="${CMAKE_SOURCE_DIR}/examples"
         OC_TEST_TMPDIR="${CMAKE_CURRENT_BINARY_DIR}")
     add_test(NAME test_triage_audit COMMAND test_triage_audit)
+
+    # T2 protocol-equality gate (C1): the embedded provider must speak the
+    # byte-identical protocol-v0 response of the sidecar shim for the same
+    # request bytes, on both success and failure paths.
+    if(OC_EMBED_OMNIDECIDE)
+        add_executable(test_triage_embed test_triage_embed.c)
+        target_link_libraries(test_triage_embed PRIVATE oc)
+        oc_set_warnings(test_triage_embed)
+        target_compile_definitions(test_triage_embed PRIVATE
+            _POSIX_C_SOURCE=200809L _DEFAULT_SOURCE
+            OC_PROVIDER_BIN="$<TARGET_FILE:oc-omnidecide-provider>"
+            OC_TEST_TMPDIR="${CMAKE_CURRENT_BINARY_DIR}")
+        add_test(NAME test_triage_embed COMMAND test_triage_embed)
+
+        # T1 rationale-attach gate: every ranked finding explained with the
+        # 9 kernel channels, rank arithmetic untouched, byte-deterministic,
+        # sidecar limitation named.
+        add_executable(test_triage_explain test_triage_explain.c)
+        target_link_libraries(test_triage_explain PRIVATE oc)
+        oc_set_warnings(test_triage_explain)
+        target_compile_definitions(test_triage_explain PRIVATE
+            _POSIX_C_SOURCE=200809L _DEFAULT_SOURCE
+            OC_OC_BIN="$<TARGET_FILE:oc-cli>"
+            OC_PROVIDER_BIN="$<TARGET_FILE:oc-omnidecide-provider>"
+            OC_REPO_ROOT="${CMAKE_SOURCE_DIR}"
+            OC_TRIAGE_CORPUS="${CMAKE_SOURCE_DIR}/examples"
+            OC_TEST_TMPDIR="${CMAKE_CURRENT_BINARY_DIR}")
+        add_test(NAME test_triage_explain COMMAND test_triage_explain)
+
+        # T3 introduced/resolved/persistent gate: fingerprint multiset
+        # classification, exit-code gate, --semantic advisory scores.
+        add_executable(test_reportdiff test_reportdiff.c)
+        target_link_libraries(test_reportdiff PRIVATE oc)
+        oc_set_warnings(test_reportdiff)
+        target_compile_definitions(test_reportdiff PRIVATE
+            _POSIX_C_SOURCE=200809L _DEFAULT_SOURCE
+            OC_OC_BIN="$<TARGET_FILE:oc-cli>"
+            OC_TEST_TMPDIR="${CMAKE_CURRENT_BINARY_DIR}")
+        add_test(NAME test_reportdiff COMMAND test_reportdiff)
+
+        # T4 brain memory gate: create/record/advise/info/entries/discard/
+        # reset/save + the advisory --triage-brain scan annotation.
+        add_executable(test_brain test_brain.c)
+        target_link_libraries(test_brain PRIVATE oc)
+        oc_set_warnings(test_brain)
+        target_compile_definitions(test_brain PRIVATE
+            _POSIX_C_SOURCE=200809L _DEFAULT_SOURCE
+            OC_OC_BIN="$<TARGET_FILE:oc-cli>"
+            OC_REPO_ROOT="${CMAKE_SOURCE_DIR}"
+            OC_TRIAGE_CORPUS="${CMAKE_SOURCE_DIR}/examples"
+            OC_TEST_TMPDIR="${CMAKE_CURRENT_BINARY_DIR}")
+        add_test(NAME test_brain COMMAND test_brain)
+
+        # T5 pin/replay gate: real spine pin + exact replay, mismatch exit
+        # gate, C3 loud schema-fingerprint refusal, foreign lineage.
+        add_executable(test_spine test_spine.c)
+        target_link_libraries(test_spine PRIVATE oc)
+        oc_set_warnings(test_spine)
+        target_compile_definitions(test_spine PRIVATE
+            _POSIX_C_SOURCE=200809L _DEFAULT_SOURCE
+            OC_OC_BIN="$<TARGET_FILE:oc-cli>"
+            OC_REPO_ROOT="${CMAKE_SOURCE_DIR}"
+            OC_TEST_TMPDIR="${CMAKE_CURRENT_BINARY_DIR}")
+        add_test(NAME test_spine COMMAND test_spine)
+
+        # T6 llm-render gate: kernel-minified Markdown, verdict parity,
+        # byte determinism, untouched json format.
+        add_executable(test_llm test_llm.c)
+        target_link_libraries(test_llm PRIVATE oc)
+        oc_set_warnings(test_llm)
+        target_compile_definitions(test_llm PRIVATE
+            _POSIX_C_SOURCE=200809L _DEFAULT_SOURCE
+            OC_OC_BIN="$<TARGET_FILE:oc-cli>"
+            OC_REPO_ROOT="${CMAKE_SOURCE_DIR}"
+            OC_TRIAGE_CORPUS="${CMAKE_SOURCE_DIR}/examples"
+            OC_TEST_TMPDIR="${CMAKE_CURRENT_BINARY_DIR}")
+        add_test(NAME test_llm COMMAND test_llm)
+
+        # T7 resource gate: sha256 provenance, loud kernel rejections,
+        # usage errors, byte stability.
+        add_executable(test_lexicon test_lexicon.c)
+        target_link_libraries(test_lexicon PRIVATE oc)
+        oc_set_warnings(test_lexicon)
+        target_compile_definitions(test_lexicon PRIVATE
+            _POSIX_C_SOURCE=200809L _DEFAULT_SOURCE
+            OC_OC_BIN="$<TARGET_FILE:oc-cli>"
+            OC_REPO_ROOT="${CMAKE_SOURCE_DIR}"
+            OC_TRIAGE_CORPUS="${CMAKE_SOURCE_DIR}/examples"
+            OC_TEST_TMPDIR="${CMAKE_CURRENT_BINARY_DIR}")
+        add_test(NAME test_lexicon COMMAND test_lexicon)
+    endif()
 endif()
 
 set_tests_properties(test_cli PROPERTIES

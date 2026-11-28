@@ -115,7 +115,15 @@ oc_code oc_brain_cmd_advise(const char *file, const char *report_path, FILE *out
     return OC_ERR_USAGE;
 }
 
-BRAIN_EXPLICIT_STUB(oc_brain_cmd_discard)
+oc_code oc_brain_cmd_discard(const char *file, long index, FILE *out, oc_status *st) {
+    (void)file;
+    (void)index;
+    (void)out;
+    oc_status_set(st, OC_ERR_USAGE,
+                  "oc brain requires the embedded OmniDecide kernel "
+                  "(rebuild with -DOC_EMBED_OMNIDECIDE=ON)");
+    return OC_ERR_USAGE;
+}
 
 BRAIN_EXPLICIT_STUB(oc_brain_cmd_reset)
 

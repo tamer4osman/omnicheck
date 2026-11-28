@@ -85,11 +85,10 @@ static int run_oc(char *const args[], char **out, size_t *out_len) {
     return code;
 }
 
-static const char REQ[] =
-    "{\"primitive\":\"choice\",\"instruction\":\"How should we fix the "
-    "outage?\",\"options\":[\"restart the service\",\"reinstall the "
-    "operating system\"],\"context\":\"The service stopped responding. "
-    "Restarting the service restored normal operation within seconds.\"}";
+static const char REQ[] = "{\"primitive\":\"choice\",\"instruction\":\"How should we fix the "
+                          "outage?\",\"options\":[\"restart the service\",\"reinstall the "
+                          "operating system\"],\"context\":\"The service stopped responding. "
+                          "Restarting the service restored normal operation within seconds.\"}";
 
 int main(void) {
     if (chdir(OC_REPO_ROOT) != 0) {
@@ -104,8 +103,7 @@ int main(void) {
     {
         char rq[2048];
         strcpy(rq, REQ);
-        char *args[] = {"pin",   "add",     "--request", rq,
-                        "--spine-file", bf, NULL};
+        char *args[] = {"pin", "add", "--request", rq, "--spine-file", bf, NULL};
         char *out = NULL;
         size_t len = 0;
         int rc = run_oc(args, &out, &len);
@@ -119,13 +117,13 @@ int main(void) {
               "second pin gets id p000002 (append-only)");
         free(out);
         /* invalid request */
-        char *bad[] = {"pin", "add", "--request", "{\"primitive\":\"nope\"}",
-                       "--spine-file", bf, NULL};
+        char *bad[] = {"pin",          "add", "--request", "{\"primitive\":\"nope\"}",
+                       "--spine-file", bf,    NULL};
         out = NULL;
         check(run_oc(bad, &out, &len) == 2, "invalid pin request exits 2");
         free(out);
-        char *noclass[] = {"pin", "add", "--request", rq, "--spine-file", bf,
-                           "--class", "sometimes", NULL};
+        char *noclass[] = {"pin", "add",     "--request", rq,  "--spine-file",
+                           bf,    "--class", "sometimes", NULL};
         out = NULL;
         check(run_oc(noclass, &out, &len) == 2, "bad --class exits 2");
         free(out);
@@ -157,8 +155,7 @@ int main(void) {
             dec += strlen("\"decision\":\"");
             /* overwrite with the other option's text (shorter), keep JSON valid */
             size_t old_len = strlen("restart the service");
-            memmove(dec + strlen(other), dec + old_len,
-                    strlen(dec + old_len) + 1);
+            memmove(dec + strlen(other), dec + old_len, strlen(dec + old_len) + 1);
             memcpy(dec, other, strlen(other));
             /* re-pad the id so the store stays parseable */
         }
@@ -212,15 +209,14 @@ int main(void) {
         char bf2[512];
         snprintf(bf2, sizeof(bf2), "%s/t5_spine2.json", OC_TEST_TMPDIR);
         remove(bf2);
-        char *args[] = {"pin",  "add",    "--request", rq,
-                        "--class", "foreign", "--spine-file", bf2, NULL};
+        char *args[] = {"pin",     "add",          "--request", rq,  "--class",
+                        "foreign", "--spine-file", bf2,         NULL};
         char *out = NULL;
         size_t len = 0;
         int rc = run_oc(args, &out, &len);
         check(rc == 0, "foreign pin records");
         free(out);
-        char *rargs[] = {"replay", "--id", "p000001", "--spine-file", bf2,
-                         NULL};
+        char *rargs[] = {"replay", "--id", "p000001", "--spine-file", bf2, NULL};
         out = NULL;
         rc = run_oc(rargs, &out, &len);
         check(rc == 0 && out && strstr(out, "\"verdict\":\"foreign\"") != NULL,
@@ -239,8 +235,7 @@ int main(void) {
         char *out2 = NULL;
         size_t len2 = 0;
         run_oc(args, &out2, &len2);
-        check(len == len2 && memcmp(out, out2, len) == 0,
-              "list is deterministic");
+        check(len == len2 && memcmp(out, out2, len) == 0, "list is deterministic");
         free(out);
         free(out2);
         char *unk[] = {"replay", "--id", "p999999", "--spine-file", bf, NULL};
@@ -254,14 +249,11 @@ int main(void) {
         char *cor[] = {"pin", "list", "--spine-file", bf, NULL};
         out = NULL;
         check(run_oc(cor, &out, &len) == 2, "corrupt store fails loud (exit 2)");
-        check(out && strstr(out, "corrupt") != NULL,
-              "corrupt refusal names the store");
+        check(out && strstr(out, "corrupt") != NULL, "corrupt refusal names the store");
         free(out);
-        char *miss[] = {"replay", "--id", "p000001", "--spine-file",
-                        "/nonexistent-t5.json", NULL};
+        char *miss[] = {"replay", "--id", "p000001", "--spine-file", "/nonexistent-t5.json", NULL};
         out = NULL;
-        check(run_oc(miss, &out, &len) == 2,
-              "replay with no store exits 2 with guidance");
+        check(run_oc(miss, &out, &len) == 2, "replay with no store exits 2 with guidance");
         free(out);
     }
 

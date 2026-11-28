@@ -499,8 +499,7 @@ static void uninstall_fatal_handlers(void) {
  * the rename cannot hit disk before the bytes do. mode_override != 0
  * wins over the stat-derived mode (journal recovery restores the
  * PRISTINE mode even when the crashed splice already lost it). */
-static int write_atomic_mode(const char *path, const char *data, size_t len,
-                             mode_t mode_override) {
+static int write_atomic_mode(const char *path, const char *data, size_t len, mode_t mode_override) {
     char tmp[PATH_MAX];
     if (snprintf(tmp, sizeof(tmp), "%s.oc-mutate-tmp", path) >= (int)sizeof(tmp))
         return 0;
@@ -542,8 +541,7 @@ static int journal_arm(const char *src, const char *data, size_t len) {
     if (snprintf(g_journal_bak, sizeof(g_journal_bak), "%s" OC_MUTATE_JOURNAL_SUFFIX, src) >=
         (int)sizeof(g_journal_bak))
         return -1;
-    if (snprintf(g_journal_src, sizeof(g_journal_src), "%s", src) >=
-        (int)sizeof(g_journal_src))
+    if (snprintf(g_journal_src, sizeof(g_journal_src), "%s", src) >= (int)sizeof(g_journal_src))
         return -1;
     FILE *f = fopen(g_journal_bak, "wb");
     if (!f)
@@ -648,7 +646,7 @@ static oc_mut_status run_test(const char *cmd, long timeout_s) {
         execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
         _exit(127);
     }
-    setpgid(pid, pid); /* also from the parent, race-safe */
+    setpgid(pid, pid);               /* also from the parent, race-safe */
     g_child_pid = (sig_atomic_t)pid; /* the fatal handler kills the suite group */
     long elapsed_ms = 0;
     int status = 0;

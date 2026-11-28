@@ -14,9 +14,9 @@
 #include "oc/pack.h"
 #include "oc/parser.h"
 #include "oc/pass.h"
+#include "oc/sha256.h"
 #include "oc/supply.h"
 #include "oc/surface.h"
-#include "oc/sha256.h"
 #include "oc/triage.h"
 #if defined(OC_EMBED_OMNIDECIDE)
 #include "oc/triage_embed.h"
@@ -249,8 +249,7 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
     snprintf(res->triage.provider, sizeof(res->triage.provider), "none");
     snprintf(res->triage.reason, sizeof(res->triage.reason), "triage not requested (--triage)");
     memset(&res->brain, 0, sizeof(res->brain));
-    snprintf(res->brain.reason, sizeof(res->brain.reason),
-             "brain not requested (--triage-brain)");
+    snprintf(res->brain.reason, sizeof(res->brain.reason), "brain not requested (--triage-brain)");
     res->brain.epoch = -1;
     memset(&res->kernel_files, 0, sizeof(res->kernel_files));
     snprintf(res->kernel_files.reason, sizeof(res->kernel_files.reason),
@@ -570,20 +569,17 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
     if (opt->n_triage_lexicons > 0 || (opt->triage_model && opt->triage_model[0])) {
         memset(&res->kernel_files, 0, sizeof(res->kernel_files));
         res->kernel_files.requested = 1;
-        size_t nl = opt->n_triage_lexicons < OC_MAX_KERNEL_FILES
-                        ? opt->n_triage_lexicons
-                        : OC_MAX_KERNEL_FILES;
+        size_t nl = opt->n_triage_lexicons < OC_MAX_KERNEL_FILES ? opt->n_triage_lexicons
+                                                                 : OC_MAX_KERNEL_FILES;
         res->kernel_files.n_lexicons = nl;
         for (size_t i = 0; i < nl; i++) {
-            snprintf(res->kernel_files.lexicons[i].path,
-                     sizeof(res->kernel_files.lexicons[i].path), "%s",
-                     opt->triage_lexicons[i]);
+            snprintf(res->kernel_files.lexicons[i].path, sizeof(res->kernel_files.lexicons[i].path),
+                     "%s", opt->triage_lexicons[i]);
             char *data = NULL;
             size_t dlen = 0;
             oc_status hst;
             oc_status_clear(&hst);
-            if (oc_read_file(opt->triage_lexicons[i], &data, &dlen, &hst) ==
-                OC_OK) {
+            if (oc_read_file(opt->triage_lexicons[i], &data, &dlen, &hst) == OC_OK) {
                 oc_sha256_hex((const unsigned char *)data, dlen,
                               res->kernel_files.lexicons[i].sha256);
             }
@@ -591,30 +587,27 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
         }
         if (opt->triage_model && opt->triage_model[0]) {
             res->kernel_files.model_requested = 1;
-            snprintf(res->kernel_files.model.path,
-                     sizeof(res->kernel_files.model.path), "%s",
+            snprintf(res->kernel_files.model.path, sizeof(res->kernel_files.model.path), "%s",
                      opt->triage_model);
             char *data = NULL;
             size_t dlen = 0;
             oc_status hst;
             oc_status_clear(&hst);
             if (oc_read_file(opt->triage_model, &data, &dlen, &hst) == OC_OK) {
-                oc_sha256_hex((const unsigned char *)data, dlen,
-                              res->kernel_files.model.sha256);
+                oc_sha256_hex((const unsigned char *)data, dlen, res->kernel_files.model.sha256);
             }
             free(data);
         }
 #if defined(OC_EMBED_OMNIDECIDE)
-        oc_triage_embed_set_kernel_files(opt->triage_lexicons, nl,
-                                         opt->triage_model);
+        oc_triage_embed_set_kernel_files(opt->triage_lexicons, nl, opt->triage_model);
 #endif
     }
 
     if (opt->want_triage) {
         oc_code trc = opt->want_triage_embedded
-            ? oc_triage_rank_findings_mode(&res->findings, &res->triage, st,
-                                           OC_TRIAGE_MODE_EMBEDDED)
-            : oc_triage_rank_findings(&res->findings, &res->triage, st);
+                          ? oc_triage_rank_findings_mode(&res->findings, &res->triage, st,
+                                                         OC_TRIAGE_MODE_EMBEDDED)
+                          : oc_triage_rank_findings(&res->findings, &res->triage, st);
         if (trc != OC_OK) {
             rc = st->code;
             goto cleanup;
@@ -650,8 +643,7 @@ oc_code oc_scan_run(const oc_scan_options *opt, oc_scan_result *res, oc_status *
         res->kernel_files.lexicons_applied = oc_triage_embed_lexicons_applied();
         res->kernel_files.model_applied = oc_triage_embed_model_applied();
 #endif
-        snprintf(res->kernel_files.reason, sizeof(res->kernel_files.reason),
-                 "ok");
+        snprintf(res->kernel_files.reason, sizeof(res->kernel_files.reason), "ok");
     }
 
     /* Guardrail: sort AFTER triage so report order stays deterministic. */

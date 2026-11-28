@@ -47,18 +47,15 @@ static void check(int cond, const char *what) {
     }
 }
 
-static const char *EXPLAIN_KEYS[9] = {"probability",   "fused",
-                                      "tf_cosine",     "jaccard",
-                                      "trigram",       "whole",
-                                      "best_chunk",    "contextual",
-                                      "directional"};
+static const char *EXPLAIN_KEYS[9] = {"probability", "fused",      "tf_cosine",
+                                      "jaccard",     "trigram",    "whole",
+                                      "best_chunk",  "contextual", "directional"};
 
 /* Runs oc check with the given extra flags, writing stdout to out_path.
  * Returns the exit code. */
 static int run_oc(const char *flags, const char *out_path) {
     char cmd[1024];
-    snprintf(cmd, sizeof(cmd),
-             "'%s' check '%s' --packs-dir '%s/packs' %s > '%s' 2>/dev/null",
+    snprintf(cmd, sizeof(cmd), "'%s' check '%s' --packs-dir '%s/packs' %s > '%s' 2>/dev/null",
              OC_OC_BIN, OC_TRIAGE_CORPUS, OC_REPO_ROOT, flags, out_path);
     int rc = system(cmd);
     return WIFEXITED(rc) ? WEXITSTATUS(rc) : -1;
@@ -96,58 +93,45 @@ int main(void) {
         if (r) {
             const oc_json *tri = oc_json_get(r, "triage");
             const oc_json *findings = oc_json_get(r, "findings");
-            check(tri != NULL && findings != NULL,
-                  "report carries triage meta and findings");
+            check(tri != NULL && findings != NULL, "report carries triage meta and findings");
             if (tri && findings) {
-                const char *prov =
-                    oc_json_as_str(oc_json_get(tri, "provider"), "");
-                check(strncmp(prov, "embedded:", 9) == 0,
-                      "provider is the embedded kernel");
+                const char *prov = oc_json_as_str(oc_json_get(tri, "provider"), "");
+                check(strncmp(prov, "embedded:", 9) == 0, "provider is the embedded kernel");
                 check(oc_json_as_num(oc_json_get(tri, "explained_count"), -1) ==
                           oc_json_as_num(oc_json_get(tri, "ranked_count"), -2),
                       "explained_count == ranked_count");
-                check(strcmp(oc_json_as_str(oc_json_get(tri, "explain_reason"),
-                                            ""),
-                             "ok") == 0,
+                check(strcmp(oc_json_as_str(oc_json_get(tri, "explain_reason"), ""), "ok") == 0,
                       "explain_reason is ok");
-                long ranked = (long)oc_json_as_num(
-                    oc_json_get(tri, "ranked_count"), -1);
+                long ranked = (long)oc_json_as_num(oc_json_get(tri, "ranked_count"), -1);
                 check(ranked > 0, "the corpus produces ranked findings");
                 explained_total = ranked;
 
                 long with_explain = 0;
                 for (size_t i = 0; i < findings->n_items; i++) {
                     const oc_json *f = findings->items[i];
-                    double rank = oc_json_as_num(
-                        oc_json_get(f, "triage_rank"), -1.0);
+                    double rank = oc_json_as_num(oc_json_get(f, "triage_rank"), -1.0);
                     const oc_json *ex = oc_json_get(f, "explain");
                     if (rank < 0) {
-                        check(ex == NULL,
-                              "unranked finding carries no explain object");
+                        check(ex == NULL, "unranked finding carries no explain object");
                         continue;
                     }
                     if (ex)
                         with_explain++;
-                    check(ex != NULL,
-                          "every ranked finding carries an explain object");
+                    check(ex != NULL, "every ranked finding carries an explain object");
                     if (!ex)
                         continue;
                     for (int k = 0; k < 9; k++)
                         check(oc_json_get(ex, EXPLAIN_KEYS[k]) != NULL,
                               "explain carries the channel");
-                    double prob = oc_json_as_num(
-                        oc_json_get(ex, "probability"), -1.0);
-                    double conf = oc_json_as_num(
-                        oc_json_get(f, "triage_confidence"), -2.0);
+                    double prob = oc_json_as_num(oc_json_get(ex, "probability"), -1.0);
+                    double conf = oc_json_as_num(oc_json_get(f, "triage_confidence"), -2.0);
                     char sa[32], sb[32];
                     snprintf(sa, sizeof(sa), "%.4f", prob);
                     snprintf(sb, sizeof(sb), "%.4f", conf);
-                    check(strcmp(sa, sb) == 0,
-                          "probability == triage_confidence at 4 decimals "
-                          "(rank arithmetic untouched)");
+                    check(strcmp(sa, sb) == 0, "probability == triage_confidence at 4 decimals "
+                                               "(rank arithmetic untouched)");
                 }
-                check(with_explain == ranked,
-                      "distinct findings carrying explain == ranked_count");
+                check(with_explain == ranked, "distinct findings carrying explain == ranked_count");
             }
         }
         oc_arena_destroy(&a);
@@ -161,8 +145,7 @@ int main(void) {
         oc_status_clear(&st);
         if (oc_read_file(p_with, &d1, &n1, &st) == OC_OK &&
             oc_read_file(p_with2, &d2, &n2, &st) == OC_OK) {
-            check(n1 == n2 && memcmp(d1, d2, n1) == 0,
-                  "two explain runs are byte-identical");
+            check(n1 == n2 && memcmp(d1, d2, n1) == 0, "two explain runs are byte-identical");
         } else {
             check(0, "explain reports readable for the determinism check");
         }
@@ -188,19 +171,13 @@ int main(void) {
                 for (size_t i = 0; i < fw->n_items; i++) {
                     const oc_json *a1 = fw->items[i];
                     const oc_json *b1 = fo->items[i];
-                    check(strcmp(oc_json_as_str(oc_json_get(a1, "fingerprint"),
-                                                ""),
-                                 oc_json_as_str(oc_json_get(b1, "fingerprint"),
-                                                "")) == 0,
+                    check(strcmp(oc_json_as_str(oc_json_get(a1, "fingerprint"), ""),
+                                 oc_json_as_str(oc_json_get(b1, "fingerprint"), "")) == 0,
                           "finding order stable across runs");
-                    double r1 = oc_json_as_num(oc_json_get(a1, "triage_rank"),
-                                               -1.0);
-                    double r2 = oc_json_as_num(oc_json_get(b1, "triage_rank"),
-                                               -1.0);
-                    double c1 = oc_json_as_num(
-                        oc_json_get(a1, "triage_confidence"), -1.0);
-                    double c2 = oc_json_as_num(
-                        oc_json_get(b1, "triage_confidence"), -1.0);
+                    double r1 = oc_json_as_num(oc_json_get(a1, "triage_rank"), -1.0);
+                    double r2 = oc_json_as_num(oc_json_get(b1, "triage_rank"), -1.0);
+                    double c1 = oc_json_as_num(oc_json_get(a1, "triage_confidence"), -1.0);
+                    double c2 = oc_json_as_num(oc_json_get(b1, "triage_confidence"), -1.0);
                     char sa[32], sb[32];
                     snprintf(sa, sizeof(sa), "%.4f|%.4f", r1, c1);
                     snprintf(sb, sizeof(sb), "%.4f|%.4f", r2, c2);
@@ -234,13 +211,11 @@ int main(void) {
             const oc_json *findings = oc_json_get(r, "findings");
             check(tri != NULL, "sidecar report carries triage meta");
             if (tri) {
-                const char *reason = oc_json_as_str(
-                    oc_json_get(tri, "explain_reason"), "");
+                const char *reason = oc_json_as_str(oc_json_get(tri, "explain_reason"), "");
                 check(strstr(reason, "sidecar protocol-v0 carries no "
                                      "rationale") != NULL,
                       "sidecar limitation is named in explain_reason");
-                check(oc_json_as_num(oc_json_get(tri, "explained_count"),
-                                     -1) == 0,
+                check(oc_json_as_num(oc_json_get(tri, "explained_count"), -1) == 0,
                       "explained_count is 0 on the sidecar path");
             }
             if (findings) {

@@ -30,13 +30,27 @@ static void tembed_json_string(oc_strbuf *b, const char *s) {
     oc_strbuf_appendc(b, '"');
     for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
         switch (*p) {
-        case '"':  oc_strbuf_appends(b, "\\\""); break;
-        case '\\': oc_strbuf_appends(b, "\\\\"); break;
-        case '\b': oc_strbuf_appends(b, "\\b"); break;
-        case '\f': oc_strbuf_appends(b, "\\f"); break;
-        case '\n': oc_strbuf_appends(b, "\\n"); break;
-        case '\r': oc_strbuf_appends(b, "\\r"); break;
-        case '\t': oc_strbuf_appends(b, "\\t"); break;
+        case '"':
+            oc_strbuf_appends(b, "\\\"");
+            break;
+        case '\\':
+            oc_strbuf_appends(b, "\\\\");
+            break;
+        case '\b':
+            oc_strbuf_appends(b, "\\b");
+            break;
+        case '\f':
+            oc_strbuf_appends(b, "\\f");
+            break;
+        case '\n':
+            oc_strbuf_appends(b, "\\n");
+            break;
+        case '\r':
+            oc_strbuf_appends(b, "\\r");
+            break;
+        case '\t':
+            oc_strbuf_appends(b, "\\t");
+            break;
         default:
             if (*p < 0x20)
                 oc_strbuf_appendf(b, "\\u%04x", (unsigned)*p);
@@ -48,8 +62,8 @@ static void tembed_json_string(oc_strbuf *b, const char *s) {
 }
 
 void oc_triage_embed_provider_label(char *buf, size_t sz) {
-    snprintf(buf, sz, "embedded:omnidecide-%d.%d.%d", ODK_VERSION_MAJOR,
-             ODK_VERSION_MINOR, ODK_VERSION_PATCH);
+    snprintf(buf, sz, "embedded:omnidecide-%d.%d.%d", ODK_VERSION_MAJOR, ODK_VERSION_MINOR,
+             ODK_VERSION_PATCH);
 }
 
 /* T7: pending kernel customization files (set once per scan). */
@@ -59,8 +73,8 @@ static const char *tembed_model_path = NULL;
 static size_t tembed_lexicons_applied = 0;
 static int tembed_model_applied = 0;
 
-void oc_triage_embed_set_kernel_files(const char *const *lexicon_paths,
-                                      size_t n_lexicons, const char *model_path) {
+void oc_triage_embed_set_kernel_files(const char *const *lexicon_paths, size_t n_lexicons,
+                                      const char *model_path) {
     tembed_lexicon_paths = lexicon_paths;
     tembed_n_lexicons = n_lexicons;
     tembed_model_path = model_path;
@@ -77,26 +91,21 @@ int oc_triage_embed_model_applied(void) {
 }
 
 int oc_triage_embed_files_requested(void) {
-    return (tembed_n_lexicons > 0 || (tembed_model_path && tembed_model_path[0]))
-               ? 1
-               : 0;
+    return (tembed_n_lexicons > 0 || (tembed_model_path && tembed_model_path[0])) ? 1 : 0;
 }
 
 /* T7 loading, shared by the rank and explain responders: LOUD rejection
  * contract. On ANY kernel refusal the reason begins "kernel rejected "
  * (triage.c maps that to a loud usage error) and 0 is returned. */
-static int tembed_load_files(odk_kernel *kernel, char *reason,
-                             size_t reason_sz) {
+static int tembed_load_files(odk_kernel *kernel, char *reason, size_t reason_sz) {
     for (size_t i = 0; i < tembed_n_lexicons; i++) {
         odk_error lerr;
         memset(&lerr, 0, sizeof(lerr));
-        if (odk_kernel_load_lexicon(kernel, tembed_lexicon_paths[i], &lerr) ==
-            ODK_OK) {
+        if (odk_kernel_load_lexicon(kernel, tembed_lexicon_paths[i], &lerr) == ODK_OK) {
             tembed_lexicons_applied++;
             continue;
         }
-        snprintf(reason, reason_sz, "kernel rejected lexicon '%s': %s",
-                 tembed_lexicon_paths[i],
+        snprintf(reason, reason_sz, "kernel rejected lexicon '%s': %s", tembed_lexicon_paths[i],
                  lerr.text[0] ? lerr.text : "unknown kernel error");
         return 0;
     }
@@ -104,8 +113,7 @@ static int tembed_load_files(odk_kernel *kernel, char *reason,
         odk_error lerr;
         memset(&lerr, 0, sizeof(lerr));
         if (odk_kernel_load_model(kernel, tembed_model_path, &lerr) != ODK_OK) {
-            snprintf(reason, reason_sz, "kernel rejected model file '%s': %s",
-                     tembed_model_path,
+            snprintf(reason, reason_sz, "kernel rejected model file '%s': %s", tembed_model_path,
                      lerr.text[0] ? lerr.text : "unknown kernel error");
             return 0;
         }
@@ -114,8 +122,8 @@ static int tembed_load_files(odk_kernel *kernel, char *reason,
     return 1;
 }
 
-int oc_triage_embed_respond(const char *req, size_t req_len, char **resp,
-                            size_t *resp_len, char *reason, size_t reason_sz) {
+int oc_triage_embed_respond(const char *req, size_t req_len, char **resp, size_t *resp_len,
+                            char *reason, size_t reason_sz) {
     *resp = NULL;
     *resp_len = 0;
     if (reason_sz > 0)
@@ -161,8 +169,7 @@ int oc_triage_embed_respond(const char *req, size_t req_len, char **resp,
             continue;
         const odk_json_value *id = odk_json_object_get(it, "id");
         const odk_json_value *tx = odk_json_object_get(it, "text");
-        if (!id || id->type != ODK_JSON_STRING || !tx ||
-            tx->type != ODK_JSON_STRING)
+        if (!id || id->type != ODK_JSON_STRING || !tx || tx->type != ODK_JSON_STRING)
             continue;
         ids[m] = id->string;
         texts[m] = tx->string;
@@ -204,8 +211,8 @@ int oc_triage_embed_respond(const char *req, size_t req_len, char **resp,
 
     odk_result result;
     memset(&result, 0, sizeof(result));
-    odk_status st = odk_evaluate_rank(kernel, OC_TEMBED_INSTRUCTION, texts, m,
-                                      NULL, NULL, &result, &err);
+    odk_status st =
+        odk_evaluate_rank(kernel, OC_TEMBED_INSTRUCTION, texts, m, NULL, NULL, &result, &err);
     if (st != ODK_OK) {
         odk_kernel_free(kernel);
         free(ids);
@@ -231,9 +238,8 @@ int oc_triage_embed_respond(const char *req, size_t req_len, char **resp,
     oc_strbuf b;
     oc_strbuf_init(&b);
     int ok = 1;
-    if (oc_strbuf_appendf(&b, "{\"model\":\"omnidecide-c/%d.%d.%d\",\"ranks\":[",
-                          ODK_VERSION_MAJOR, ODK_VERSION_MINOR,
-                          ODK_VERSION_PATCH) == 0) {
+    if (oc_strbuf_appendf(&b, "{\"model\":\"omnidecide-c/%d.%d.%d\",\"ranks\":[", ODK_VERSION_MAJOR,
+                          ODK_VERSION_MINOR, ODK_VERSION_PATCH) == 0) {
         ok = 0;
     }
     size_t emitted = 0;
@@ -246,8 +252,8 @@ int oc_triage_embed_respond(const char *req, size_t req_len, char **resp,
         if (ok) {
             oc_strbuf_appends(&b, "{\"id\":");
             tembed_json_string(&b, ids[idx]);
-            if (oc_strbuf_appendf(&b, ",\"rank\":%zu,\"confidence\":%.4f}", i,
-                                  ranked[i].score) == 0)
+            if (oc_strbuf_appendf(&b, ",\"rank\":%zu,\"confidence\":%.4f}", i, ranked[i].score) ==
+                0)
                 ok = 0;
         }
         emitted++;
@@ -282,8 +288,8 @@ int oc_triage_embed_respond(const char *req, size_t req_len, char **resp,
     return 1;
 }
 
-int oc_triage_embed_explain(const char *req, size_t req_len, char **resp,
-                            size_t *resp_len, char *reason, size_t reason_sz) {
+int oc_triage_embed_explain(const char *req, size_t req_len, char **resp, size_t *resp_len,
+                            char *reason, size_t reason_sz) {
     *resp = NULL;
     *resp_len = 0;
     if (reason_sz > 0)
@@ -327,8 +333,7 @@ int oc_triage_embed_explain(const char *req, size_t req_len, char **resp,
             continue;
         const odk_json_value *id = odk_json_object_get(it, "id");
         const odk_json_value *tx = odk_json_object_get(it, "text");
-        if (!id || id->type != ODK_JSON_STRING || !tx ||
-            tx->type != ODK_JSON_STRING)
+        if (!id || id->type != ODK_JSON_STRING || !tx || tx->type != ODK_JSON_STRING)
             continue;
         ids[m] = id->string;
         texts[m] = tx->string;
@@ -375,8 +380,8 @@ int oc_triage_embed_explain(const char *req, size_t req_len, char **resp,
      * rank arithmetic is untouched by construction. */
     odk_explain ex;
     memset(&ex, 0, sizeof(ex));
-    if (odk_explain_choice(kernel, OC_TEMBED_INSTRUCTION, texts, m, NULL, NULL,
-                           &ex, &err) != ODK_OK ||
+    if (odk_explain_choice(kernel, OC_TEMBED_INSTRUCTION, texts, m, NULL, NULL, &ex, &err) !=
+            ODK_OK ||
         ex.option_count != m) {
         odk_explain_release(&ex);
         odk_kernel_free(kernel);
@@ -393,8 +398,7 @@ int oc_triage_embed_explain(const char *req, size_t req_len, char **resp,
     oc_strbuf_init(&b);
     int ok = 1;
     if (oc_strbuf_appendf(&b, "{\"model\":\"omnidecide-c/%d.%d.%d\",\"explain\":[",
-                          ODK_VERSION_MAJOR, ODK_VERSION_MINOR,
-                          ODK_VERSION_PATCH) == 0)
+                          ODK_VERSION_MAJOR, ODK_VERSION_MINOR, ODK_VERSION_PATCH) == 0)
         ok = 0;
     for (size_t i = 0; ok && i < m; i++) {
         const odk_explain_option *o = &ex.options[i];
@@ -410,9 +414,8 @@ int oc_triage_embed_explain(const char *req, size_t req_len, char **resp,
                               "\"trigram\":%.17g,\"whole\":%.17g,"
                               "\"best_chunk\":%.17g,\"contextual\":%.17g,"
                               "\"directional\":%.17g}",
-                              o->probability, o->fused, o->tf_cosine,
-                              o->jaccard, o->trigram, o->whole, o->best_chunk,
-                              o->contextual, o->directional) == 0)
+                              o->probability, o->fused, o->tf_cosine, o->jaccard, o->trigram,
+                              o->whole, o->best_chunk, o->contextual, o->directional) == 0)
             ok = 0;
     }
     if (ok && oc_strbuf_appends(&b, "]}\n") == 0)

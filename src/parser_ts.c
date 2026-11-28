@@ -4089,8 +4089,8 @@ static int rust_use_expand(oc_arena *a, TSNode n, const char *src, const char *p
         }
         if (ts_node_is_null(list))
             return 1;
-        return rust_use_expand(a, list, src, new_prefix, from_path, imports, binds, family, oom,
-                               st, depth + 1);
+        return rust_use_expand(a, list, src, new_prefix, from_path, imports, binds, family, oom, st,
+                               depth + 1);
     }
     /* metavariable and anything else: nothing recorded, never guessed */
     return 1;

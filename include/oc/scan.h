@@ -22,6 +22,7 @@
 #define OC_SCAN_H
 
 #include "arena.h"
+#include "brain.h"
 #include "coverage.h"
 #include "discover.h"
 #include "dup.h"
@@ -30,7 +31,6 @@
 #include "pack.h"
 #include "pass.h"
 #include "triage.h"
-#include "brain.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -130,16 +130,16 @@ typedef struct oc_scan_result {
     oc_discover_stats dstats;
     size_t functions_total;
     size_t functions_measured;
-    oc_triage_outcome triage; /* provider "none" unless requested */
-    oc_brain_outcome brain;   /* advisory no-op unless want_triage_brain;
-                               * the report emits the brain block only
-                               * when brain.requested */
+    oc_triage_outcome triage;             /* provider "none" unless requested */
+    oc_brain_outcome brain;               /* advisory no-op unless want_triage_brain;
+                                           * the report emits the brain block only
+                                           * when brain.requested */
     oc_kernel_files_outcome kernel_files; /* T7 provenance; emitted only
-                               * when requested */
-    const char *backend;      /* parser backend name ("tree-sitter") */
-    const oc_pack_set *packs; /* loaded packs (report + rule context) */
-    const oc_dup_index *dup;  /* duplication meta (arena-owned) */
-    const oc_coverage *cov;   /* NULL when no coverage was composed */
+                                           * when requested */
+    const char *backend;                  /* parser backend name ("tree-sitter") */
+    const oc_pack_set *packs;             /* loaded packs (report + rule context) */
+    const oc_dup_index *dup;              /* duplication meta (arena-owned) */
+    const oc_coverage *cov;               /* NULL when no coverage was composed */
     /* CRAP leaderboard (WBS 4.3): top OC_CRAP_LEADERBOARD_TOP measured
      * functions by CRAP desc (ties: path asc, line asc); NULL when no
      * coverage was composed. Arena-owned. */

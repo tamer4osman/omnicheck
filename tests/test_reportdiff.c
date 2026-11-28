@@ -37,11 +37,9 @@ static void check(int cond, const char *what) {
     }
 }
 
-static int run_diff(const char *extra, const char *b, const char *c,
-                    const char *out_path) {
+static int run_diff(const char *extra, const char *b, const char *c, const char *out_path) {
     char cmd[1024];
-    snprintf(cmd, sizeof(cmd),
-             "'%s' diff --baseline '%s' --current '%s' %s > '%s' 2>/dev/null",
+    snprintf(cmd, sizeof(cmd), "'%s' diff --baseline '%s' --current '%s' %s > '%s' 2>/dev/null",
              OC_OC_BIN, b, c, extra ? extra : "", out_path);
     int rc = system(cmd);
     return WIFEXITED(rc) ? WEXITSTATUS(rc) : -1;
@@ -60,9 +58,8 @@ static void write_report(const char *path, const char *findings_json) {
     fclose(f);
 }
 
-static void write_finding(FILE *f, const char *fp, const char *rule,
-                          const char *file, long line, const char *msg,
-                          int first) {
+static void write_finding(FILE *f, const char *fp, const char *rule, const char *file, long line,
+                          const char *msg, int first) {
     fprintf(f,
             "%s{\"fingerprint\":\"%s\",\"rule\":\"%s\",\"file\":\"%s\","
             "\"line\":%ld,\"message\":\"%s\"}",
@@ -102,9 +99,8 @@ int main(void) {
         check(0, "baseline fixture writable");
         return 1;
     }
-    fprintf(f,
-            "{\"meta\":{\"tool\":\"omnicheck\",\"version\":\"0.3.0\","
-            "\"schema\":\"omnicheck.report/v0\"},\"findings\":[");
+    fprintf(f, "{\"meta\":{\"tool\":\"omnicheck\",\"version\":\"0.3.0\","
+               "\"schema\":\"omnicheck.report/v0\"},\"findings\":[");
     write_finding(f, "fp-a", "OC001", "a.c", 10, "long function", 1);
     write_finding(f, "fp-a", "OC001", "a.c", 20, "long function", 0);
     write_finding(f, "fp-b", "OC002", "b.c", 30, "todo comment", 0);
@@ -117,9 +113,8 @@ int main(void) {
         check(0, "current fixture writable");
         return 1;
     }
-    fprintf(f,
-            "{\"meta\":{\"tool\":\"omnicheck\",\"version\":\"0.3.0\","
-            "\"schema\":\"omnicheck.report/v0\"},\"findings\":[");
+    fprintf(f, "{\"meta\":{\"tool\":\"omnicheck\",\"version\":\"0.3.0\","
+               "\"schema\":\"omnicheck.report/v0\"},\"findings\":[");
     write_finding(f, "fp-a", "OC001", "a.c", 99, "long function", 1);
     write_finding(f, "fp-a", "OC001", "a.c", 20, "long function", 0);
     write_finding(f, "fp-b", "OC002", "b.c", 30, "todo comment", 0);
@@ -140,14 +135,11 @@ int main(void) {
             const oc_json *resolved = oc_json_get(r, "resolved");
             const oc_json *moved = oc_json_get(r, "moved");
             const oc_json *counts = oc_json_get(r, "counts");
-            check(intro && resolved && moved && counts,
-                  "diff document carries all sections");
+            check(intro && resolved && moved && counts, "diff document carries all sections");
             if (intro)
-                check(intro->n_items == 1,
-                      "one introduced fingerprint (D)");
+                check(intro->n_items == 1, "one introduced fingerprint (D)");
             if (resolved)
-                check(resolved->n_items == 1,
-                      "one resolved fingerprint (C)");
+                check(resolved->n_items == 1, "one resolved fingerprint (C)");
             if (counts) {
                 check(oc_json_as_num(oc_json_get(counts, "introduced"), -1) == 1,
                       "counts.introduced == 1");
@@ -187,7 +179,7 @@ int main(void) {
         if (r) {
             const oc_json *sem = oc_json_get(r, "semantic");
             check(sem != NULL && sem->type == OC_JSON_BOOL && sem->boolean,
-                      "semantic flag recorded in the document");
+                  "semantic flag recorded in the document");
             const oc_json *intro = oc_json_get(r, "introduced");
             check(intro && intro->n_items == 1, "one introduced entry");
             if (intro && intro->n_items == 1) {
@@ -196,10 +188,8 @@ int main(void) {
                 if (adv) {
                     check(oc_json_as_num(oc_json_get(adv, "rank"), -1) >= 0,
                           "advisory rank present");
-                    double c = oc_json_as_num(
-                        oc_json_get(adv, "confidence"), -1.0);
-                    check(c >= 0.0 && c <= 1.0,
-                          "advisory confidence in [0,1]");
+                    double c = oc_json_as_num(oc_json_get(adv, "confidence"), -1.0);
+                    check(c >= 0.0 && c <= 1.0, "advisory confidence in [0,1]");
                 }
             }
         }
@@ -212,8 +202,7 @@ int main(void) {
         oc_status_clear(&st);
         if (oc_read_file(s1, &d1d, &n1, &st) == OC_OK &&
             oc_read_file(s2, &d2d, &n2, &st) == OC_OK) {
-            check(n1 == n2 && memcmp(d1d, d2d, n1) == 0,
-                  "two semantic runs are byte-identical");
+            check(n1 == n2 && memcmp(d1d, d2d, n1) == 0, "two semantic runs are byte-identical");
         } else {
             check(0, "semantic reports readable for determinism");
         }

@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "oc/brain.h"
 #include "oc/finding.h"
 #include "oc/pack.h"
 #include "oc/triage.h"
-#include "oc/brain.h"
 
 /*
  * The two renderers below moved verbatim from src/cli/main.c (Sprint 4):
@@ -459,8 +459,7 @@ void oc_report_write_human(FILE *out, const oc_scan_result *res) {
  * newline-joined) and returns the minified copy flattened to ONE line
  * (embedded newlines become single spaces -- the llm render is
  * line-oriented). Malloc'd; static buffer not possible (per-finding). */
-static char *llm_minify(const char *text, oc_strbuf *raw_acc,
-                        oc_strbuf *min_acc) {
+static char *llm_minify(const char *text, oc_strbuf *raw_acc, oc_strbuf *min_acc) {
     const char *src = text ? text : "";
     char *min = odk_minify(src);
     if (!min)
@@ -471,8 +470,7 @@ static char *llm_minify(const char *text, oc_strbuf *raw_acc,
     if (flat) {
         size_t w = 0;
         for (size_t i = 0; i < n; i++) {
-            char c = (min[i] == '\n' || min[i] == '\r' || min[i] == '\t') ? ' '
-                                                                          : min[i];
+            char c = (min[i] == '\n' || min[i] == '\r' || min[i] == '\t') ? ' ' : min[i];
             if (c == ' ' && (w == 0 || flat[w - 1] == ' '))
                 continue; /* collapse runs of whitespace */
             flat[w++] = c;
@@ -519,25 +517,20 @@ void oc_report_write_llm(FILE *out, const oc_scan_result *res) {
     for (size_t i = 0; i < findings->n; i++) {
         const oc_finding *f = &findings->items[i];
         char *min = llm_minify(f->message, &raw_acc, &min_acc);
-        fprintf(out, "- %s|%s|%s:%zu:%zu|%s|%s|%s\n", f->rule_id,
-                oc_severity_str(f->severity), f->file, f->line, f->col,
-                f->symbol ? f->symbol : "-", min, f->fingerprint);
+        fprintf(out, "- %s|%s|%s:%zu:%zu|%s|%s|%s\n", f->rule_id, oc_severity_str(f->severity),
+                f->file, f->line, f->col, f->symbol ? f->symbol : "-", min, f->fingerprint);
         free(min); /* llm_minify owns the flattened copy */
         if (f->triaged) {
-            fprintf(out,
-                    "  rank=%d confidence=%.4f brain_rank=%d brain_bonus=%.4f\n",
-                    f->triage_rank, f->triage_confidence, f->brain_annotated
-                        ? f->brain_rank
-                        : -1,
+            fprintf(out, "  rank=%d confidence=%.4f brain_rank=%d brain_bonus=%.4f\n",
+                    f->triage_rank, f->triage_confidence, f->brain_annotated ? f->brain_rank : -1,
                     f->brain_annotated ? f->brain_bonus : 0.0);
         }
         if (f->explained) {
             fprintf(out,
                     "  explain p=%.4f fused=%.4f cos=%.4f jac=%.4f trig=%.4f "
                     "whole=%.4f chunk=%.4f ctx=%.4f dir=%.4f\n",
-                    f->explain.probability, f->explain.fused,
-                    f->explain.tf_cosine, f->explain.jaccard,
-                    f->explain.trigram, f->explain.whole, f->explain.best_chunk,
+                    f->explain.probability, f->explain.fused, f->explain.tf_cosine,
+                    f->explain.jaccard, f->explain.trigram, f->explain.whole, f->explain.best_chunk,
                     f->explain.contextual, f->explain.directional);
         }
     }
@@ -546,12 +539,12 @@ void oc_report_write_llm(FILE *out, const oc_scan_result *res) {
     {
         char *min = llm_minify(triage->reason, &raw_acc, &min_acc);
         fprintf(out, "provider=%s model=%s ranked=%d ranked_count=%zu reason=%s\n",
-                triage->provider[0] ? triage->provider : "none",
-                triage->model, triage->ranked, triage->ranked_count, min);
+                triage->provider[0] ? triage->provider : "none", triage->model, triage->ranked,
+                triage->ranked_count, min);
         free(min); /* llm_minify owns the flattened copy */
         if (triage->explain_requested) {
-            fprintf(out, "explained_count=%zu explain_reason=%s\n",
-                    triage->explained_count, triage->explain_reason);
+            fprintf(out, "explained_count=%zu explain_reason=%s\n", triage->explained_count,
+                    triage->explain_reason);
         }
     }
 
@@ -561,8 +554,8 @@ void oc_report_write_llm(FILE *out, const oc_scan_result *res) {
         fprintf(out,
                 "brain applied=%d file=%s epoch=%lld weight=%.1f adjusted=%zu "
                 "reason=%s\n",
-                res->brain.applied, res->brain.file, res->brain.epoch,
-                OC_BRAIN_WEIGHT, res->brain.adjusted, res->brain.reason);
+                res->brain.applied, res->brain.file, res->brain.epoch, OC_BRAIN_WEIGHT,
+                res->brain.adjusted, res->brain.reason);
     }
 
     /* Token estimates over the accumulated prose (kernel minifier). */
@@ -571,9 +564,8 @@ void oc_report_write_llm(FILE *out, const oc_scan_result *res) {
     memset(&tr, 0, sizeof(tr));
     if (raw_acc.len > 0)
         odk_token_report(raw_acc.data, min_acc.data, &tr);
-    fprintf(out,
-            "raw_tokens=%d compressed_tokens=%d reduction_pct=%.1f\n",
-            tr.raw_tokens, tr.compressed_tokens, tr.reduction_pct);
+    fprintf(out, "raw_tokens=%d compressed_tokens=%d reduction_pct=%.1f\n", tr.raw_tokens,
+            tr.compressed_tokens, tr.reduction_pct);
 
     oc_strbuf_destroy(&raw_acc);
     oc_strbuf_destroy(&min_acc);

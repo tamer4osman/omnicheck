@@ -3,8 +3,8 @@
 #include "oc/json.h"
 #include "oc/str.h"
 
-#include <omnidecide.h>
 #include <odk_spine.h>
+#include <omnidecide.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,13 +66,27 @@ static void spine_json_string(oc_strbuf *b, const char *s) {
     oc_strbuf_appendc(b, '"');
     for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
         switch (*p) {
-        case '"':  oc_strbuf_appends(b, "\\\""); break;
-        case '\\': oc_strbuf_appends(b, "\\\\"); break;
-        case '\b': oc_strbuf_appends(b, "\\b"); break;
-        case '\f': oc_strbuf_appends(b, "\\f"); break;
-        case '\n': oc_strbuf_appends(b, "\\n"); break;
-        case '\r': oc_strbuf_appends(b, "\\r"); break;
-        case '\t': oc_strbuf_appends(b, "\\t"); break;
+        case '"':
+            oc_strbuf_appends(b, "\\\"");
+            break;
+        case '\\':
+            oc_strbuf_appends(b, "\\\\");
+            break;
+        case '\b':
+            oc_strbuf_appends(b, "\\b");
+            break;
+        case '\f':
+            oc_strbuf_appends(b, "\\f");
+            break;
+        case '\n':
+            oc_strbuf_appends(b, "\\n");
+            break;
+        case '\r':
+            oc_strbuf_appends(b, "\\r");
+            break;
+        case '\t':
+            oc_strbuf_appends(b, "\\t");
+            break;
         default:
             if (*p < 0x20)
                 oc_strbuf_appendf(b, "\\u%04x", (unsigned)*p);
@@ -98,8 +112,7 @@ static oc_json *spine_load_store(const char *path, oc_arena *a, oc_status *st) {
     oc_json *root = oc_json_parse(a, data, len, &pst);
     free(data);
     if (!root || root->type != OC_JSON_OBJ ||
-        strcmp(oc_json_as_str(oc_json_get(root, "schema"), ""),
-               "omnicheck.spine/v0") != 0) {
+        strcmp(oc_json_as_str(oc_json_get(root, "schema"), ""), "omnicheck.spine/v0") != 0) {
         oc_status_set(st, OC_ERR_PARSE,
                       "pin store '%s' is corrupt or foreign; refusing (fail "
                       "loud -- move it aside or delete it)",
@@ -109,13 +122,12 @@ static oc_json *spine_load_store(const char *path, oc_arena *a, oc_status *st) {
     return root;
 }
 
-
 #if !defined(OC_EMBED_OMNIDECIDE)
 
 /* No vendored kernel: pin/replay cannot evaluate; fail loud. The list
  * command is pure store reading and stays available. */
-oc_code oc_spine_cmd_add(const char *file, const char *request,
-                         const char *replay_class, FILE *out, oc_status *st) {
+oc_code oc_spine_cmd_add(const char *file, const char *request, const char *replay_class, FILE *out,
+                         oc_status *st) {
     (void)file;
     (void)request;
     (void)replay_class;
@@ -126,8 +138,8 @@ oc_code oc_spine_cmd_add(const char *file, const char *request,
     return OC_ERR_USAGE;
 }
 
-oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out,
-                            int *verdict_out, oc_status *st) {
+oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out, int *verdict_out,
+                            oc_status *st) {
     (void)file;
     (void)pin_id;
     (void)out;
@@ -147,44 +159,38 @@ oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out,
  * to keep VENDOR.sha256 intact). OmniCheck therefore validates the
  * request shape itself and only hands the spine well-formed documents;
  * anything else fails loud here with our own message. */
-static const char *const SPINE_PRIMITIVES[] = {"choice", "score",  "rank",
+static const char *const SPINE_PRIMITIVES[] = {"choice",  "score",   "rank",
                                                "compare", "extract", "noul"};
 
 static int spine_primitive_known(const char *p) {
-    for (size_t i = 0; i < sizeof(SPINE_PRIMITIVES) / sizeof(*SPINE_PRIMITIVES);
-         i++)
+    for (size_t i = 0; i < sizeof(SPINE_PRIMITIVES) / sizeof(*SPINE_PRIMITIVES); i++)
         if (strcmp(p, SPINE_PRIMITIVES[i]) == 0)
             return 1;
     return 0;
 }
 
 static int spine_primitive_needs_options(const char *p) {
-    return strcmp(p, "choice") == 0 || strcmp(p, "rank") == 0 ||
-           strcmp(p, "compare") == 0;
+    return strcmp(p, "choice") == 0 || strcmp(p, "rank") == 0 || strcmp(p, "compare") == 0;
 }
 
 /* Validates the request document shape. Returns 0 and sets st on any
  * violation (fail loud), 1 when the shape is well-formed. */
-static int spine_validate_request(const char *request, oc_arena *a,
-                                  oc_status *st) {
+static int spine_validate_request(const char *request, oc_arena *a, oc_status *st) {
     oc_status pst;
     oc_status_clear(&pst);
     oc_json *root = oc_json_parse(a, request, strlen(request), &pst);
     if (!root || root->type != OC_JSON_OBJ) {
-        oc_status_set(st, OC_ERR_USAGE,
-                      "pin request must be a JSON object (fail loud)");
+        oc_status_set(st, OC_ERR_USAGE, "pin request must be a JSON object (fail loud)");
         return 0;
     }
-    const char *primitive =
-        oc_json_as_str(oc_json_get(root, "primitive"), NULL);
+    const char *primitive = oc_json_as_str(oc_json_get(root, "primitive"), NULL);
     if (!primitive || !spine_primitive_known(primitive)) {
         oc_status_set(st, OC_ERR_USAGE,
                       "pin request primitive must be one of choice|score|rank|"
                       "compare|extract|noul (fail loud)");
         return 0;
     }
-    const char *instruction =
-        oc_json_as_str(oc_json_get(root, "instruction"), NULL);
+    const char *instruction = oc_json_as_str(oc_json_get(root, "instruction"), NULL);
     if (!instruction || !instruction[0]) {
         oc_status_set(st, OC_ERR_USAGE,
                       "pin request requires a non-empty \"instruction\" string "
@@ -213,8 +219,8 @@ static int spine_validate_request(const char *request, oc_arena *a,
     return 1;
 }
 
-oc_code oc_spine_cmd_add(const char *file, const char *request,
-                         const char *replay_class, FILE *out, oc_status *st) {
+oc_code oc_spine_cmd_add(const char *file, const char *request, const char *replay_class, FILE *out,
+                         oc_status *st) {
     if (!request || !request[0]) {
         oc_status_set(st, OC_ERR_USAGE, "--request requires a JSON document");
         return OC_ERR_USAGE;
@@ -227,11 +233,10 @@ oc_code oc_spine_cmd_add(const char *file, const char *request,
         if (!shape_ok)
             return OC_ERR_USAGE;
     }
-    if (!replay_class || (strcmp(replay_class, "exact") != 0 &&
-                          strcmp(replay_class, "semantic") != 0 &&
-                          strcmp(replay_class, "foreign") != 0)) {
-        oc_status_set(st, OC_ERR_USAGE,
-                      "--class must be exact|semantic|foreign");
+    if (!replay_class ||
+        (strcmp(replay_class, "exact") != 0 && strcmp(replay_class, "semantic") != 0 &&
+         strcmp(replay_class, "foreign") != 0)) {
+        oc_status_set(st, OC_ERR_USAGE, "--class must be exact|semantic|foreign");
         return OC_ERR_USAGE;
     }
 
@@ -261,14 +266,13 @@ oc_code oc_spine_cmd_add(const char *file, const char *request,
     odk_spine_decision_pin_init(&pin);
     /* timestamp 0: the caller-supplied pin timestamp is part of the
      * record; wall-clock time would break byte determinism. */
-    odk_spine_status src = odk_spine_pin(spine, kernel, request, "oc-pin",
-                                         replay_class, 0, &pin, &err);
+    odk_spine_status src =
+        odk_spine_pin(spine, kernel, request, "oc-pin", replay_class, 0, &pin, &err);
     if (src != ODK_SPINE_OK) {
         odk_spine_decision_pin_release(&pin);
         odk_spine_free(spine);
         odk_kernel_free(kernel);
-        oc_status_set(st, OC_ERR_USAGE,
-                      "kernel refused the pin request: %s",
+        oc_status_set(st, OC_ERR_USAGE, "kernel refused the pin request: %s",
                       err.text[0] ? err.text : "invalid request document");
         return OC_ERR_USAGE;
     }
@@ -362,8 +366,8 @@ oc_code oc_spine_cmd_add(const char *file, const char *request,
                 ok = 0;
         }
         if (ok) {
-            spine_json_string(&b, pin.kernel_version ? pin.kernel_version
-                                                     : ODK_SPINE_KERNEL_VERSION);
+            spine_json_string(&b,
+                              pin.kernel_version ? pin.kernel_version : ODK_SPINE_KERNEL_VERSION);
             if (oc_strbuf_appends(&b, ",\"schema_fp\":") == 0)
                 ok = 0;
         }
@@ -418,9 +422,7 @@ oc_code oc_spine_cmd_add(const char *file, const char *request,
     }
 
     /* Emit the pin document. */
-    fprintf(out,
-            "{\"schema\":\"omnicheck.spine.pin/v0\",\"id\":\"%s\",\"file\":",
-            our_id);
+    fprintf(out, "{\"schema\":\"omnicheck.spine.pin/v0\",\"id\":\"%s\",\"file\":", our_id);
     oc_jsonw w;
     oc_jsonw_init(&w);
     oc_jsonw_str(&w, path);
@@ -430,8 +432,8 @@ oc_code oc_spine_cmd_add(const char *file, const char *request,
     return OC_OK;
 }
 
-oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out,
-                            int *verdict_out, oc_status *st) {
+oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out, int *verdict_out,
+                            oc_status *st) {
     if (!pin_id || !pin_id[0]) {
         oc_status_set(st, OC_ERR_USAGE, "--id requires a pin id (see 'oc pin list')");
         return OC_ERR_USAGE;
@@ -446,7 +448,8 @@ oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out,
     oc_json *store = spine_load_store(path, &a, st);
     if (!store) {
         if (!spine_file_exists(path)) {
-            oc_status_set(st, OC_ERR_USAGE, "no pin store at '%s' (pin a "
+            oc_status_set(st, OC_ERR_USAGE,
+                          "no pin store at '%s' (pin a "
                           "decision first with 'oc pin add')",
                           path);
         }
@@ -467,8 +470,7 @@ oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out,
     }
     if (!hit) {
         oc_arena_destroy(&a);
-        oc_status_set(st, OC_ERR_USAGE, "unknown pin id '%s' in '%s'", pin_id,
-                      path);
+        oc_status_set(st, OC_ERR_USAGE, "unknown pin id '%s' in '%s'", pin_id, path);
         return OC_ERR_USAGE;
     }
 
@@ -535,8 +537,7 @@ oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out,
     char *decision = NULL;
     double confidence = 0.0;
     char *result_json = NULL;
-    odk_spine_status src = odk_spine_evaluate_request(kernel, request_json,
-                                                      &decision, &confidence,
+    odk_spine_status src = odk_spine_evaluate_request(kernel, request_json, &decision, &confidence,
                                                       &result_json, &err);
     odk_spine_free(spine);
     if (src != ODK_SPINE_OK) {
@@ -555,16 +556,16 @@ oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out,
     snprintf(ea, sizeof(ea), "%.17g", stored_conf);
     snprintf(eb, sizeof(eb), "%.17g", confidence);
     const char *verdict;
-    if (strcmp(stored_decision, decision ? decision : "") == 0 &&
-        strcmp(ea, eb) == 0)
+    if (strcmp(stored_decision, decision ? decision : "") == 0 && strcmp(ea, eb) == 0)
         verdict = "exact";
     else if (strcmp(stored_decision, decision ? decision : "") == 0)
         verdict = "semantic";
     else
         verdict = "mismatch";
 
-    fprintf(out, "{\"schema\":\"omnicheck.spine.replay/v0\",\"id\":\"%s\","
-                 "\"verdict\":\"%s\",\"expected\":",
+    fprintf(out,
+            "{\"schema\":\"omnicheck.spine.replay/v0\",\"id\":\"%s\","
+            "\"verdict\":\"%s\",\"expected\":",
             pin_id, verdict);
     oc_jsonw w;
     oc_jsonw_init(&w);
@@ -573,8 +574,9 @@ oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out,
     oc_jsonw_destroy(&w);
     oc_jsonw_init(&w);
     oc_jsonw_str(&w, decision ? decision : "");
-    fprintf(out, "%s,\"expected_confidence\":%.17g,\"actual_confidence\":%.17g,"
-                 "\"schema_fp_matches\":true}\n",
+    fprintf(out,
+            "%s,\"expected_confidence\":%.17g,\"actual_confidence\":%.17g,"
+            "\"schema_fp_matches\":true}\n",
             w.buf.data ? w.buf.data : "null", stored_conf, confidence);
     oc_jsonw_destroy(&w);
 
@@ -589,7 +591,6 @@ oc_code oc_spine_cmd_replay(const char *file, const char *pin_id, FILE *out,
 
 #endif /* OC_EMBED_OMNIDECIDE */
 
-
 oc_code oc_spine_cmd_list(const char *file, FILE *out, oc_status *st) {
     char path[512];
     spine_file_path(path, sizeof(path));
@@ -600,8 +601,7 @@ oc_code oc_spine_cmd_list(const char *file, FILE *out, oc_status *st) {
     oc_json *store = spine_load_store(path, &a, st);
     if (!store) {
         if (!spine_file_exists(path)) {
-            fprintf(out,
-                    "{\"schema\":\"omnicheck.spine.list/v0\",\"file\":");
+            fprintf(out, "{\"schema\":\"omnicheck.spine.list/v0\",\"file\":");
             oc_jsonw w;
             oc_jsonw_init(&w);
             oc_jsonw_str(&w, path);
@@ -629,8 +629,7 @@ oc_code oc_spine_cmd_list(const char *file, FILE *out, oc_status *st) {
             fprintf(out, "%s{\"id\":\"%s\",\"decision\":", i > 0 ? "," : "", id);
             oc_jsonw_init(&w);
             oc_jsonw_str(&w, dec);
-            fprintf(out, "%s,\"replay_class\":\"%s\"}", w.buf.data ? w.buf.data : "null",
-                    cls);
+            fprintf(out, "%s,\"replay_class\":\"%s\"}", w.buf.data ? w.buf.data : "null", cls);
             oc_jsonw_destroy(&w);
         }
     }
@@ -638,5 +637,3 @@ oc_code oc_spine_cmd_list(const char *file, FILE *out, oc_status *st) {
     oc_arena_destroy(&a);
     return OC_OK;
 }
-
-

@@ -43,8 +43,7 @@ static void check(int cond, const char *what) {
 
 static int run_check(const char *flags, const char *out_path) {
     char cmd[1024];
-    snprintf(cmd, sizeof(cmd),
-             "'%s' check '%s' --packs-dir '%s/packs' %s > '%s' 2>/dev/null",
+    snprintf(cmd, sizeof(cmd), "'%s' check '%s' --packs-dir '%s/packs' %s > '%s' 2>/dev/null",
              OC_OC_BIN, OC_TRIAGE_CORPUS, OC_REPO_ROOT, flags, out_path);
     int rc = system(cmd);
     return WIFEXITED(rc) ? WEXITSTATUS(rc) : -1;
@@ -89,8 +88,7 @@ int main(void) {
     /* ---- 1 + 2. llm render structure + verdict parity ---- */
     int rc_llm = run_check("--format llm", p1);
     int rc_json = run_check("--format json", pj);
-    check(rc_llm == rc_json,
-          "the llm run's exit code equals the json run's exit code");
+    check(rc_llm == rc_json, "the llm run's exit code equals the json run's exit code");
     {
         size_t l1 = 0;
         char *d = read_file(p1, &l1);
@@ -98,14 +96,10 @@ int main(void) {
         if (d) {
             check(strstr(d, "<!-- omnicheck.report.llm/v0 ") == d,
                   "document opens with the schema comment");
-            check(strstr(d, "\n## findings\n") != NULL,
-                  "document carries the findings section");
-            check(strstr(d, "- OC0") != NULL,
-                  "findings use the pipe-column form");
-            check(strstr(d, "\n## triage\n") != NULL,
-                  "document carries the triage section");
-            check(strstr(d, "\n## tokens\n") != NULL,
-                  "document carries the tokens section");
+            check(strstr(d, "\n## findings\n") != NULL, "document carries the findings section");
+            check(strstr(d, "- OC0") != NULL, "findings use the pipe-column form");
+            check(strstr(d, "\n## triage\n") != NULL, "document carries the triage section");
+            check(strstr(d, "\n## tokens\n") != NULL, "document carries the tokens section");
             long raw = token_value(d, "raw_tokens");
             long comp = token_value(d, "compressed_tokens");
             check(raw >= 1, "raw_tokens >= 1 on a real corpus");
@@ -124,8 +118,7 @@ int main(void) {
         size_t a = 0, b = 0;
         char *x1 = read_file(p1, &a);
         char *x2 = read_file(p2, &b);
-        check(x1 && x2 && a == b && memcmp(x1, x2, a) == 0,
-              "two llm runs are byte-identical");
+        check(x1 && x2 && a == b && memcmp(x1, x2, a) == 0, "two llm runs are byte-identical");
         free(x1);
         free(x2);
     } else {
@@ -163,8 +156,7 @@ int main(void) {
                  "'%s' 2>/dev/null",
                  OC_OC_BIN, OC_TRIAGE_CORPUS, OC_REPO_ROOT, rj);
         int rc = system(cmd);
-        check(WIFEXITED(rc) && WEXITSTATUS(rc) == 2,
-              "unknown format exits 2");
+        check(WIFEXITED(rc) && WEXITSTATUS(rc) == 2, "unknown format exits 2");
     }
 
     if (failures == 0) {

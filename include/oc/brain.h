@@ -45,8 +45,8 @@ extern "C" {
  * (embedded provider, explain, brain). The external shim
  * tools/omnidecide/oc_odk_provider.c keeps its own mirrored copy --
  * they must stay identical or embedded-vs-sidecar byte equality breaks. */
-#define OC_TRIAGE_INSTRUCTION                                                  \
-    "Rank these static-analysis findings from most to least important "        \
+#define OC_TRIAGE_INSTRUCTION                                                                      \
+    "Rank these static-analysis findings from most to least important "                            \
     "for a developer to address first."
 
 /* How strongly experience shifts the advisory confidence (clamped to
@@ -55,8 +55,8 @@ extern "C" {
 
 /* Outcome -> reward mapping for `oc brain record` (kernel clamps to
  * [-1,1]; >= +0.05 counts a win, <= -0.05 a loss). */
-#define OC_BRAIN_REWARD_ACCEPTED 1.0
-#define OC_BRAIN_REWARD_FIXED 0.5
+#define OC_BRAIN_REWARD_ACCEPTED  1.0
+#define OC_BRAIN_REWARD_FIXED     0.5
 #define OC_BRAIN_REWARD_DISMISSED (-1.0)
 
 /* Default brain file when OC_BRAIN_FILE is unset (relative to the CWD
@@ -64,9 +64,9 @@ extern "C" {
 #define OC_BRAIN_DEFAULT_FILE ".oc-brain.json"
 
 typedef struct oc_brain_outcome {
-    int requested;  /* --triage-brain given (the report emits the block) */
-    int applied;    /* memory consulted and merged into annotations */
-    char file[512]; /* brain file path used */
+    int requested;    /* --triage-brain given (the report emits the block) */
+    int applied;      /* memory consulted and merged into annotations */
+    char file[512];   /* brain file path used */
     char reason[192]; /* human explanation when !applied */
     size_t adjusted;  /* findings carrying brain annotations */
     long long epoch;  /* kernel epoch of the loaded memory; -1 unknown */
@@ -76,8 +76,7 @@ typedef struct oc_brain_outcome {
  * brain_rank/brain_bonus, never changes severity/order/verdict. NEVER
  * fails the scan: every failure path fail-opens with a named reason and
  * returns OC_OK. Only findings with triaged==1 can be annotated. */
-oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out,
-                                 oc_status *st);
+oc_code oc_brain_adjust_findings(oc_finding_vec *v, oc_brain_outcome *out, oc_status *st);
 
 /* `oc brain info [--brain-file F]`: wrapper document around the kernel's
  * own summary payload, plus the store's path, sha256 and kernel epoch.
@@ -92,16 +91,14 @@ oc_code oc_brain_cmd_create(const char *file, FILE *out, oc_status *st);
  * records one outcome keyed by the finding's message text (resolved
  * from the report by fingerprint) and saves atomically. Fails loud on
  * unknown fingerprints, unknown verdicts, unreadable reports. */
-oc_code oc_brain_cmd_record(const char *file, const char *report_path,
-                            const char *fingerprint, const char *outcome,
-                            FILE *out, oc_status *st);
+oc_code oc_brain_cmd_record(const char *file, const char *report_path, const char *fingerprint,
+                            const char *outcome, FILE *out, oc_status *st);
 
 /* `oc brain advise --report R [--brain-file F]`: the advisory layer as a
  * standalone query -- per-finding experience bonus and the
  * experience-adjusted confidence, printed as a deterministic document.
  * Never mutates the store. */
-oc_code oc_brain_cmd_advise(const char *file, const char *report_path,
-                            FILE *out, oc_status *st);
+oc_code oc_brain_cmd_advise(const char *file, const char *report_path, FILE *out, oc_status *st);
 
 /* `oc brain entries [--brain-file F]`: the kernel's full memory listing
  * (keys, wins/losses/draws, visits, ema, bonus), wrapped with the store
@@ -111,8 +108,7 @@ oc_code oc_brain_cmd_entries(const char *file, FILE *out, oc_status *st);
 /* `oc brain discard --brain-file F --index N`: remove the entry at INDEX
  * (see `oc brain entries` for the indexing) and save atomically. Fails
  * loud on an unknown index or a corrupt store. */
-oc_code oc_brain_cmd_discard(const char *file, long index, FILE *out,
-                             oc_status *st);
+oc_code oc_brain_cmd_discard(const char *file, long index, FILE *out, oc_status *st);
 
 /* `oc brain reset [--brain-file F]`: remove the brain file (absent file
  * is an honest no-op, not an error). */

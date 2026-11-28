@@ -51,8 +51,7 @@ static void check(int cond, const char *what) {
  * Returns the exit code; *out NULL on capture failure. */
 static int run_capture(const char *cmd, char **out, size_t *len) {
     char full[1600];
-    snprintf(full, sizeof(full), "%s > '%s/t4_out.txt' 2>/dev/null", cmd,
-             OC_TEST_TMPDIR);
+    snprintf(full, sizeof(full), "%s > '%s/t4_out.txt' 2>/dev/null", cmd, OC_TEST_TMPDIR);
     int rc = system(full);
     *out = NULL;
     *len = 0;
@@ -83,14 +82,13 @@ static int run_oc(const char *args, char **out, size_t *len) {
     return run_capture(cmd, out, len);
 }
 
-static void run_scan_to(const char *flags, const char *out_path,
-                        const char *brain_file_env) {
+static void run_scan_to(const char *flags, const char *out_path, const char *brain_file_env) {
     char cmd[1400];
     snprintf(cmd, sizeof(cmd),
              "OC_BRAIN_FILE='%s' '%s' check '%s' --packs-dir '%s/packs' %s "
              "> '%s' 2>/dev/null",
-             brain_file_env ? brain_file_env : "/nonexistent/none.json",
-             OC_OC_BIN, OC_TRIAGE_CORPUS, OC_REPO_ROOT, flags, out_path);
+             brain_file_env ? brain_file_env : "/nonexistent/none.json", OC_OC_BIN,
+             OC_TRIAGE_CORPUS, OC_REPO_ROOT, flags, out_path);
     system(cmd);
 }
 
@@ -152,8 +150,7 @@ int main(void) {
     snprintf(cmd, sizeof(cmd), "brain create --brain-file '%s'", store);
     rc = run_oc(cmd, &out, &len);
     check(rc == 0 && out && strstr(out, "\"created\":true") != NULL &&
-              strstr(out, "\"sha256\":\"") != NULL &&
-              strstr(out, "\"epoch\":0") != NULL,
+              strstr(out, "\"sha256\":\"") != NULL && strstr(out, "\"epoch\":0") != NULL,
           "create makes a fresh store with sha256 + epoch provenance");
     free(out);
     out = NULL;
@@ -174,8 +171,7 @@ int main(void) {
           "two brain-less scans are byte-identical");
     check(s1 && strstr(s1, "\"brain\":{") == NULL,
           "brain-less scan carries NO brain block (byte-stability)");
-    check(s1 && strstr(s1, "\"brain_annotated\"") == NULL &&
-              strstr(s1, "\"brain_rank\"") == NULL,
+    check(s1 && strstr(s1, "\"brain_annotated\"") == NULL && strstr(s1, "\"brain_rank\"") == NULL,
           "brain-less scan carries no brain annotations");
     free(s1);
     free(s2);
@@ -204,8 +200,7 @@ int main(void) {
     out = NULL;
 
     rc = run_oc(cmd, &out, &len);
-    check(rc == 0 && out && strstr(out, "\"saved\":true") != NULL,
-          "repeated record accumulates");
+    check(rc == 0 && out && strstr(out, "\"saved\":true") != NULL, "repeated record accumulates");
     free(out);
     out = NULL;
 
@@ -237,17 +232,14 @@ int main(void) {
     out = NULL;
 
     /* ---- 4. advise: positive bonus for the accepted finding ---- */
-    snprintf(cmd, sizeof(cmd),
-             "brain advise --brain-file '%s' --report '%s'", store, report);
+    snprintf(cmd, sizeof(cmd), "brain advise --brain-file '%s' --report '%s'", store, report);
     rc = run_oc(cmd, &out, &len);
-    check(rc == 0 && out && strstr(out, "\"bonus\":") != NULL,
-          "advise emits per-finding bonuses");
+    check(rc == 0 && out && strstr(out, "\"bonus\":") != NULL, "advise emits per-finding bonuses");
     if (out && strstr(out, fp)) {
         /* crude but honest: the recorded fingerprint's item carries a
          * positive bonus (accepted = +1.0 reward, twice) */
         const char *hit = strstr(out, fp);
-        check(strstr(hit, "\"bonus\":0.") != NULL ||
-                  strstr(hit, "\"bonus\":1") != NULL,
+        check(strstr(hit, "\"bonus\":0.") != NULL || strstr(hit, "\"bonus\":1") != NULL,
               "the accepted finding has a non-negative bonus");
     }
     free(out);
@@ -260,11 +252,9 @@ int main(void) {
         char *bd = read_file(rb, &bl);
         check(bd != NULL, "brain scan report readable");
         if (bd) {
-            check(strstr(bd, "\"applied\":true") != NULL &&
-                      strstr(bd, "\"adjusted\":") != NULL,
+            check(strstr(bd, "\"applied\":true") != NULL && strstr(bd, "\"adjusted\":") != NULL,
                   "brain scan carries the brain block with applied:true");
-            check(strstr(bd, "\"brain_rank\":") != NULL &&
-                      strstr(bd, "\"brain_bonus\":") != NULL,
+            check(strstr(bd, "\"brain_rank\":") != NULL && strstr(bd, "\"brain_bonus\":") != NULL,
                   "brain scan annotates findings with brain_rank/bonus");
             free(bd);
         }
@@ -307,16 +297,14 @@ int main(void) {
     }
 
     /* ---- 6. discard / save / reset ---- */
-    snprintf(cmd, sizeof(cmd),
-             "brain discard --brain-file '%s' --index 0", store);
+    snprintf(cmd, sizeof(cmd), "brain discard --brain-file '%s' --index 0", store);
     rc = run_oc(cmd, &out, &len);
     check(rc == 0 && out && strstr(out, "\"discarded\":true") != NULL,
           "discard removes the entry at index 0");
     free(out);
     out = NULL;
 
-    snprintf(cmd, sizeof(cmd),
-             "brain discard --brain-file '%s' --index 999999", store);
+    snprintf(cmd, sizeof(cmd), "brain discard --brain-file '%s' --index 999999", store);
     rc = run_oc(cmd, &out, &len);
     check(rc == 2, "discard of an unknown index fails loud");
     free(out);
@@ -332,8 +320,7 @@ int main(void) {
 
     snprintf(cmd, sizeof(cmd), "brain reset --brain-file '%s'", store);
     rc = run_oc(cmd, &out, &len);
-    check(rc == 0 && out && strstr(out, "\"removed\":true") != NULL,
-          "reset removes the store");
+    check(rc == 0 && out && strstr(out, "\"removed\":true") != NULL, "reset removes the store");
     free(out);
     out = NULL;
 

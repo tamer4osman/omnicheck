@@ -45,8 +45,7 @@ static void check(int cond, const char *what) {
 
 static int run_check(const char *flags, const char *out_path, int cap_stderr) {
     char cmd[1400];
-    snprintf(cmd, sizeof(cmd),
-             "'%s' check '%s' --packs-dir '%s/packs' %s > '%s' %s 2>&1",
+    snprintf(cmd, sizeof(cmd), "'%s' check '%s' --packs-dir '%s/packs' %s > '%s' %s 2>&1",
              OC_OC_BIN, OC_TRIAGE_CORPUS, OC_REPO_ROOT, flags, out_path,
              cap_stderr ? "" : "2>/dev/null");
     int rc = system(cmd);
@@ -86,9 +85,8 @@ int main(void) {
     /* Valid strict-JSON lexicon (all keys optional; tiny and sane). */
     FILE *f = fopen(lex, "wb");
     if (f) {
-        fprintf(f,
-                "{\"stopwords\":[\"the\",\"a\",\"of\"],"
-                "\"concepts\":{\"secret\":[\"credential\",\"password\"]}}\n");
+        fprintf(f, "{\"stopwords\":[\"the\",\"a\",\"of\"],"
+                   "\"concepts\":{\"secret\":[\"credential\",\"password\"]}}\n");
         fclose(f);
     }
     /* Hostile lexicon: wrong value type -- the kernel must refuse it. */
@@ -122,10 +120,8 @@ int main(void) {
         char *d = read_file(p_ok, &l);
         check(d != NULL, "lexicon scan report readable");
         if (d) {
-            check(strstr(d, "\"kernel_files\":") != NULL,
-                  "report carries the kernel_files block");
-            check(strstr(d, "\"lexicons_applied\":1") != NULL,
-                  "lexicons_applied == 1");
+            check(strstr(d, "\"kernel_files\":") != NULL, "report carries the kernel_files block");
+            check(strstr(d, "\"lexicons_applied\":1") != NULL, "lexicons_applied == 1");
             check(strstr(d, lex) != NULL, "the lexicon path is recorded");
             /* independent sha256 of the fixture */
             size_t fl = 0;
@@ -155,8 +151,7 @@ int main(void) {
         size_t a = 0, b = 0;
         char *x1 = read_file(p_ok, &a);
         char *x2 = read_file(p_ok2, &b);
-        check(x1 && x2 && a == b && memcmp(x1, x2, a) == 0,
-              "two lexicon runs are byte-identical");
+        check(x1 && x2 && a == b && memcmp(x1, x2, a) == 0, "two lexicon runs are byte-identical");
         free(x1);
         free(x2);
     }
@@ -175,8 +170,7 @@ int main(void) {
         char *d = read_file(p_err, &l);
         check(d != NULL, "error output captured");
         if (d)
-            check(strstr(d, "kernel rejected lexicon") != NULL,
-                  "the kernel's rejection is named");
+            check(strstr(d, "kernel rejected lexicon") != NULL, "the kernel's rejection is named");
         free(d);
     }
 
@@ -194,8 +188,7 @@ int main(void) {
         char *d = read_file(p_err, &l);
         check(d != NULL, "model error output captured");
         if (d)
-            check(strstr(d, "kernel rejected model") != NULL,
-                  "the model rejection is named");
+            check(strstr(d, "kernel rejected model") != NULL, "the model rejection is named");
         free(d);
     }
 

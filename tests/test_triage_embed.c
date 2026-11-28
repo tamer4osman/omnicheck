@@ -98,8 +98,7 @@ static char *run_provider(const char *bin, const char *req, size_t *len) {
 static char *run_embedded(const char *req, char *why, size_t why_sz) {
     char *resp = NULL;
     size_t resp_len = 0;
-    int ok = oc_triage_embed_respond(req, strlen(req), &resp, &resp_len, why,
-                                     why_sz);
+    int ok = oc_triage_embed_respond(req, strlen(req), &resp, &resp_len, why, why_sz);
     if (!ok)
         return NULL;
     resp[resp_len] = '\0'; /* responder already NUL-terminates; belt+braces */
@@ -134,8 +133,7 @@ int main(int argc, char **argv) {
         char *emb2 = run_embedded(req4, why, sizeof(why));
         check(emb2 != NULL, "second embedded call succeeds");
         if (emb2) {
-            check(strcmp(emb, emb2) == 0,
-                  "embedded responses are byte-stable across calls");
+            check(strcmp(emb, emb2) == 0, "embedded responses are byte-stable across calls");
             free(emb2);
         }
         free(emb);
@@ -156,11 +154,9 @@ int main(int argc, char **argv) {
             size_t prov_len = 0;
             char *prov = run_provider(bin, big, &prov_len);
             char *emb_big = run_embedded(big, why, sizeof(why));
-            check(prov != NULL && emb_big != NULL,
-                  "both providers answer the 200-item request");
+            check(prov != NULL && emb_big != NULL, "both providers answer the 200-item request");
             if (prov && emb_big) {
-                check(prov_len == strlen(emb_big),
-                      "200-item response lengths match");
+                check(prov_len == strlen(emb_big), "200-item response lengths match");
                 check(prov_len > 0 && memcmp(prov, emb_big, prov_len) == 0,
                       "200-item response bytes match (sidecar == embedded)");
             }
@@ -192,8 +188,7 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < sizeof(neg) / sizeof(neg[0]); i++) {
         size_t prov_len = 12345; /* sentinel: must become 0 */
         char *prov = run_provider(bin, neg[i].req, &prov_len);
-        check(prov != NULL && prov_len == 0,
-              "provider prints nothing on the fail path");
+        check(prov != NULL && prov_len == 0, "provider prints nothing on the fail path");
         free(prov);
         char *r = run_embedded(neg[i].req, why, sizeof(why));
         check(r == NULL, "embedded fail-opens on the fail path");

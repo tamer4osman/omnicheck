@@ -22,16 +22,16 @@ int oc_severity_from_str(const char *s, oc_severity *out);
  * EXPLAIN.md). Advisory only: never affects severity, existence, rank
  * arithmetic or report order. */
 typedef struct oc_triage_rationale {
-    double probability;  /* the calibrated distribution entry (== the
-                          * ranked confidence at 4 decimals) */
-    double fused;        /* clamp01(0.7*contextual + 0.3*directional)  */
-    double tf_cosine;    /* tf-weighted token cosine                   */
-    double jaccard;      /* distinct-token Jaccard                     */
-    double trigram;      /* character-trigram cosine                   */
-    double whole;        /* 0.35*cos + 0.35*jac + 0.30*trig, clamped   */
-    double best_chunk;   /* blended similarity of the best chunk       */
-    double contextual;   /* clamp01(0.4*whole + 0.6*best_chunk)        */
-    double directional;  /* pair similarity (label, instruction)       */
+    double probability; /* the calibrated distribution entry (== the
+                         * ranked confidence at 4 decimals) */
+    double fused;       /* clamp01(0.7*contextual + 0.3*directional)  */
+    double tf_cosine;   /* tf-weighted token cosine                   */
+    double jaccard;     /* distinct-token Jaccard                     */
+    double trigram;     /* character-trigram cosine                   */
+    double whole;       /* 0.35*cos + 0.35*jac + 0.30*trig, clamped   */
+    double best_chunk;  /* blended similarity of the best chunk       */
+    double contextual;  /* clamp01(0.4*whole + 0.6*best_chunk)        */
+    double directional; /* pair similarity (label, instruction)       */
 } oc_triage_rationale;
 
 typedef struct oc_finding {

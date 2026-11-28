@@ -52,8 +52,8 @@ void oc_triage_embed_provider_label(char *buf, size_t sz);
  * an explicitly configured resource is never silently skipped. The
  * pointers must stay valid until the next responder call. Passing
  * NULL/0 clears the customization. */
-void oc_triage_embed_set_kernel_files(const char *const *lexicon_paths,
-                                      size_t n_lexicons, const char *model_path);
+void oc_triage_embed_set_kernel_files(const char *const *lexicon_paths, size_t n_lexicons,
+                                      const char *model_path);
 size_t oc_triage_embed_lexicons_applied(void);
 int oc_triage_embed_model_applied(void);
 
@@ -75,8 +75,8 @@ int oc_triage_embed_files_requested(void);
  * writing a named human reason into reason/reason_sz; *resp is then left
  * untouched (NULL). oc_triage_embed_respond never fails the scan: the
  * caller maps a 0 return to the standard fail-open outcome. */
-int oc_triage_embed_respond(const char *req, size_t req_len, char **resp,
-                            size_t *resp_len, char *reason, size_t reason_sz);
+int oc_triage_embed_respond(const char *req, size_t req_len, char **resp, size_t *resp_len,
+                            char *reason, size_t reason_sz);
 
 /* T1: explain responder -- same request bytes as oc_triage_embed_respond,
  * but the kernel's read-only explain pass (odk_explain_choice) runs over
@@ -92,8 +92,8 @@ int oc_triage_embed_respond(const char *req, size_t req_len, char **resp,
  * formats of the explain auditor. Same return/reason discipline as
  * oc_triage_embed_respond: 1 + malloc'd resp on success, 0 + named
  * reason on any fail-open path. */
-int oc_triage_embed_explain(const char *req, size_t req_len, char **resp,
-                            size_t *resp_len, char *reason, size_t reason_sz);
+int oc_triage_embed_explain(const char *req, size_t req_len, char **resp, size_t *resp_len,
+                            char *reason, size_t reason_sz);
 
 #ifdef __cplusplus
 }

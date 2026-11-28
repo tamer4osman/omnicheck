@@ -116,10 +116,8 @@ static void fail_open(const char *bin, oc_triage_outcome *out, const char *why) 
  * reason strings arrive verbatim per path so each keeps its exact
  * historical report bytes (the byte-stability guarantee: only the
  * provider label differs between sidecar and embedded runs). */
-static void triage_consume_response(const char *resp, size_t resp_len,
-                                    const char *provider,
-                                    const char *invalid_json_reason,
-                                    const char *no_ranks_reason,
+static void triage_consume_response(const char *resp, size_t resp_len, const char *provider,
+                                    const char *invalid_json_reason, const char *no_ranks_reason,
                                     oc_finding_vec *v, oc_triage_outcome *out) {
     /* Parse with a local throwaway arena. */
     oc_arena tmp;
@@ -181,8 +179,7 @@ static void triage_consume_response(const char *resp, size_t resp_len,
 /* T2: embedded provider path. One in-process call; the same budget is
  * enforced as an honest post-check (a kernel run that blew its budget
  * fail-opens instead of quietly shipping a late rank). */
-static oc_code triage_run_embedded(oc_finding_vec *v, oc_triage_outcome *out,
-                                   oc_status *st) {
+static oc_code triage_run_embedded(oc_finding_vec *v, oc_triage_outcome *out, oc_status *st) {
     char label[64];
     oc_triage_embed_provider_label(label, sizeof(label));
     if (v->n == 0) {
@@ -202,8 +199,7 @@ static oc_code triage_run_embedded(oc_finding_vec *v, oc_triage_outcome *out,
     size_t eresp_len = 0;
     char ewhy[192];
     ewhy[0] = '\0';
-    int eok = oc_triage_embed_respond(ereq.data, ereq.len, &eresp,
-                                      &eresp_len, ewhy, sizeof(ewhy));
+    int eok = oc_triage_embed_respond(ereq.data, ereq.len, &eresp, &eresp_len, ewhy, sizeof(ewhy));
     oc_strbuf_destroy(&ereq);
     if (!eok) {
         /* T7: an explicitly configured resource the kernel refuses is
@@ -212,22 +208,19 @@ static oc_code triage_run_embedded(oc_finding_vec *v, oc_triage_outcome *out,
             oc_status_set(st, OC_ERR_USAGE, "%s", ewhy);
             return OC_ERR_USAGE;
         }
-        fail_open(label, out,
-                  ewhy[0] ? ewhy : "embedded provider failed (fail-open)");
+        fail_open(label, out, ewhy[0] ? ewhy : "embedded provider failed (fail-open)");
         oc_status_clear(st);
         return OC_OK;
     }
     if (triage_now_ms() > edeadline) {
         free(eresp);
-        fail_open(label, out,
-                  "embedded triage exceeded its time budget (fail-open)");
+        fail_open(label, out, "embedded triage exceeded its time budget (fail-open)");
         oc_status_clear(st);
         return OC_OK;
     }
     triage_consume_response(eresp, eresp_len, label,
                             "embedded provider response was not valid JSON",
-                            "embedded provider returned no usable ranks", v,
-                            out);
+                            "embedded provider returned no usable ranks", v, out);
     free(eresp);
     oc_status_clear(st);
     return OC_OK;
@@ -237,8 +230,8 @@ static oc_code triage_run_embedded(oc_finding_vec *v, oc_triage_outcome *out,
 /* Sidecar path: spawn $OC_OMNIDECIDE_BIN, one request line in, one
  * response line out (historical flow; the response consumer is now the
  * shared T2 code so both paths apply responses identically). */
-static oc_code triage_run_sidecar(oc_finding_vec *v, oc_triage_outcome *out,
-                                  oc_status *st, const char *bin) {
+static oc_code triage_run_sidecar(oc_finding_vec *v, oc_triage_outcome *out, oc_status *st,
+                                  const char *bin) {
     if (v->n == 0) {
         fail_open(bin, out, "no findings to rank");
         oc_status_clear(st);
@@ -442,8 +435,7 @@ static oc_code triage_run_sidecar(oc_finding_vec *v, oc_triage_outcome *out,
     }
 
     resp[resp_len] = '\0';
-    triage_consume_response(resp, resp_len, bin,
-                            "sidecar response was not valid JSON",
+    triage_consume_response(resp, resp_len, bin, "sidecar response was not valid JSON",
                             "sidecar returned no usable ranks", v, out);
     free(resp);
     oc_status_clear(st);
@@ -454,8 +446,8 @@ oc_code oc_triage_rank_findings(oc_finding_vec *v, oc_triage_outcome *out, oc_st
     return oc_triage_rank_findings_mode(v, out, st, OC_TRIAGE_MODE_AUTO);
 }
 
-oc_code oc_triage_rank_findings_mode(oc_finding_vec *v, oc_triage_outcome *out,
-                                     oc_status *st, oc_triage_mode mode) {
+oc_code oc_triage_rank_findings_mode(oc_finding_vec *v, oc_triage_outcome *out, oc_status *st,
+                                     oc_triage_mode mode) {
     memset(out, 0, sizeof(*out));
     out->provider[0] = '\0';
     out->ranked = 0;
@@ -502,8 +494,7 @@ oc_code oc_triage_rank_findings_mode(oc_finding_vec *v, oc_triage_outcome *out,
     return OC_OK;
 }
 
-oc_code oc_triage_explain_attach(oc_finding_vec *v, oc_triage_outcome *out,
-                                 oc_status *st) {
+oc_code oc_triage_explain_attach(oc_finding_vec *v, oc_triage_outcome *out, oc_status *st) {
     out->explain_requested = 1;
     out->explained_count = 0;
     snprintf(out->explain_reason, sizeof(out->explain_reason), "ok");
@@ -524,8 +515,7 @@ oc_code oc_triage_explain_attach(oc_finding_vec *v, oc_triage_outcome *out,
     }
     if (v->n < 2) {
         snprintf(out->explain_reason, sizeof(out->explain_reason),
-                 "rank primitive needs at least 2 options; %zu finding(s)",
-                 v->n);
+                 "rank primitive needs at least 2 options; %zu finding(s)", v->n);
         oc_status_clear(st);
         return OC_OK;
     }
@@ -546,8 +536,7 @@ oc_code oc_triage_explain_attach(oc_finding_vec *v, oc_triage_outcome *out,
     size_t eresp_len = 0;
     char ewhy[192];
     ewhy[0] = '\0';
-    int eok = oc_triage_embed_explain(req.data, req.len, &eresp, &eresp_len,
-                                      ewhy, sizeof(ewhy));
+    int eok = oc_triage_embed_explain(req.data, req.len, &eresp, &eresp_len, ewhy, sizeof(ewhy));
     oc_strbuf_destroy(&req);
     if (!eok) {
         snprintf(out->explain_reason, sizeof(out->explain_reason), "%s",
@@ -585,20 +574,13 @@ oc_code oc_triage_explain_attach(oc_finding_vec *v, oc_triage_outcome *out,
                 v->items[j].explained = 1;
                 v->items[j].explain.probability =
                     oc_json_as_num(oc_json_get(e, "probability"), 0.0);
-                v->items[j].explain.fused =
-                    oc_json_as_num(oc_json_get(e, "fused"), 0.0);
-                v->items[j].explain.tf_cosine =
-                    oc_json_as_num(oc_json_get(e, "tf_cosine"), 0.0);
-                v->items[j].explain.jaccard =
-                    oc_json_as_num(oc_json_get(e, "jaccard"), 0.0);
-                v->items[j].explain.trigram =
-                    oc_json_as_num(oc_json_get(e, "trigram"), 0.0);
-                v->items[j].explain.whole =
-                    oc_json_as_num(oc_json_get(e, "whole"), 0.0);
-                v->items[j].explain.best_chunk =
-                    oc_json_as_num(oc_json_get(e, "best_chunk"), 0.0);
-                v->items[j].explain.contextual =
-                    oc_json_as_num(oc_json_get(e, "contextual"), 0.0);
+                v->items[j].explain.fused = oc_json_as_num(oc_json_get(e, "fused"), 0.0);
+                v->items[j].explain.tf_cosine = oc_json_as_num(oc_json_get(e, "tf_cosine"), 0.0);
+                v->items[j].explain.jaccard = oc_json_as_num(oc_json_get(e, "jaccard"), 0.0);
+                v->items[j].explain.trigram = oc_json_as_num(oc_json_get(e, "trigram"), 0.0);
+                v->items[j].explain.whole = oc_json_as_num(oc_json_get(e, "whole"), 0.0);
+                v->items[j].explain.best_chunk = oc_json_as_num(oc_json_get(e, "best_chunk"), 0.0);
+                v->items[j].explain.contextual = oc_json_as_num(oc_json_get(e, "contextual"), 0.0);
                 v->items[j].explain.directional =
                     oc_json_as_num(oc_json_get(e, "directional"), 0.0);
             }

@@ -58,9 +58,8 @@ extern "C" {
  * introduced or resolved entries exist (the CLI maps that to exit 1),
  * 0 otherwise. Returns OC_OK (0) on success or a non-zero oc_code with
  * st set on the fail-loud paths (CLI maps those to exit 2). */
-oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
-                          int want_semantic, int *semantic_changes, FILE *out,
-                          oc_status *st);
+oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path, int want_semantic,
+                          int *semantic_changes, FILE *out, oc_status *st);
 
 #ifdef __cplusplus
 }

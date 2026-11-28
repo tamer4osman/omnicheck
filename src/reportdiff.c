@@ -21,7 +21,7 @@
 #define OC_REPORTDIFF_MAX_FINDINGS 200000u
 
 typedef struct {
-    const char *fp;  /* fingerprint (arena-owned, borrowed) */
+    const char *fp; /* fingerprint (arena-owned, borrowed) */
     const char *rule;
     const char *file;
     long line;
@@ -50,13 +50,27 @@ static void rd_json_string(oc_strbuf *b, const char *s) {
     oc_strbuf_appendc(b, '"');
     for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
         switch (*p) {
-        case '"':  oc_strbuf_appends(b, "\\\""); break;
-        case '\\': oc_strbuf_appends(b, "\\\\"); break;
-        case '\b': oc_strbuf_appends(b, "\\b"); break;
-        case '\f': oc_strbuf_appends(b, "\\f"); break;
-        case '\n': oc_strbuf_appends(b, "\\n"); break;
-        case '\r': oc_strbuf_appends(b, "\\r"); break;
-        case '\t': oc_strbuf_appends(b, "\\t"); break;
+        case '"':
+            oc_strbuf_appends(b, "\\\"");
+            break;
+        case '\\':
+            oc_strbuf_appends(b, "\\\\");
+            break;
+        case '\b':
+            oc_strbuf_appends(b, "\\b");
+            break;
+        case '\f':
+            oc_strbuf_appends(b, "\\f");
+            break;
+        case '\n':
+            oc_strbuf_appends(b, "\\n");
+            break;
+        case '\r':
+            oc_strbuf_appends(b, "\\r");
+            break;
+        case '\t':
+            oc_strbuf_appends(b, "\\t");
+            break;
         default:
             if (*p < 0x20)
                 oc_strbuf_appendf(b, "\\u%04x", (unsigned)*p);
@@ -69,9 +83,8 @@ static void rd_json_string(oc_strbuf *b, const char *s) {
 
 /* Loads one side: parse, schema-gate, collect entries, assign occ/count.
  * The entries array and the arena are owned by the caller. */
-static oc_code rd_load_side(const char *path, oc_arena *a, rd_entry **out_e,
-                            size_t *out_n, size_t *out_finding_count,
-                            oc_status *st) {
+static oc_code rd_load_side(const char *path, oc_arena *a, rd_entry **out_e, size_t *out_n,
+                            size_t *out_finding_count, oc_status *st) {
     char *data = NULL;
     size_t len = 0;
     oc_code rc = oc_read_file(path, &data, &len, st);
@@ -165,16 +178,14 @@ static oc_code rd_load_side(const char *path, oc_arena *a, rd_entry **out_e,
  * order), then a per-entry advisory {rank, confidence} lookup. ADVISORY
  * ONLY: the classification happened before this runs and the exit gate
  * never reads these numbers. */
-static oc_code rd_semantic_scores(const rd_entry *ec, size_t nc,
-                                  long **out_rank, double **out_conf,
+static oc_code rd_semantic_scores(const rd_entry *ec, size_t nc, long **out_rank, double **out_conf,
                                   oc_status *st) {
     long *rank = (long *)calloc(nc > 0 ? nc : 1, sizeof(*rank));
     double *conf = (double *)calloc(nc > 0 ? nc : 1, sizeof(*conf));
     if (!rank || !conf) {
         free(rank);
         free(conf);
-        oc_status_set(st, OC_ERR_ALLOC,
-                      "out of memory preparing the advisory scores");
+        oc_status_set(st, OC_ERR_ALLOC, "out of memory preparing the advisory scores");
         return OC_ERR_ALLOC;
     }
     for (size_t i = 0; i < nc; i++)
@@ -210,8 +221,7 @@ static oc_code rd_semantic_scores(const rd_entry *ec, size_t nc,
         oc_strbuf_destroy(&req);
         free(rank);
         free(conf);
-        oc_status_set(st, OC_ERR_ALLOC,
-                      "out of memory building the advisory request");
+        oc_status_set(st, OC_ERR_ALLOC, "out of memory building the advisory request");
         return OC_ERR_ALLOC;
     }
 
@@ -219,14 +229,12 @@ static oc_code rd_semantic_scores(const rd_entry *ec, size_t nc,
     size_t resp_len = 0;
     char why[192];
     why[0] = '\0';
-    int rok = oc_triage_embed_respond(req.data, req.len, &resp, &resp_len,
-                                      why, sizeof(why));
+    int rok = oc_triage_embed_respond(req.data, req.len, &resp, &resp_len, why, sizeof(why));
     oc_strbuf_destroy(&req);
     if (!rok) {
         free(rank);
         free(conf);
-        oc_status_set(st, OC_ERR_INTERNAL,
-                      "advisory rank call failed: %s",
+        oc_status_set(st, OC_ERR_INTERNAL, "advisory rank call failed: %s",
                       why[0] ? why : "embedded provider failed");
         return OC_ERR_INTERNAL;
     }
@@ -266,8 +274,7 @@ static oc_code rd_semantic_scores(const rd_entry *ec, size_t nc,
     if (!parse_ok) {
         free(rank);
         free(conf);
-        oc_status_set(st, OC_ERR_INTERNAL,
-                      "advisory rank response was not valid JSON");
+        oc_status_set(st, OC_ERR_INTERNAL, "advisory rank response was not valid JSON");
         return OC_ERR_INTERNAL;
     }
     *out_rank = rank;
@@ -276,9 +283,8 @@ static oc_code rd_semantic_scores(const rd_entry *ec, size_t nc,
 }
 #endif /* OC_EMBED_OMNIDECIDE */
 
-oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
-                          int want_semantic, int *semantic_changes, FILE *out,
-                          oc_status *st) {
+oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path, int want_semantic,
+                          int *semantic_changes, FILE *out, oc_status *st) {
     oc_arena a;
     oc_arena_init(&a);
     rd_entry *eb = NULL, *ec = NULL;
@@ -359,9 +365,8 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
         }
     }
 
-    if (oc_strbuf_appends(
-            &b, "{\"schema\":\"omnicheck.reportdiff/v0\",\"tool\":\"omnicheck\","
-                "\"version\":\"") == 0)
+    if (oc_strbuf_appends(&b, "{\"schema\":\"omnicheck.reportdiff/v0\",\"tool\":\"omnicheck\","
+                              "\"version\":\"") == 0)
         ok = 0;
     if (ok && oc_strbuf_appends(&b, OC_VERSION_STRING) == 0)
         ok = 0;
@@ -373,8 +378,9 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
         ok = 0;
     if (ok) {
         rd_json_string(&b, baseline_path);
-        if (oc_strbuf_appendf(&b, ",\"finding_count\":%zu},\"current\":"
-                                  "{\"path\":",
+        if (oc_strbuf_appendf(&b,
+                              ",\"finding_count\":%zu},\"current\":"
+                              "{\"path\":",
                               fcb) == 0)
             ok = 0;
     }
@@ -409,8 +415,7 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
                         rd_json_string(&b, e->rule);
                         oc_strbuf_appends(&b, ",\"file\":");
                         rd_json_string(&b, e->file);
-                        if (oc_strbuf_appendf(
-                                &b, ",\"line\":%ld,\"message\":", e->line) == 0) {
+                        if (oc_strbuf_appendf(&b, ",\"line\":%ld,\"message\":", e->line) == 0) {
                             ok = 0;
                             break;
                         }
@@ -419,8 +424,7 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
                             if (oc_strbuf_appendf(&b,
                                                   ",\"advisory\":{\"rank\":%ld,"
                                                   "\"confidence\":%.4f}",
-                                                  adv_rank[j + k],
-                                                  adv_conf[j + k]) == 0) {
+                                                  adv_rank[j + k], adv_conf[j + k]) == 0) {
                                 ok = 0;
                                 break;
                             }
@@ -451,8 +455,7 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
                         rd_json_string(&b, e->rule);
                         oc_strbuf_appends(&b, ",\"file\":");
                         rd_json_string(&b, e->file);
-                        if (oc_strbuf_appendf(
-                                &b, ",\"line\":%ld,\"message\":", e->line) == 0) {
+                        if (oc_strbuf_appendf(&b, ",\"line\":%ld,\"message\":", e->line) == 0) {
                             ok = 0;
                             break;
                         }
@@ -461,8 +464,7 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
                             if (oc_strbuf_appendf(&b,
                                                   ",\"advisory\":{\"rank\":%ld,"
                                                   "\"confidence\":%.4f}",
-                                                  adv_rank[j + k],
-                                                  adv_conf[j + k]) == 0) {
+                                                  adv_rank[j + k], adv_conf[j + k]) == 0) {
                                 ok = 0;
                                 break;
                             }
@@ -507,8 +509,7 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
                         rd_json_string(&b, e->rule);
                         oc_strbuf_appends(&b, ",\"file\":");
                         rd_json_string(&b, e->file);
-                        if (oc_strbuf_appendf(
-                                &b, ",\"line\":%ld,\"message\":", e->line) == 0) {
+                        if (oc_strbuf_appendf(&b, ",\"line\":%ld,\"message\":", e->line) == 0) {
                             ok = 0;
                             break;
                         }
@@ -537,8 +538,7 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
                         rd_json_string(&b, e->rule);
                         oc_strbuf_appends(&b, ",\"file\":");
                         rd_json_string(&b, e->file);
-                        if (oc_strbuf_appendf(
-                                &b, ",\"line\":%ld,\"message\":", e->line) == 0) {
+                        if (oc_strbuf_appendf(&b, ",\"line\":%ld,\"message\":", e->line) == 0) {
                             ok = 0;
                             break;
                         }
@@ -585,10 +585,10 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
                         rd_json_string(&b, eb[i + k].rule);
                         oc_strbuf_appends(&b, ",\"file\":");
                         rd_json_string(&b, eb[i + k].file);
-                        if (oc_strbuf_appendf(&b, ",\"baseline_line\":%ld,"
-                                                    "\"current_line\":%ld}",
-                                              eb[i + k].line,
-                                              ec[j + k].line) == 0) {
+                        if (oc_strbuf_appendf(&b,
+                                              ",\"baseline_line\":%ld,"
+                                              "\"current_line\":%ld}",
+                                              eb[i + k].line, ec[j + k].line) == 0) {
                             ok = 0;
                             break;
                         }
@@ -605,15 +605,14 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
         }
         n_moved = emitted;
     }
-    if (ok &&
-        oc_strbuf_appendf(&b,
-                          "],\"counts\":{\"introduced\":%zu,\"resolved\":%zu,"
-                          "\"moved\":%zu,\"persistent\":%zu},"
-                          "\"note\":\"fingerprints exclude line numbers; "
-                          "moves are persistent, not introduced+resolved "
-                          "pairs; line numbers are informational only; the "
-                          "kernel never decides identity\"}\n",
-                          n_introduced, n_resolved, n_moved, persistent) == 0)
+    if (ok && oc_strbuf_appendf(&b,
+                                "],\"counts\":{\"introduced\":%zu,\"resolved\":%zu,"
+                                "\"moved\":%zu,\"persistent\":%zu},"
+                                "\"note\":\"fingerprints exclude line numbers; "
+                                "moves are persistent, not introduced+resolved "
+                                "pairs; line numbers are informational only; the "
+                                "kernel never decides identity\"}\n",
+                                n_introduced, n_resolved, n_moved, persistent) == 0)
         ok = 0;
 
     free(adv_rank);
@@ -624,8 +623,7 @@ oc_code oc_reportdiff_run(const char *baseline_path, const char *current_path,
 
     if (!ok || b.data == NULL) {
         oc_strbuf_destroy(&b);
-        oc_status_set(st, OC_ERR_ALLOC,
-                      "out of memory writing the diff document");
+        oc_status_set(st, OC_ERR_ALLOC, "out of memory writing the diff document");
         return OC_ERR_ALLOC;
     }
     size_t w = fwrite(b.data, 1, b.len, out);

@@ -115,64 +115,9 @@ oc_code oc_brain_cmd_advise(const char *file, const char *report_path, FILE *out
     return OC_ERR_USAGE;
 }
 
-oc_code oc_brain_cmd_discard(const char *file, long index, FILE *out, oc_status *st) {
-    (void)file;
-    (void)index;
-    (void)out;
-    oc_status_set(st, OC_ERR_USAGE,
-                  "oc brain requires the embedded OmniDecide kernel "
-                  "(rebuild with -DOC_EMBED_OMNIDECIDE=ON)");
-    return OC_ERR_USAGE;
-}
+BRAIN_EXPLICIT_STUB(oc_brain_cmd_discard)
 
-oc_code oc_brain_cmd_reset(const char *file, FILE *out, oc_status *st) {
-    char path[512];
-    /* Prefer explicit file over environment/default; validate selected path. */
-    if (file && file[0]) {
-        int n = snprintf(path, sizeof(path), "%s", file);
-        if (n < 0 || (size_t)n >= sizeof(path)) {
-            oc_status_set(st, OC_ERR_USAGE, "specified --brain-file path is too long");
-            return OC_ERR_USAGE;
-        }
-    } else if (!brain_file_path(path, sizeof(path))) {
-        oc_status_set(st, OC_ERR_USAGE, "brain file path overflow (OC_BRAIN_FILE too long)");
-        return OC_ERR_USAGE;
-    }
-    int existed = file_exists(path) ? 1 : 0;
-    int removed = 0;
-    if (existed)
-        removed = (remove(path) == 0) ? 1 : 0;
-    fprintf(out, "{\"schema\":\"omnicheck.brain.reset/v0\",\"file\":");
-    oc_jsonw w;
-    oc_jsonw_init(&w);
-    oc_jsonw_str(&w, path);
-    size_t w1 =
-        fwrite(w.buf.data ? w.buf.data : "null", 1, w.buf.data ? strlen(w.buf.data) : 4, out);
-    size_t w1_len = w.buf.data ? strlen(w.buf.data) : 4;
-    if (w1 != w1_len || ferror(out)) {
-        if (existed && !removed) {
-            oc_status_set(st, OC_ERR_IO, "failed to remove the brain file '%s'", path);
-            return OC_ERR_IO;
-        }
-        oc_status_set(st, OC_ERR_IO, "failed to write the reset result for '%s'", path);
-        return OC_ERR_IO;
-    }
-    int w2 = fprintf(out, ",\"removed\":%s}\n", removed ? "true" : "false");
-    if (w2 < 0 || ferror(out)) {
-        if (existed && !removed) {
-            oc_status_set(st, OC_ERR_IO, "failed to remove the brain file '%s'", path);
-            return OC_ERR_IO;
-        }
-        oc_status_set(st, OC_ERR_IO, "failed to write the reset result for '%s'", path);
-        return OC_ERR_IO;
-    }
-    oc_jsonw_destroy(&w);
-    if (existed && !removed) {
-        oc_status_set(st, OC_ERR_IO, "failed to remove the brain file '%s'", path);
-        return OC_ERR_IO;
-    }
-    return OC_OK;
-}
+BRAIN_EXPLICIT_STUB(oc_brain_cmd_reset)
 
 #else /* OC_EMBED_OMNIDECIDE */
 
@@ -520,8 +465,20 @@ oc_code oc_brain_cmd_create(const char *file, FILE *out, oc_status *st) {
     oc_jsonw w;
     oc_jsonw_init(&w);
     oc_jsonw_str(&w, path);
-    fprintf(out, "%s,\"created\":true,\"epoch\":%lld,\"sha256\":\"%s\"}\n",
-            w.buf.data ? w.buf.data : "null", epoch, sha);
+    size_t w1 =
+        fwrite(w.buf.data ? w.buf.data : "null", 1, w.buf.data ? strlen(w.buf.data) : 4, out);
+    size_t w1_len = w.buf.data ? strlen(w.buf.data) : 4;
+    if (w1 != w1_len || ferror(out)) {
+        oc_status_set(st, OC_ERR_IO, "failed to write the create result");
+        oc_jsonw_destroy(&w);
+        return OC_ERR_IO;
+    }
+    int w2 = fprintf(out, ",\"created\":true,\"epoch\":%lld,\"sha256\":\"%s\"}\n", epoch, sha);
+    if (w2 < 0 || ferror(out)) {
+        oc_status_set(st, OC_ERR_IO, "failed to write the create result");
+        oc_jsonw_destroy(&w);
+        return OC_ERR_IO;
+    }
     oc_jsonw_destroy(&w);
     return OC_OK;
 }

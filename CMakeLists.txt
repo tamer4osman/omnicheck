@@ -60,6 +60,10 @@ set(OC_CORE_SOURCES
     src/lsp.c
     src/mcp.c
     src/report.c
+    src/reportdiff.c
+    src/sha256.c
+    src/brain.c
+    src/spine.c
 )
 
 add_library(oc STATIC ${OC_CORE_SOURCES})
@@ -100,6 +104,14 @@ endif()
 # OC_OMNIDECIDE_BIN points at the provider (or any protocol-v0 binary).
 # ---------------------------------------------------------------------------
 option(OC_WITH_OMNIDECIDE "Build the vendored OmniDecide-C triage provider" ON)
+# T2: embed the kernel INTO lib oc (default ON per plan). The embedded
+# provider speaks the byte-identical protocol-v0 response in-process; the
+# sidecar keeps absolute precedence at runtime when OC_OMNIDECIDE_BIN is
+# set, and --triage-embedded requests the embedded path explicitly (loud
+# refusal when not built in).
+option(OC_EMBED_OMNIDECIDE
+       "Embed the OmniDecide kernel in-process (embedded triage provider; the sidecar keeps absolute precedence)"
+       ON)
 if(OC_WITH_OMNIDECIDE)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/omnidecide/CMakeLists.txt")
         # Upstream options default OFF as a subdirectory; pin them anyway so
@@ -116,6 +128,12 @@ if(OC_WITH_OMNIDECIDE)
         add_executable(oc-omnidecide-explain tools/omnidecide/oc_odk_explain.c)
         target_link_libraries(oc-omnidecide-explain PRIVATE omnidecide)
         oc_set_warnings(oc-omnidecide-explain)
+        if(OC_EMBED_OMNIDECIDE)
+            target_sources(oc PRIVATE src/triage_embed.c)
+            target_link_libraries(oc PRIVATE omnidecide)
+            target_compile_definitions(oc PRIVATE OC_EMBED_OMNIDECIDE=1)
+            message(STATUS "OmniCheck: embedded OmniDecide triage provider enabled (OC_EMBED_OMNIDECIDE=ON)")
+        endif()
         file(READ "${CMAKE_CURRENT_SOURCE_DIR}/third_party/omnidecide/CMakeLists.txt"
              _odk_cmake_txt)
         string(REGEX MATCH "project\\(omnidecide VERSION ([0-9.]+)" _odk_ver "${_odk_cmake_txt}")

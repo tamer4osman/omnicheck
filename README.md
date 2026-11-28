@@ -78,11 +78,12 @@ every verdict, the adviser only reorders attention.
 12. [OmniDecide triage sidecar](#omnidecide-triage-sidecar)
 13. [Determinism contract](#determinism-contract)
 14. [Verification and evidence](#verification-and-evidence)
-15. [Milestones](#milestones)
-16. [Repository layout](#repository-layout)
-17. [Documentation map](#documentation-map)
-18. [License](#license)
-19. [Author](#author)
+15. [Security hardening (v0.3.0 assessment)](#security-hardening-v030-assessment)
+16. [Milestones](#milestones)
+17. [Repository layout](#repository-layout)
+18. [Documentation map](#documentation-map)
+19. [License](#license)
+20. [Author](#author)
 
 ---
 
@@ -819,6 +820,52 @@ The kernel's own suites run unmodified from the vendored root:
 `odk_smoke_test` (373 checks) + `odk_spine_test` (210 checks) = **583 checks
 green in-repo**, clean under ASan+UBSan+LSan; `test_triage_real` drives the
 real provider end-to-end in every build cell.
+
+---
+
+## Security hardening (v0.3.0 assessment)
+
+A dedicated adversarial security assessment of v0.3.0 (commit `51d4e49`)
+found five High-severity defects and two Medium-hygiene defects. All seven
+are fixed in this tree, and every fix preserves the project contract:
+**fail loud, never fail open; byte-identical output on legitimate input.**
+
+| ID | Severity | File | Defect | Fix |
+| --- | --- | --- | --- | --- |
+| H-1 | High (CVSS 7.5) | `src/json.c` | JSON key/value/item vectors were reallocated and copied on **every** append inside an arena that never reclaims: a 30,000-field `package.json` costed O(n^2) bytes (measured 3,626 MiB RSS -> OOM). | Geometric doubling with a hard 1,000,000 field/item budget (`OC_JSON_MAX_ENTRIES`) that fails the parse loudly. |
+| H-2 | High (CVSS 7.5) | `src/parser_ts.c` | `rust_use_expand` recursed once per use-tree nesting level with no depth limit: a 100,000-deep `use` tree blew the C stack (SIGSEGV, ASan-confirmed). | Explicit depth budget `OC_RUST_USE_MAX_DEPTH 256`; exceeding it aborts the parse loudly. |
+| H-3 | High (CVSS 7.5) | `src/coverage.c` | The Go coverprofile loader derived a malloc size from the record's end line: a 47-byte input claiming `1.1,1000000000.0` requested ~4 GB (measured 3,615 MiB -> SIGKILL). | `OC_COV_MAX_LINE 10,000,000` sanity bound; hostile records fail the load loudly. |
+| H-4 | High (CVSS 8.1) | `src/mutate.c` | Mutants were spliced straight into working-tree sources and restored only on the happy path: SIGKILL/SIGINT/CI-timeout mid-run **permanently corrupted the user's source file**. | Four crash-safety layers: fsync'd journal armed before the first splice, atomic temp-file+rename writes with permission bits preserved via `fchmod`, async-signal-safe SIGINT/SIGTERM/SIGHUP/SIGQUIT restore handlers, and startup recovery that restores pristine bytes and mode from a journal left by a dead run. |
+| H-5 | High (CVSS 7.5) | `src/parser_ts.c` | Adversarially deep syntax trees drove the vendored tree-sitter query engine quadratic: a 1 MB nested-call JS chain hung >150 s. | One linear arena-stack DFS measures tree depth before any cursor runs; deeper than `OC_TS_MAX_TREE_DEPTH 8192` the file is refused loudly before the quadratic cost is paid. |
+| M-10 | Medium (hygiene) | `src/coverage.c`, `src/dup.c` | `qsort(NULL, 0, ...)` on empty file sets is undefined behaviour. | NULL/empty guards around the affected call sites. |
+| T16 | Medium (hygiene) | `src/coverage.c` | Same `qsort` UB in the second loader path. | Same guard. |
+
+### Verification evidence
+
+* `ctest`: **39/39 pass** on the Release preset -- zero regressions.
+* The adversarial fixtures from the assessment (30,000-dep `package.json`,
+  47-byte Go coverprofile bomb, 200,000-deep nested calls, 20,000-deep arrow
+  chains, 100,000-deep Rust use-tree, SIGKILL + SIGINT during mutate) all
+  pass: bounded memory, loud exit codes, no hangs, source files always
+  restored with their original permission bits. The harness
+  (`patches/kill_highs_verification_harness.py`) regenerates the fixtures
+  itself and scores **6/6 against the packaged binary**.
+* **Byte-stability sweep**: `oc check` output is byte-identical (and
+  exit-code-identical) between the pristine v0.3.0 binary and the fixed
+  binary across 16 corpora (examples + all language fixture trees).
+* Both presets build clean (`default` Release, `sanitize` ASan+UBSan);
+  sanitizers report **zero** errors on the hot paths.
+
+Full write-up with before/after measurements: [FIXES.md](FIXES.md).
+The complete patch against pristine v0.3.0:
+`patches/omnicheck-v0.3.0-security-fixes.patch`.
+
+Behavioural notes: deep/hostile inputs now fail with a specific, actionable
+message and exit code 2 instead of crashing or hanging. `oc mutate` creates
+two transient files next to a target while a mutant is applied
+(`<file>.oc-mutate-journal`, `<file>.oc-mutate-tmp`); both are removed on
+every normal path, and a journal that survives a crash is consumed by the
+next run's startup recovery.
 
 ---
 

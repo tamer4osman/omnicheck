@@ -44,7 +44,10 @@ extern "C" {
 
 /* `oc pin add --request <json> [--class exact|semantic|foreign]`: pins
  * the decision and appends it to the store. Fails loud on invalid
- * requests. Prints the pin document on stdout. */
+ * requests. Prints the pin document on stdout with the save receipt schema:
+ * {"schema":"omnicheck.spine.pin/v0","id":"<store-order-pin-id>","file":"<store-path>","saved":true}
+ * The id is a deterministic counter (p000000, p000001, ...); file is the
+ * store path used; saved is true on successful persistent storage. */
 oc_code oc_spine_cmd_add(const char *file, const char *request,
                          const char *replay_class, FILE *out, oc_status *st);
 

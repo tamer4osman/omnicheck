@@ -1099,6 +1099,11 @@ oc_code oc_brain_cmd_reset(const char *file, FILE *out, oc_status *st) {
     int removed = 0;
     if (existed)
         removed = (remove(path) == 0) ? 1 : 0;
+    /* Check removal failure before writing output. */
+    if (existed && !removed) {
+        oc_status_set(st, OC_ERR_IO, "failed to remove the brain file '%s'", path);
+        return OC_ERR_IO;
+    }
     fprintf(out, "{\"schema\":\"omnicheck.brain.reset/v0\",\"file\":");
     oc_jsonw w;
     oc_jsonw_init(&w);
@@ -1107,27 +1112,17 @@ oc_code oc_brain_cmd_reset(const char *file, FILE *out, oc_status *st) {
         fwrite(w.buf.data ? w.buf.data : "null", 1, w.buf.data ? strlen(w.buf.data) : 4, out);
     size_t w1_len = w.buf.data ? strlen(w.buf.data) : 4;
     if (w1 != w1_len || ferror(out)) {
-        if (existed && !removed) {
-            oc_status_set(st, OC_ERR_IO, "failed to remove the brain file '%s'", path);
-            return OC_ERR_IO;
-        }
+        oc_jsonw_destroy(&w);
         oc_status_set(st, OC_ERR_IO, "failed to write the reset result for '%s'", path);
         return OC_ERR_IO;
     }
     int w2 = fprintf(out, ",\"removed\":%s}\n", removed ? "true" : "false");
     if (w2 < 0 || ferror(out)) {
-        if (existed && !removed) {
-            oc_status_set(st, OC_ERR_IO, "failed to remove the brain file '%s'", path);
-            return OC_ERR_IO;
-        }
+        oc_jsonw_destroy(&w);
         oc_status_set(st, OC_ERR_IO, "failed to write the reset result for '%s'", path);
         return OC_ERR_IO;
     }
     oc_jsonw_destroy(&w);
-    if (existed && !removed) {
-        oc_status_set(st, OC_ERR_IO, "failed to remove the brain file '%s'", path);
-        return OC_ERR_IO;
-    }
     return OC_OK;
 }
 

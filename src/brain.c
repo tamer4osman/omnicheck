@@ -610,8 +610,8 @@ oc_code oc_brain_cmd_record(const char *file, const char *report_path, const cha
                       err.text[0] ? err.text : "unknown error");
         return OC_ERR_INTERNAL;
     }
-    odk_status svr = odk_brain_save_file(brain, path, &err);
     long long epoch = brain_epoch(brain);
+    odk_status svr = odk_brain_save_file(brain, path, &err);
     odk_brain_free(brain);
     if (svr != ODK_OK) {
         oc_arena_destroy(&a);
@@ -695,8 +695,8 @@ oc_code oc_brain_cmd_save(const char *file, FILE *out, oc_status *st) {
                       err.text[0] ? err.text : "kernel load failed");
         return OC_ERR_PARSE;
     }
-    odk_status svr = odk_brain_save_file(brain, path, &err);
     long long epoch = brain_epoch(brain);
+    odk_status svr = odk_brain_save_file(brain, path, &err);
     odk_brain_free(brain);
     if (svr != ODK_OK) {
         oc_status_set(st, OC_ERR_IO, "failed to save the brain file '%s': %s", path,
@@ -715,12 +715,13 @@ oc_code oc_brain_cmd_save(const char *file, FILE *out, oc_status *st) {
     size_t w1 =
         fwrite(w.buf.data ? w.buf.data : "null", 1, w.buf.data ? strlen(w.buf.data) : 4, out);
     size_t w1_len = w.buf.data ? strlen(w.buf.data) : 4;
-    oc_jsonw_destroy(&w);
     if (w1 != w1_len || ferror(out)) {
+        oc_jsonw_destroy(&w);
         oc_status_set(st, OC_ERR_IO,
                       "failed to write the save result (brain store was saved to '%s')", path);
         return OC_ERR_IO;
     }
+    oc_jsonw_destroy(&w);
     int w2 = fprintf(out,
                      ",\"saved\":true,\"existed\":true,\"epoch\":%lld,"
                      "\"sha256\":\"%s\"}\n",
@@ -1040,8 +1041,8 @@ oc_code oc_brain_cmd_discard(const char *file, long index, FILE *out, oc_status 
                       err.text[0] ? err.text : "unknown index");
         return OC_ERR_USAGE;
     }
-    odk_status svr = odk_brain_save_file(brain, path, &err);
     long long epoch = brain_epoch(brain);
+    odk_status svr = odk_brain_save_file(brain, path, &err);
     odk_brain_free(brain);
     if (svr != ODK_OK) {
         oc_status_set(st, OC_ERR_IO, "failed to save the brain file '%s': %s", path,
@@ -1061,18 +1062,23 @@ oc_code oc_brain_cmd_discard(const char *file, long index, FILE *out, oc_status 
         fwrite(w.buf.data ? w.buf.data : "null", 1, w.buf.data ? strlen(w.buf.data) : 4, out);
     size_t w1_len = w.buf.data ? strlen(w.buf.data) : 4;
     if (w1 != w1_len || ferror(out)) {
-        oc_status_set(st, OC_ERR_IO, "failed to write the discard document");
+        oc_jsonw_destroy(&w);
+        oc_status_set(st, OC_ERR_IO,
+                      "failed to write the discard document (brain store was discarded to '%s')",
+                      path);
         return OC_ERR_IO;
     }
+    oc_jsonw_destroy(&w);
     int w2 = fprintf(out,
                      ",\"index\":%ld,\"discarded\":true,\"epoch\":%lld,"
                      "\"sha256\":\"%s\"}\n",
                      index, epoch, sha);
     if (w2 < 0 || ferror(out)) {
-        oc_status_set(st, OC_ERR_IO, "failed to write the discard document");
+        oc_status_set(st, OC_ERR_IO,
+                      "failed to write the discard document (brain store was discarded to '%s')",
+                      path);
         return OC_ERR_IO;
     }
-    oc_jsonw_destroy(&w);
     return OC_OK;
 }
 
